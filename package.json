@@ -1,0 +1,24 @@
+{
+    "name": "com.cinegamesdk.host",
+    "version": "0.1.0",
+    "displayName": "CineGame Host SDK",
+    "description": "This is the SDK for creating hosts for CineGame",
+    "unity": "2019.4",
+    "documentationUrl": "https://github.com/cinemataztic/cinegame-sdk-samples",
+    "changelogUrl": "https://github.com/cinemataztic/cinegame-sdk-samples",
+    "licensesUrl": "https://github.com/cinemataztic/cinegame-sdk-samples",
+    "dependencies": {
+        "com.unity.nuget.newtonsoft-json": "3.0.2",
+        "com.unity.editorcoroutines": "1.0.0"
+    },
+    "keywords": [
+        "CinemaTaztic",
+        "CineGame",
+        "CineClash"
+    ],
+    "author": {
+        "name": "Cinemataztic Aps",
+        "email": "ae@cinemataztic.com",
+        "url": "https://cinega.me"
+    }
+}
