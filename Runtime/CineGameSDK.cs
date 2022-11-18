@@ -645,7 +645,7 @@ namespace CineGame.Host {
                     }
 
                     if (CreateResponse.ContainsKey ("maxSupportersPerPlayer")) {
-                        SmartfoxClient.MaxSupportersPerPlayer = (int)(long)CreateResponse ["maxSupportersPerPlayer"];
+                        SmartfoxClient.MaxSpectators = (int)(long)CreateResponse ["maxSupportersPerPlayer"] * SmartfoxClient.MaxPlayers;
                     }
 
                     OnGameReady?.Invoke (new Dictionary<string, object> {

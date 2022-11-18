@@ -21,7 +21,7 @@ namespace CineGame.Host {
         internal static Room GameRoom;
 
         internal static int MaxPlayers = 75;
-        internal static int MaxSupportersPerPlayer = 5;
+        internal static int MaxSpectators = 75*5;
 
         /// <summary>
 		/// We send a Keep-Alive dummy message to the server every minute to avoid being kicked
@@ -258,7 +258,7 @@ namespace CineGame.Host {
             var roomSettings = new RoomSettings (GameCode);
             roomSettings.IsGame = true;
             roomSettings.MaxUsers = (short)MaxPlayers;
-            roomSettings.MaxSpectators = (short)(MaxPlayers * MaxSupportersPerPlayer);
+            roomSettings.MaxSpectators = (short)MaxSpectators;
             roomSettings.Variables.Add (new SFSRoomVariable ("GameType", GameType));
             roomSettings.Variables.Add (new SFSRoomVariable ("HostId", sfs.MySelf.Id));
             if (Debug.isDebugBuild) {
@@ -461,12 +461,16 @@ namespace CineGame.Host {
         }
 
         internal static void UpdateRoomCapacity (int maxPlayers, int maxSpectators) {
-            try {
-                //We stop further users from joining by setting the room capacity to current number of users
-                sfs.Send (new ChangeRoomCapacityRequest (GameRoom, maxPlayers, maxSpectators));
-            } catch (Exception e) {
-                Debug.LogWarningFormat ("SFS Failed to fix room capacity at {0}: {1}", GameRoom.UserCount, e.Message);
-                throw;
+            MaxPlayers = maxPlayers;
+            MaxSpectators = maxSpectators;
+            if (sfs != null && GameRoom != null) {
+                try {
+                    //We stop further users from joining by setting the room capacity to current number of users
+                    sfs.Send (new ChangeRoomCapacityRequest (GameRoom, maxPlayers, maxSpectators));
+                } catch (Exception e) {
+                    Debug.LogWarningFormat ("SFS Failed to fix room capacity at {0}: {1}", GameRoom.UserCount, e.Message);
+                    throw;
+                }
             }
         }
 
