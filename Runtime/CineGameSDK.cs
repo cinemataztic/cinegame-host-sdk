@@ -329,6 +329,11 @@ namespace CineGame.Host {
 
         public static APIRegion Region {
             get {
+#if UNITY_EDITOR
+                if (instance == null) {
+                    instance = UnityEngine.Object.FindObjectOfType<CineGameSDK> ();
+                }
+#endif
                 if (instance != null) {
 #pragma warning disable 0618
                     var marketId = instance.Market;
