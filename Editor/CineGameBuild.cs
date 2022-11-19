@@ -1,8 +1,10 @@
 ﻿using UnityEngine;
 using UnityEngine.Networking;
+using UnityEngine.SceneManagement;
 using UnityEditor;
 using UnityEditor.Build.Reporting;
 using Unity.EditorCoroutines.Editor;
+//using UnityEngine.Video;
 
 using System;
 using System.Runtime.InteropServices;
@@ -10,11 +12,10 @@ using System.Collections.Generic;
 using System.Collections;
 using System.IO;
 using System.Reflection;
+using System.Linq;
+using System.Text.RegularExpressions;
 
 using CineGame.Host;
-using System.Linq;
-//using UnityEngine.Video;
-using System.Text.RegularExpressions;
 
 //using Ionic.Zip;
 //using System.Threading;
@@ -719,6 +720,8 @@ namespace CineGame.HostEditor {
 		/// If no CineGameSettings are found, one is created. If different GameTypes are referenced in loaded scenes, error is displayed
         /// </summary>
         internal static string GetGameTypeFromSceneOrProject () {
+            if (SceneManager.sceneCount == 0)
+                return null;
             var sdks = FindObjectsOfType<CineGameSDK> ();
             CineGameSettings settings;
             if (sdks.Length == 0 || sdks.All (sdk => sdk.Settings == null)) {
