@@ -65,6 +65,11 @@ namespace CineGame.Host {
 
         static int ConnectionRetryCount = 0;
 
+        /// <summary>
+		/// We maintain this dictionary of {BackendID,Sfs2X.Entities.User} so we can map from the persistent BackendID to a temp smartfox User when sending messages
+		/// </summary>
+        static Dictionary<long, User> userDict = new Dictionary<long, User> ();
+
         // Update is called once per frame
         internal static void Update () {
             if (sfs != null) {
@@ -348,6 +353,9 @@ namespace CineGame.Host {
                     }
                     user.Properties ["bkid"] = backendID;
                     user.Properties ["name"] = userName;
+
+                    userDict [backendID] = user;
+
                     if (user.IsPlayer) {
                         if (CineGameSDK.GameEnded) {
                             Debug.LogWarning ($"Received bkid object from {userName} ({backendID}) but game has already ended");
@@ -395,7 +403,7 @@ namespace CineGame.Host {
                     int backendID = (int)o;
                     CineGameSDK.OnPlayerObjectMessage?.Invoke(backendID, CineGameSDK.PlayerObjectMessage.FromSmartFoxObject (dataObj));
                 } else if (numBkIdWarnings-- > 0) {
-                    Debug.LogWarning ($"SFS OnObjectMessage: {user.Name} has no bkid property! Happens when packages are received out of order");
+                    Debug.LogWarning ($"SFS OnObjectMessage: {user.Name} has no bkid property! Happens when packages get lost or are received out of order");
                 }
             }
         }
@@ -419,10 +427,15 @@ namespace CineGame.Host {
                     user.Properties.TryGetValue ("name", out uname);
                     if (room.Id == GameRoom.Id) {
 
-                        CineGameSDK.OnPlayerLeft?.Invoke((int)user.Properties ["bkid"]);
+                        var backendID = (int)user.Properties ["bkid"];
+                        CineGameSDK.OnPlayerLeft?.Invoke (backendID);
+
                         Debug.LogFormat ("SFS Removing {0} ({1}) from room, probably due to idle timeout. This does not affect game.", user.Name, uname);
                         GameRoom.RemoveUser (user);
 
+                        if (userDict.ContainsKey (backendID)) {
+                            userDict.Remove (backendID);
+                        }
                     }
                 } catch (Exception e) {
                     //We don't care about exceptions here, just log it without error
@@ -493,10 +506,8 @@ namespace CineGame.Host {
         internal static void SendObjectMessage (ISFSObject dataObj, int backendId) {
             var users = new List<User> ();
             try {
-                users.Add (GameRoom.UserList.Find (u => (int)u.Properties ["bkid"] == backendId));
-                if (users.Count > 0) {
-                    sfs.Send (new ObjectMessageRequest (dataObj, GameRoom, users));
-                }
+                users.Add (userDict [backendId]);
+                sfs.Send (new ObjectMessageRequest (dataObj, GameRoom, users));
             } catch (Exception e) {
                 if (!(e is NullReferenceException) && e.Message != null) {
                     var username = (users.Count > 0 && users [0] != null) ? users [0].Name : "unknown";
@@ -506,11 +517,12 @@ namespace CineGame.Host {
         }
 
         internal static void SendPrivateMessage (string msg, int backendId) {
-            var user = GameRoom.UserList.Find (u => (int)u.Properties ["bkid"] == backendId);
+            User user = null;
             try {
+                user = userDict [backendId];
                 sfs.Send (new PrivateMessageRequest (msg, user.Id));
             } catch (Exception e) {
-                Debug.LogErrorFormat ("SFS Error while sending private message to [{0}]: {1}", user.Name, e.Message);
+                Debug.LogErrorFormat ("SFS Error while sending private message to {0}: {1}", user != null ? user.Name : backendId, e.Message);
             }
         }
 
