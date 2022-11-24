@@ -108,6 +108,10 @@ namespace CineGame.Host {
             public byte [] GetByteArray (string key) {
                 return smartfoxObject.GetByteArray (key).Bytes;
             }
+            public Color GetColor (string key) {
+                var val = smartfoxObject.GetFloatArray (key);
+                return (val.Length == 3) ? new Color (val [0], val [1], val [2]) : new Color (val [0], val [1], val [2], val [3]);
+            }
 
             public void PutInt (string key, int value) {
                 smartfoxObject.PutInt (key, value);
@@ -135,6 +139,9 @@ namespace CineGame.Host {
             }
             public void PutByteArray (string key, byte [] value) {
                 smartfoxObject.PutByteArray (key, new Sfs2X.Util.ByteArray (value));
+            }
+            public void PutColor (string key, Color value) {
+                smartfoxObject.PutFloatArray (key, new float [] { value.r, value.g, value.b, value.a });
             }
             public void PutNull (string key) {
                 smartfoxObject.PutNull (key);
