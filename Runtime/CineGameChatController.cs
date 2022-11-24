@@ -68,7 +68,10 @@ namespace CineGame.Host {
             }
 
             StartCoroutine (E_LoadProfanity ());
-            SetupEmojiList ();
+
+            if (EmojiInfo != null && !string.IsNullOrWhiteSpace (EmojiInfo.text)) {
+                SetupEmojiDictionary ();
+            }
 
             CineGameSDK.OnPlayerChatMessage += Message;
         }
@@ -121,7 +124,10 @@ namespace CineGame.Host {
             }
         }
 
-        void SetupEmojiList () {
+        /// <summary>
+		/// Set up dictionary of {emoji,UVs}
+		/// </summary>
+        void SetupEmojiDictionary () {
             using (StringReader reader = new StringReader (EmojiInfo.text)) {
                 string line = reader.ReadLine ();
                 while (line != null && line.Length > 1) {
