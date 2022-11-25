@@ -10,7 +10,7 @@ using System.IO;
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
 
-namespace CineGame.HostEditor {
+namespace CineGame.Host.Editor {
 
 	public class CineGameTest : EditorWindow {
 		[DllImport ("libc", EntryPoint = "chmod", SetLastError = true)]

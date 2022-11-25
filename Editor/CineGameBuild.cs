@@ -15,12 +15,7 @@ using System.Reflection;
 using System.Linq;
 using System.Text.RegularExpressions;
 
-using CineGame.Host;
-
-//using Ionic.Zip;
-//using System.Threading;
-
-namespace CineGame.HostEditor {
+namespace CineGame.Host.Editor {
 
     internal class CineGameBuild : EditorWindow {
 

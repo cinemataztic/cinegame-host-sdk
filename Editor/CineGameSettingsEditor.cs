@@ -1,13 +1,12 @@
 ﻿using System;
 using UnityEditor;
 
-using CineGame.Host;
 using UnityEngine;
 
-namespace CineGame.HostEditor {
+namespace CineGame.Host.Editor {
 
 	[CustomEditor (typeof (CineGameSettings))]
-	public class CineGameSettingsEditor : Editor {
+	public class CineGameSettingsEditor : UnityEditor.Editor {
 
 		SerializedProperty GameTypeProperty;
 		SerializedProperty MarketIdProperty;

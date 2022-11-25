@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 // Information about this assembly is defined by the following attributes. 
 // Change them to the values specific to your project.
 
-[assembly: AssemblyTitle ("CineGameSDK.Host")]
+[assembly: AssemblyTitle ("com.cinegamesdk.host")]
 [assembly: AssemblyDescription ("UnityEngine runtime scripts for creating a CineGame and communicating realtime with mobile clients")]
 [assembly: AssemblyConfiguration ("")]
 [assembly: AssemblyCompany ("Cinemataztic")]
@@ -24,3 +24,5 @@ using System.Runtime.CompilerServices;
 
 //[assembly: AssemblyDelaySign(false)]
 //[assembly: AssemblyKeyFile("")]
+
+[assembly: InternalsVisibleTo ("com.cinegamesdk.hosteditor")]

@@ -1,7 +1,7 @@
 ﻿using System.Reflection;
 
 namespace CineGame.Host {
-	public static class Configuration {
+	internal static class Configuration {
 		/// <summary>
 		/// Gets the property name from an accessor method (trim the compiler-generated 'get_' or 'set_' prefix).
 		/// </summary>

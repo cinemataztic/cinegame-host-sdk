@@ -7,9 +7,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.Networking;
 
-using CineGame.Host;
-
-namespace CineGame.HostEditor
+namespace CineGame.Host.Editor
 {
     public class CineGameLogin : EditorWindow
     {
