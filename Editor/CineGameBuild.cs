@@ -340,6 +340,8 @@ namespace CineGame.HostEditor {
             GetLatestCommit ();
 
             titleContent = new GUIContent ("CineGame Build", IconTexture);
+
+            GetGameTypeFromSceneOrProject ();
         }
 
 
