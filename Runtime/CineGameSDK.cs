@@ -46,6 +46,9 @@ namespace CineGame.Host {
         private static string MacAddress = null;
         public static string DeviceId = null;
         private static string DeviceInfo = null;
+        public static string UserEmail;
+        public static string UserName;
+        public static string UserId;
 
         /// <summary>
         /// User
@@ -502,24 +505,23 @@ namespace CineGame.Host {
                     //Get gamecode from the backend. We are seeing network errors when trying this in first frame so we delay it a little
                     BackendHeaders ["Authorization"] = "Bearer " + accessToken;
 
-                    /*var accessTokenParts = accessToken.Split ('.');
+                    var accessTokenParts = accessToken.Split ('.');
                     if (accessTokenParts.Length > 1) {
                         var payloadString = Encoding.UTF8.GetString (CineGameUtility.Base64UrlDecode (accessTokenParts [1]));
-                        var payloadJson = (Dictionary<string, object>)Json.Deserialize (payloadString);
-                        
+                        var payloadJson = Json.Deserialize (payloadString) as Dictionary<string, object>;
                         object o;
                         if (payloadJson.TryGetValue ("email", out o)) {
-                            SentrySdk.UserEmail = (string)o;
+                            UserEmail = (string)o;
                         }
                         if (payloadJson.TryGetValue ("_id", out o)) {
-                            SentrySdk.UserId = (string)o;
+                            UserId = (string)o;
                         }
                         if (payloadJson.ContainsKey ("name")) {
                             var dName = (Dictionary<string, object>)payloadJson ["name"];
-                            SentrySdk.UserName = dName ["first"] + " " + dName ["last"];
+                            UserName = dName ["first"] + " " + dName ["last"];
                         }
-                        Debug.Log ($"Logging in as user/device {SentrySdk.UserName} ({SentrySdk.UserEmail}) id={SentrySdk.UserId}");
-                    }*/
+                        Debug.Log ($"Logging in as user/device {UserName} ({UserEmail}) id={UserId}");
+                    }
                 }
             }
 
