@@ -51,10 +51,6 @@ namespace CineGame.Host {
             if (instance != null)
                 return;
             instance = this;
-
-            //For debugging purposes. Normally these will be overridden by config from backend
-            GiphyApiKey = Environment.GetEnvironmentVariable ("GIPHY_API_KEY");
-            TenorApiKey = Environment.GetEnvironmentVariable ("TENOR_API_KEY");
         }
 
         void Start () {
