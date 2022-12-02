@@ -61,6 +61,7 @@ namespace CineGame.Host.Editor {
         static string LatestAuthor;
         static string LatestCommitMessage;
         static string LatestDiff;
+        static string ScmSubdirectory;
 
         static string progressMessage = "Waiting ...";
 
@@ -88,6 +89,7 @@ namespace CineGame.Host.Editor {
 
         static bool HasWinBuildSupport, HasMacOSBuildSupport, HasLinux64BuildSupport, HasLinuxIl2cppSupport;
         static bool BuildOnlyForLinux;
+        static bool BuildOnUcb;
 
         public CineGameBuild () {
             instance = this;
@@ -121,6 +123,8 @@ namespace CineGame.Host.Editor {
                 return;
             }
 
+            var ucbAvailable = !string.IsNullOrWhiteSpace (CloudProjectSettings.organizationId) && !string.IsNullOrWhiteSpace (CloudProjectSettings.projectId);
+
             var gtTooltip = "GameType extracted from CineGameSettings asset";
             EditorGUILayout.LabelField (new GUIContent ("GameType: ", gtTooltip), new GUIContent (GameType, gtTooltip));
 
@@ -138,53 +142,67 @@ namespace CineGame.Host.Editor {
                 EditorGUILayout.LabelField ("Last commit msg:", LatestCommitMessage);
             }
 
-            var width100Option = GUILayout.Width (100f);
-            EditorGUILayout.Space ();
-
-            if (Application.platform == RuntimePlatform.OSXEditor) {
-                EditorGUILayout.BeginHorizontal ();
-                CrtFilePath = EditorGUILayout.TextField (new GUIContent ("CRT File:", "Certificate PEM file used to sign Windows build"), CrtFilePath);
-                if (GUILayout.Button ("Browse", width100Option)) {
-                    var result = EditorUtility.OpenFilePanel ("Select certificate for signing Windows build", CrtFilePath, "pem");
-                    if (!string.IsNullOrWhiteSpace (result)) {
-                        CrtFilePath = result;
-                    }
-                }
-                EditorGUILayout.EndHorizontal ();
-                EditorGUILayout.BeginHorizontal ();
-                KeyFilePath = EditorGUILayout.TextField (new GUIContent ("KEY File: ", "Private key PEM file used to sign Windows build"), KeyFilePath);
-                if (GUILayout.Button ("Browse", width100Option)) {
-                    var result = EditorUtility.OpenFilePanel ("Select private key for signing Windows build", KeyFilePath, "pem");
-                    if (!string.IsNullOrWhiteSpace (result)) {
-                        KeyFilePath = result;
-                    }
-                }
-                EditorGUILayout.EndHorizontal ();
-                EditorGUILayout.Space ();
-                var _kci = EditorGUILayout.Popup (new GUIContent ("macOS Signing identity:", "Signing identity used to sign macOS build"), KeychainCertIndex, KeychainCertNames);
-                if (_kci != KeychainCertIndex) {
-                    KeychainCertIndex = _kci;
-                    EditorPrefs.SetString ("CinemaBuildKeychainSearchPattern", KeychainCertNames [KeychainCertIndex]);
-                }
-            } else {
-                EditorGUILayout.BeginHorizontal ();
-                CrtFilePath = EditorGUILayout.TextField (new GUIContent ("PFX File:", "PFX File containing certificate and private key for signing Windows build"), CrtFilePath);
-                if (GUILayout.Button ("Browse", width100Option)) {
-                    var result = EditorUtility.OpenFilePanel ("Select certificate for signing Windows build", CrtFilePath, "pfx");
-                    if (!string.IsNullOrWhiteSpace (result)) {
-                        CrtFilePath = result;
-                    }
-                }
-                EditorGUILayout.EndHorizontal ();
-            }
-            EditorGUILayout.Space ();
-
             if (!IsBuilding) {
                 var _buildOnlyForLinux = EditorGUILayout.Toggle ("Build only for Linux", BuildOnlyForLinux);
                 if (_buildOnlyForLinux != BuildOnlyForLinux) {
                     BuildOnlyForLinux = _buildOnlyForLinux;
                     EditorPrefs.SetBool ("CinemaBuildOnlyForLinux", BuildOnlyForLinux);
                 }
+                if (ucbAvailable) {
+                    var _buildOnUcb = EditorGUILayout.Toggle ("Unity Cloud Build", BuildOnUcb);
+                    if (BuildOnUcb != _buildOnUcb) {
+                        BuildOnUcb = _buildOnUcb;
+                        EditorPrefs.SetBool ("CinemaBuildOnUcb", BuildOnUcb);
+                    }
+                } else {
+                    GUI.enabled = false;
+                    EditorGUILayout.Toggle (new GUIContent ("Unity Cloud Build", "Cloud Build Service not configured"), false);
+                    GUI.enabled = true;
+                }
+
+                if (!BuildOnlyForLinux && (!BuildOnUcb || !ucbAvailable)) {
+                    var width100Option = GUILayout.Width (100f);
+                    EditorGUILayout.Space ();
+
+                    if (Application.platform == RuntimePlatform.OSXEditor) {
+                        EditorGUILayout.BeginHorizontal ();
+                        CrtFilePath = EditorGUILayout.TextField (new GUIContent ("CRT File:", "Certificate PEM file used to sign Windows build"), CrtFilePath);
+                        if (GUILayout.Button ("Browse", width100Option)) {
+                            var result = EditorUtility.OpenFilePanel ("Select certificate for signing Windows build", CrtFilePath, "pem");
+                            if (!string.IsNullOrWhiteSpace (result)) {
+                                CrtFilePath = result;
+                            }
+                        }
+                        EditorGUILayout.EndHorizontal ();
+                        EditorGUILayout.BeginHorizontal ();
+                        KeyFilePath = EditorGUILayout.TextField (new GUIContent ("KEY File: ", "Private key PEM file used to sign Windows build"), KeyFilePath);
+                        if (GUILayout.Button ("Browse", width100Option)) {
+                            var result = EditorUtility.OpenFilePanel ("Select private key for signing Windows build", KeyFilePath, "pem");
+                            if (!string.IsNullOrWhiteSpace (result)) {
+                                KeyFilePath = result;
+                            }
+                        }
+                        EditorGUILayout.EndHorizontal ();
+                        EditorGUILayout.Space ();
+                        var _kci = EditorGUILayout.Popup (new GUIContent ("macOS Signing identity:", "Signing identity used to sign macOS build"), KeychainCertIndex, KeychainCertNames);
+                        if (_kci != KeychainCertIndex) {
+                            KeychainCertIndex = _kci;
+                            EditorPrefs.SetString ("CinemaBuildKeychainSearchPattern", KeychainCertNames [KeychainCertIndex]);
+                        }
+                    } else {
+                        EditorGUILayout.BeginHorizontal ();
+                        CrtFilePath = EditorGUILayout.TextField (new GUIContent ("PFX File:", "PFX File containing certificate and private key for signing Windows build"), CrtFilePath);
+                        if (GUILayout.Button ("Browse", width100Option)) {
+                            var result = EditorUtility.OpenFilePanel ("Select certificate for signing Windows build", CrtFilePath, "pfx");
+                            if (!string.IsNullOrWhiteSpace (result)) {
+                                CrtFilePath = result;
+                            }
+                        }
+                        EditorGUILayout.EndHorizontal ();
+                    }
+                    EditorGUILayout.Space ();
+                }
+
                 if (GUILayout.Button ("Build " + GameType + " for " + (BuildOnlyForLinux ? "Linux" : "all platforms"))) {
                     OnClickBuild ();
                 }
@@ -200,13 +218,21 @@ namespace CineGame.Host.Editor {
             }
 
             if (!IsBuilding) {
+                /*if (ucbAvailable) {
+                    Rect rScroll = EditorGUILayout.BeginVertical (GUILayout.ExpandHeight (true));
+                    ucbBuildsScrollPosition = EditorGUILayout.BeginScrollView (ucbBuildsScrollPosition, false, true, GUILayout.Height (rScroll.height));
+                    CloudBuild.OnGUI ();
+                    EditorGUILayout.EndScrollView ();
+                    EditorGUILayout.EndVertical ();
+                }*/
+
                 var lastBuildReportPath = GetLastBuildReportPath ();
                 if (string.IsNullOrEmpty (LastBuildReportString) && File.Exists (lastBuildReportPath)) {
                     LastBuildReportString = File.ReadAllText (lastBuildReportPath);
                 }
 
                 if (!string.IsNullOrEmpty (LastBuildReportString)) {
-                    Rect rScroll = EditorGUILayout.BeginVertical ();
+                    Rect rScroll = EditorGUILayout.BeginVertical (GUILayout.ExpandHeight (true));
                     buildReportScrollPosition = EditorGUILayout.BeginScrollView (buildReportScrollPosition, false, true, GUILayout.Height (rScroll.height));
                     EditorGUILayout.SelectableLabel (LastBuildReportString, EditorStyles.textArea, GUILayout.ExpandHeight (true));
                     EditorGUILayout.EndScrollView ();
@@ -219,7 +245,7 @@ namespace CineGame.Host.Editor {
                 var linuxPath = string.Format (outputPathFormat, GameType, BuildTarget.StandaloneLinux64);
 
                 if ((File.Exists (macPath) || File.Exists (winPath) || File.Exists (linuxPath)) && GUILayout.Button ("Upload " + GameType + " for " + MarketSlug)) {
-                    //All three builds exist and user has clicked on Upload button
+                    //Any of the three builds exist and user has clicked on Upload button
                     OnClickUpload ();
                 }
 
@@ -250,6 +276,36 @@ namespace CineGame.Host.Editor {
 
 
         void OnClickBuild () {
+            if (!EditorBuildSettings.scenes.Any (sc => sc.path == SceneManager.GetActiveScene ().path)) {
+                if (!EditorUtility.DisplayDialog (ProgressBarTitle, "The active scene is not included in the build settings. Replace build settings with open scenes?", "OK", "Cancel"))
+                    return;
+                var buildScenes = new List<EditorBuildSettingsScene> ();
+                for (int i = 0; i < SceneManager.sceneCount; i++) {
+                    var scene = SceneManager.GetSceneAt (i);
+                    buildScenes.Add (new EditorBuildSettingsScene {
+                        enabled = true,
+                        path = scene.path,
+                        guid = AssetDatabase.GUIDFromAssetPath (scene.path),
+                    });
+                }
+                EditorBuildSettings.scenes = buildScenes.ToArray ();
+            }
+
+            if (!string.IsNullOrWhiteSpace (LatestDiff)) {
+                if (!EditorUtility.DisplayDialog (ProgressBarTitle, "There are local changes to the project. Build anyway?", "OK", "Cancel"))
+                    return;
+            }
+
+            if (BuildOnUcb) {
+                CloudBuild.Init ();
+                CloudBuild.CreateBuildTarget (CloudBuild.UcbPlatform.standalonelinux64, appName: GameType, branchName: LatestBranch, subdirectory: ScmSubdirectory, autoBuild: true);
+                if (!BuildOnlyForLinux) {
+                    CloudBuild.CreateBuildTarget (CloudBuild.UcbPlatform.standaloneosxintel64, appName: GameType, branchName: LatestBranch, subdirectory: ScmSubdirectory, autoBuild: true);
+                    CloudBuild.CreateBuildTarget (CloudBuild.UcbPlatform.standalonewindows64,  appName: GameType, branchName: LatestBranch, subdirectory: ScmSubdirectory, autoBuild: true);
+                }
+                return;
+            }
+
             var crtFileExists = !string.IsNullOrWhiteSpace (CrtFilePath) && File.Exists (CrtFilePath);
             if (!BuildOnlyForLinux && HasWinBuildSupport && !crtFileExists) {
                 if (!EditorUtility.DisplayDialog (ProgressBarTitle, "WARNING: No Crt and Keyfile specified. Windows builds will not be signed. Continue?", "OK", "Cancel")) {
@@ -279,7 +335,7 @@ namespace CineGame.Host.Editor {
                 return;
             }
 
-            StartCoroutine (E_BuildSingleSceneForAllPlatforms ());
+            StartCoroutine (E_BuildGame ());
         }
 
 
@@ -294,7 +350,7 @@ namespace CineGame.Host.Editor {
                 return;
             }
 
-            StartCoroutine (E_UploadSingleSceneForAllPlatforms ());
+            StartCoroutine (E_UploadGame ());
         }
 
 
@@ -325,6 +381,7 @@ namespace CineGame.Host.Editor {
             //LoginRegionIndex = Mathf.Clamp (Array.IndexOf (LoginRegions, EditorPrefs.GetString ("CinemaBuildMarketRegion", LoginRegions [0])), 0, LoginRegions.Length - 1);
 
             BuildOnlyForLinux = EditorPrefs.GetBool ("CinemaBuildOnlyForLinux", false);
+            BuildOnUcb = EditorPrefs.GetBool ("CinemaBuildOnUcb", true);
             CrtFilePath = EditorPrefs.GetString ("CinemaBuildCrtFile");
             KeyFilePath = EditorPrefs.GetString ("CinemaBuildKeyFile");
 
@@ -348,7 +405,7 @@ namespace CineGame.Host.Editor {
         [MenuItem ("CineGame/Build")]
         internal static void Init () {
             if (instance == null) {
-                instance = GetWindow<CineGameBuild> (ProgressBarTitle, typeof (CineGameBuild), typeof (CineGameTest));
+                instance = GetWindow<CineGameBuild> (ProgressBarTitle, typeof (CloudBuild), typeof (CineGameTest), typeof(CineGameLogin));
             }
             instance.Focus ();
 
@@ -364,11 +421,8 @@ namespace CineGame.Host.Editor {
             }
         }
 
-        IEnumerator E_BuildSingleSceneForAllPlatforms () {
+        IEnumerator E_BuildGame () {
             var tmpDir = Application.temporaryCachePath + "/cinemabuild";
-            string [] scenes = {
-                UnityEngine.SceneManagement.SceneManager.GetActiveScene ().path,
-            };
 
             uint rwxr_xr_x = 0x1ED;//Convert.ToUInt32 ("755", 8);
 
@@ -412,7 +466,7 @@ namespace CineGame.Host.Editor {
                     yield return null;
 
                     //Build player
-                    var buildReport = BuildPipeline.BuildPlayer (scenes, outPath, buildTarget, buildOptions);
+                    var buildReport = BuildPipeline.BuildPlayer (EditorBuildSettings.scenes, outPath, buildTarget, buildOptions);
                     RepaintWindow ();
                     yield return null;
 
@@ -515,7 +569,7 @@ namespace CineGame.Host.Editor {
             }
         }
 
-        IEnumerator E_UploadSingleSceneForAllPlatforms () {
+        IEnumerator E_UploadGame () {
             progressMessage = string.Format ("Uploading {0} to {1} ...", GameType, MarketSlug);
             RepaintWindow ();
             yield return null;
@@ -564,28 +618,6 @@ namespace CineGame.Host.Editor {
                 form.AddField ("sdk-version", sdkVersion.ToString ());
                 form.AddField ("sdk-buildtime", sdkBuildTimeString);
 
-                string submitURL;
-                switch (CineGameLogin.LoginRegionIndex) {
-                case 0:
-                    submitURL = "https://api.staging.cinemataztic.com/v2/build-hook/upload";
-                    break;
-                case 1:
-                    submitURL = "https://api.cinemataztic.com/v2/build-hook/upload";
-                    break;
-                case 2:
-                    submitURL = "https://biospil.api.player.drf-1.cinemataztic.com/v2/build-hook/upload";
-                    break;
-                case 3:
-                    submitURL = "https://wideeyemedia.ie.api.player.eu-2.cinemataztic.com/v2/build-hook/upload";
-                    break;
-                case 4:
-                    submitURL = "https://itv.in.api.player.asia-1.cinemataztic.com/v2/build-hook/upload";
-                    break;
-                default:
-                    submitURL = "https://api.staging.cinemataztic.com/v2/build-hook/upload";
-                    break;
-                }
-
                 var headers = form.headers;
                 headers ["Authorization"] = string.Format ("Bearer {0}", Configuration.CINEMATAZTIC_ACCESS_TOKEN);
                 //headers["Keep-Alive"] = string.Format ("timeout={0}", UPLOAD_REQUEST_TIMEOUT);
@@ -593,7 +625,7 @@ namespace CineGame.Host.Editor {
                 var watch = new System.Diagnostics.Stopwatch ();
                 watch.Start ();
 
-                var request = UnityWebRequest.Post (submitURL, form);
+                var request = UnityWebRequest.Post (new Uri (CineGameLogin.CinematazticApiBaseUri, "build-hook/upload"), form);
                 var enHeaders = headers.GetEnumerator ();
                 while (enHeaders.MoveNext ()) {
                     request.SetRequestHeader (enHeaders.Current.Key, enHeaders.Current.Value);
@@ -940,7 +972,8 @@ namespace CineGame.Host.Editor {
                     var strHashEnd = str.IndexOf (' ');
                     LatestCommit = str.Substring (0, strHashEnd > 0 ? strHashEnd : str.Length);
                     var indexOfBranch = str.IndexOf ("(HEAD -> ") + 9;
-                    LatestBranch = str.Substring (indexOfBranch, str.Length - indexOfBranch - 1);
+                    var branches = str.Substring (indexOfBranch).Trim (' ', ')').Split (", origin/");
+                    LatestBranch = branches.Length > 1 ? branches [1] : branches [0];
                 } else if (message.StartsWith ("Author: ")) {
                     LatestAuthor = message.Substring (8);
                 } else if (message.Length > 1) {
@@ -958,6 +991,11 @@ namespace CineGame.Host.Editor {
                     return false;
                 });
                 LatestDiff = sb.ToString ();
+
+                ExternalProcess.Run ("git", "rev-parse --show-toplevel", parentDir, delegate (string message, float pct) {
+                    ScmSubdirectory = Path.GetRelativePath (message.Trim (), Path.GetDirectoryName (Application.dataPath));
+                    return false;
+                });
             }
         }
 

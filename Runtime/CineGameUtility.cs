@@ -50,5 +50,13 @@ namespace CineGame.Host
 				return sb.ToString();
 			}
 		}
+
+		/// <summary>
+		/// Cap string to a maximum length and add a postfix if truncated
+		/// </summary>
+		public static string Truncate (this string s, int maxLength, string postfix = "…") {
+			if (s.Length <= maxLength) return s;
+			return s.Substring (0, maxLength) + postfix;
+		}
 	}
 }

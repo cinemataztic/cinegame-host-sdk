@@ -59,7 +59,7 @@ namespace CineGame.Host.Editor
         [MenuItem ("CineGame/Login")]
         internal static void Init () {
             if (instance == null) {
-                instance = GetWindow<CineGameLogin> ("CineGame Login", typeof(CineGameBuild), typeof(CineGameTest));
+                instance = GetWindow<CineGameLogin> ("CineGame Login", typeof (CloudBuild), typeof (CineGameTest), typeof (CineGameBuild));
             }
             instance.Focus ();
         }
@@ -153,6 +153,19 @@ namespace CineGame.Host.Editor
         public static string LoginRegionDisplayName {
             get {
                 return LoginRegions [LoginRegionIndex];
+            }
+        }
+
+        internal static Uri CinematazticApiBaseUri {
+            get {
+                return LoginRegionIndex switch {
+                    0 => new Uri ("https://api.staging.cinemataztic.com/v2/"),
+                    1 => new Uri ("https://api.cinemataztic.com/v2/"),
+                    2 => new Uri ("https://biospil.api.player.drf-1.cinemataztic.com/v2/"),
+                    3 => new Uri ("https://wideeyemedia.ie.api.player.eu-2.cinemataztic.com/v2/"),
+                    4 => new Uri ("https://itv.in.api.player.asia-1.cinemataztic.com/v2/"),
+                    _ => new Uri ("https://api.staging.cinemataztic.com/v2/"),
+                };
             }
         }
 
