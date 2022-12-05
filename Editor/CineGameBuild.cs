@@ -740,7 +740,7 @@ namespace CineGame.Host.Editor {
             if (Application.platform == RuntimePlatform.WindowsEditor) {
                 return ExternalProcess.Run ("powershell", string.Format ("Get-ChildItem . | where {{ $_.Name -notlike '*_BackUpThisFolder_ButDontShipItWithYourGame' }} | Compress-Archive -DestinationPath {0} -Update", fullOutPath), Path.GetFullPath (sInDir), progress);
             }
-            return ExternalProcess.Run ("zip", string.Format ("-FSrD \"{0}\" . -x \"*_BackUpThisFolder_ButDontShipItWithYourGame/*\"", fullOutPath), Path.GetFullPath (sInDir), progress);
+            return ExternalProcess.Run ("zip", string.Format ("-FSrD \"{0}\" . -x \"*_BackUpThisFolder_ButDontShipItWithYourGame/*\" \"*_BurstDebugInformation_DoNotShip/*\"", fullOutPath), Path.GetFullPath (sInDir), progress);
         }
 
 
