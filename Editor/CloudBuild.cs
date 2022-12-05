@@ -31,6 +31,9 @@ namespace CineGame.Host.Editor {
 		static readonly Color GreenColor = new Color (.134f, .905f, .444f);
 		static readonly Color BlueColor = new Color (.11f, .441f, .911f);
 
+		/// <summary>
+		/// Guids of required resources
+		/// </summary>
 		static class Guids {
 			public static string ProgressTexture = "1e7e3d3b79f6e4bc59f7503783aa4eef";
 			public static string DownloadIconTexture = "b70af5f80aae94dd889771188c9227b9";
@@ -39,6 +42,17 @@ namespace CineGame.Host.Editor {
 			public static string BuildIconTexture = "fb51f571adf424ca083dcdd700fecc95";
 			public static string CancelIconTexture = "70d1b25736b2847cd8a01350fa6e2173";
 		}
+
+		/// <summary>
+		/// Map UcbPlatform to BuildTarget enum
+		/// </summary>
+		static readonly Dictionary<UcbPlatform, BuildTarget> BuildPlatformTargetMap = new Dictionary<UcbPlatform, BuildTarget> {
+			{ UcbPlatform.android,  BuildTarget.Android },
+			{ UcbPlatform.ios,      BuildTarget.iOS },
+			{ UcbPlatform.standalonelinux64, BuildTarget.StandaloneLinux64 },
+			{ UcbPlatform.standaloneosxuniversal, BuildTarget.StandaloneOSX },
+			{ UcbPlatform.standalonewindows64, BuildTarget.StandaloneWindows64 },
+		};
 
 		EditorCoroutine StartCoroutine (IEnumerator coroutine) {
 			return EditorCoroutineUtility.StartCoroutine (coroutine, this);
@@ -285,9 +299,9 @@ namespace CineGame.Host.Editor {
 							if (GUI.Button (rt2, new GUIContent (DownloadIconTexture, $"Download {build.buildTargetName} #{build.build}"))) {
 								Download (build);
 							}
-							//if (installAvailable && GUI.Button (rt3, new GUIContent (InstallIconTexture, $"Install {build.buildTargetName} #{build.build} now on {(build.platform == UcbPlatform.android ? AttachedAndroidDeviceName : AttachediOSDeviceName)}"))) {
-							//	Install (build);
-							//}
+							if (build.platform == UcbPlatform.standalonelinux64 && GUI.Button (rt3, new GUIContent (InstallIconTexture, $"Test {build.buildTargetName} #{build.build} now on LAN machine"))) {
+								Install (build);
+							}
 						} else {
 							//var statusString = build.buildStatus.ToString ();
 							rt = BuildTargetsGridView.NextCell ();
@@ -343,7 +357,7 @@ namespace CineGame.Host.Editor {
 			ios,
 			android,
 			webgl,
-			standaloneosxintel64,
+			standaloneosxuniversal,
 			standalonewindows64,
 			standalonelinux64,
 		}
@@ -367,6 +381,7 @@ namespace CineGame.Host.Editor {
 			AAB,
 			APK,
 			IPA,
+			ZIP,
 		}
 
 		internal enum UcbScmType {
@@ -706,8 +721,23 @@ namespace CineGame.Host.Editor {
 				}
 			}
 
-			if (target.platform == UcbPlatform.standalonelinux64) {
+			/*if (target.platform == UcbPlatform.standalonelinux64) {
 				// We automatically upload Linux builds to cinemataztic player api via a webhook integration in UCB
+				var buildNumber = LatestBuild [target.buildtargetid].build;
+
+				Debug.Log ($"Creating share for {target.buildtargetid} build {buildNumber} ...");
+
+				for (; ; ) {
+					using (var request = UnityWebRequest.Post (new Uri (CloudBuildBaseUri, "buildtargets/" + target.buildtargetid + "/builds/" + buildNumber + "/share"), string.Empty)) {
+						request.SetRequestHeader ("Authorization", "Basic " + EditorPrefs.GetString ("UcbApiKey"));
+						yield return request.SendWebRequest ();
+						if (request.result == UnityWebRequest.Result.Success) {
+							break;
+						}
+						Debug.LogError ($"Error while creating share for {target.buildtargetid} build {buildNumber}, retrying in one sec: " + request.downloadHandler?.text ?? request.error);
+						yield return new WaitForSeconds (1f);
+					}
+				}
 
 				Debug.Log ("Checking for existing cinemataztic api build hook ...");
 
@@ -741,6 +771,7 @@ namespace CineGame.Host.Editor {
 						config = new UcbHook.UcbHookConfig {
 							url = buildUploadUrl,
 							encoding = UcbHook.UcbHookEncoding.json,
+							sslVerify = true,
 						},
 					};
 					for (; ; ) {
@@ -761,7 +792,7 @@ namespace CineGame.Host.Editor {
 						}
 					}
 				}
-			}
+			}*/
 		}
 
 		/// <summary>
@@ -947,7 +978,8 @@ namespace CineGame.Host.Editor {
 		}
 
 		IEnumerator E_Download (UcbBuild build) {
-			var path = GetPathToDownloadedBuild (build);
+			var gameType = GetGameTypeForBuild (build);
+			var path = CineGameBuild.GetOutputPath (gameType, BuildPlatformTargetMap [build.platform]);
 			using (var request = UnityWebRequest.Get (build.links.download_primary.href)) {
 				//No auth header needed
 				request.downloadHandler = new DownloadHandlerFile (path);
@@ -970,20 +1002,22 @@ namespace CineGame.Host.Editor {
 					EditorUtility.DisplayDialog ("Cloud Build", $"Error while downloading {Path.GetFileNameWithoutExtension (path)}: {request.error}", "OK");
 					GetCloudBuildTargets ();
 				} else {
-					EditorUtility.RevealInFinder (path);
+					CineGameBuild.Init ();
+					CineGameBuild.GameType = gameType;
 				}
 			}
 		}
 
 		/// <summary>
-		/// Install build on attached mobile device
+		/// Install build on attached device
 		/// </summary>
 		void Install (UcbBuild build) {
 			StartCoroutine (E_Install (build));
 		}
 
 		IEnumerator E_Install (UcbBuild build) {
-			var path = GetPathToDownloadedBuild (build);
+			var gameType = GetGameTypeForBuild (build);
+			var path = CineGameBuild.GetOutputPath (gameType, BuildPlatformTargetMap [build.platform]);
 			if (!File.Exists (path)) {
 				yield return StartCoroutine (E_Download (build));
 				if (!File.Exists (path)) {
@@ -992,7 +1026,7 @@ namespace CineGame.Host.Editor {
 				}
 			}
 			EditorUtility.ClearProgressBar ();
-			//TODO implement deploy and run via CineGameTest ?
+			CineGameTest.Init ();
 		}
 
 		IEnumerator E_DownloadLogForBuild (UcbBuild build) {
@@ -1023,6 +1057,11 @@ namespace CineGame.Host.Editor {
 					EditorUtility.RevealInFinder (path);
 				}
 			}
+		}
+
+		static string GetGameTypeForBuild (UcbBuild build) {
+			//return CineGameBuild.GameType;
+			return build.buildTargetName.Split (' ') [0];
 		}
 
 		/// <summary>

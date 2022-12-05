@@ -3,6 +3,7 @@ using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
 using UnityEditor;
 using UnityEditor.Build.Reporting;
+using UnityEditor.SceneManagement;
 using Unity.EditorCoroutines.Editor;
 //using UnityEngine.Video;
 
@@ -93,6 +94,7 @@ namespace CineGame.Host.Editor {
 
         public CineGameBuild () {
             instance = this;
+            EditorSceneManager.sceneOpened += OnSceneOpened;
         }
 
         EditorCoroutine StartCoroutine (IEnumerator coroutine) {
@@ -239,10 +241,9 @@ namespace CineGame.Host.Editor {
                     EditorGUILayout.EndVertical ();
                 }
 
-                var outputPathFormat = GetOutputPathFormat ();
-                var macPath = string.Format (outputPathFormat, GameType, BuildTarget.StandaloneOSX);
-                var winPath = string.Format (outputPathFormat, GameType, BuildTarget.StandaloneWindows);
-                var linuxPath = string.Format (outputPathFormat, GameType, BuildTarget.StandaloneLinux64);
+                var macPath = GetOutputPath (GameType, BuildTarget.StandaloneOSX);
+                var winPath = GetOutputPath (GameType, BuildTarget.StandaloneWindows);
+                var linuxPath = GetOutputPath (GameType, BuildTarget.StandaloneLinux64);
 
                 if ((File.Exists (macPath) || File.Exists (winPath) || File.Exists (linuxPath)) && GUILayout.Button ("Upload " + GameType + " for " + MarketSlug)) {
                     //Any of the three builds exist and user has clicked on Upload button
@@ -263,11 +264,7 @@ namespace CineGame.Host.Editor {
         }
 
 
-        /// <summary>
-        /// Scene hierarchy has changed (gameobjects created, deleted or scene has loaded).
-        /// Determine gametype and market
-        /// </summary>
-        void OnHierarchyChange () {
+        void OnSceneOpened (Scene scene, OpenSceneMode mode) {
             if (CineGameLogin.IsLoggedIn && !IsBuilding && !EditorApplication.isPlayingOrWillChangePlaymode) {
                 GetGameTypeFromSceneOrProject ();
                 //RepaintWindow ();
@@ -300,7 +297,7 @@ namespace CineGame.Host.Editor {
                 CloudBuild.Init ();
                 CloudBuild.CreateBuildTarget (CloudBuild.UcbPlatform.standalonelinux64, appName: GameType, branchName: LatestBranch, subdirectory: ScmSubdirectory, autoBuild: true);
                 if (!BuildOnlyForLinux) {
-                    CloudBuild.CreateBuildTarget (CloudBuild.UcbPlatform.standaloneosxintel64, appName: GameType, branchName: LatestBranch, subdirectory: ScmSubdirectory, autoBuild: true);
+                    CloudBuild.CreateBuildTarget (CloudBuild.UcbPlatform.standaloneosxuniversal, appName: GameType, branchName: LatestBranch, subdirectory: ScmSubdirectory, autoBuild: true);
                     CloudBuild.CreateBuildTarget (CloudBuild.UcbPlatform.standalonewindows64,  appName: GameType, branchName: LatestBranch, subdirectory: ScmSubdirectory, autoBuild: true);
                 }
                 return;
@@ -375,9 +372,6 @@ namespace CineGame.Host.Editor {
                 HasLinuxIl2cppSupport = Directory.Exists (Path.Combine (Path.GetDirectoryName (EditorApplication.applicationPath), buildSupportIl2cppDir));
             }
 
-            EditorApplication.hierarchyChanged -= OnHierarchyChange;
-            EditorApplication.hierarchyChanged += OnHierarchyChange;
-
             //LoginRegionIndex = Mathf.Clamp (Array.IndexOf (LoginRegions, EditorPrefs.GetString ("CinemaBuildMarketRegion", LoginRegions [0])), 0, LoginRegions.Length - 1);
 
             BuildOnlyForLinux = EditorPrefs.GetBool ("CinemaBuildOnlyForLinux", false);
@@ -394,11 +388,9 @@ namespace CineGame.Host.Editor {
             titleContent = new GUIContent ("CineGame Build", IconTexture);
 
             GetGameTypeFromSceneOrProject ();
-        }
 
-
-        void OnDisable () {
-            EditorApplication.hierarchyChanged -= OnHierarchyChange;
+            EditorSceneManager.sceneOpened -= OnSceneOpened;
+            EditorSceneManager.sceneOpened += OnSceneOpened;
         }
 
 
@@ -522,7 +514,7 @@ namespace CineGame.Host.Editor {
 
                         var spct = buildProgress;
                         var fakepct = 0f;
-                        if (!CompressBuild (tmpDir, string.Format (GetOutputPathFormat (), GameType, platformName), delegate (string sMessage, float percent) {
+                        if (!CompressBuild (tmpDir, GetOutputPath (GameType, buildTarget), delegate (string sMessage, float percent) {
                             percent = fakepct;
                             fakepct += (1f - fakepct) * .01f;
                             if (EditorUtility.DisplayCancelableProgressBar (ProgressBarTitle, sMessage, percent)) {
@@ -577,11 +569,10 @@ namespace CineGame.Host.Editor {
             //Try uploading all three builds until we succeed
             var cancelUpload = false;
             while (!cancelUpload) {
-                var outputPathFormat = "../Builds/{0}_{1}.zip";
-                var macPath = string.Format (outputPathFormat, GameType, BuildTarget.StandaloneOSX);
-                var winPath = string.Format (outputPathFormat, GameType, BuildTarget.StandaloneWindows);
-                var linuxPath = string.Format (outputPathFormat, GameType, BuildTarget.StandaloneLinux64);
-                var mimeType = "application/zip";
+                var macPath = GetOutputPath (GameType, BuildTarget.StandaloneOSX);
+                var winPath = GetOutputPath (GameType, BuildTarget.StandaloneWindows);
+                var linuxPath = GetOutputPath (GameType, BuildTarget.StandaloneLinux64);
+                var mimeType = System.Net.Mime.MediaTypeNames.Application.Zip;
                 var form = new WWWForm ();
                 if (File.Exists (macPath)) {
                     form.AddBinaryData ("mac", File.ReadAllBytes (macPath), Path.GetFileName (macPath), mimeType);
@@ -899,10 +890,6 @@ namespace CineGame.Host.Editor {
             return ta;
         }
 
-        static string GetOutputPathFormat () {
-            return "../Builds/{0}_{1}.zip";
-        }
-
         static string GetLastBuildReportPath () {
             return "../Builds/buildreport.txt";
         }
@@ -1014,6 +1001,12 @@ namespace CineGame.Host.Editor {
             });
             KeychainCertNames = l.ToArray ();
             KeychainCertIndex = Mathf.Clamp (Array.IndexOf (KeychainCertNames, EditorPrefs.GetString ("CinemaBuildKeychainSearchPattern")), 0, KeychainCertNames.Length - 1);
+        }
+
+        const string outputPathFormat = "../Builds/{0}_{1}.zip";
+
+        internal static string GetOutputPath (string gameType, BuildTarget target) {
+            return string.Format (outputPathFormat, gameType, target);
         }
     }
 

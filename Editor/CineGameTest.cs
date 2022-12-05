@@ -146,7 +146,6 @@ namespace CineGame.Host.Editor {
 		void OnEnable () {
 			TimeStamp = EditorPrefs.GetString ("CinemaTestLastTimeStamp", null);
 			IdentityFile = EditorPrefs.GetString ("CinemaTestIdentityFile", "~/.ssh/id_rsa");
-			CineGameBuild.GetGameTypeFromSceneOrProject ();
 
 			titleContent = new GUIContent ("CineGame Test", CineGameBuild.IconTexture);
 		}
@@ -233,7 +232,10 @@ namespace CineGame.Host.Editor {
 				//Quickndirty hack for executable not having a filename extension on linux builds (?!?!)
 				var newExePath = $"{targetFile}.x86_64";
 				File.Move (targetFile, newExePath);
-				sys_chmod (newExePath, rwxr_xr_x);
+				if (Application.platform == RuntimePlatform.OSXEditor) {
+					Debug.Log ("Setting executable permissions ...");
+					sys_chmod (newExePath, rwxr_xr_x);
+				}
 
 				var spct = 0f;
 				var fakepct = 0f;
