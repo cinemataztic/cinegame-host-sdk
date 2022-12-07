@@ -92,6 +92,12 @@ namespace CineGame.Host.Editor {
         static bool BuildOnlyForLinux;
         static bool BuildOnUcb;
 
+        static bool UcbAvailable {
+            get {
+                return !string.IsNullOrWhiteSpace (CloudProjectSettings.organizationId) && !string.IsNullOrWhiteSpace (CloudProjectSettings.projectId);
+            }
+        }
+
         public CineGameBuild () {
             instance = this;
             EditorSceneManager.sceneOpened += OnSceneOpened;
@@ -125,8 +131,6 @@ namespace CineGame.Host.Editor {
                 return;
             }
 
-            var ucbAvailable = !string.IsNullOrWhiteSpace (CloudProjectSettings.organizationId) && !string.IsNullOrWhiteSpace (CloudProjectSettings.projectId);
-
             var gtTooltip = "GameType extracted from CineGameSettings asset";
             EditorGUILayout.LabelField (new GUIContent ("GameType: ", gtTooltip), new GUIContent (GameType, gtTooltip));
 
@@ -150,7 +154,7 @@ namespace CineGame.Host.Editor {
                     BuildOnlyForLinux = _buildOnlyForLinux;
                     EditorPrefs.SetBool ("CinemaBuildOnlyForLinux", BuildOnlyForLinux);
                 }
-                if (ucbAvailable) {
+                if (UcbAvailable) {
                     var _buildOnUcb = EditorGUILayout.Toggle ("Unity Cloud Build", BuildOnUcb);
                     if (BuildOnUcb != _buildOnUcb) {
                         BuildOnUcb = _buildOnUcb;
@@ -158,11 +162,11 @@ namespace CineGame.Host.Editor {
                     }
                 } else {
                     GUI.enabled = false;
-                    EditorGUILayout.Toggle (new GUIContent ("Unity Cloud Build", "Cloud Build Service not configured"), false);
+                    EditorGUILayout.Toggle (new GUIContent ("Unity Cloud Build", "Cloud Build Service not configured"), BuildOnUcb);
                     GUI.enabled = true;
                 }
 
-                if (!BuildOnlyForLinux && (!BuildOnUcb || !ucbAvailable)) {
+                if (!BuildOnlyForLinux && (!BuildOnUcb || !UcbAvailable)) {
                     var width100Option = GUILayout.Width (100f);
                     EditorGUILayout.Space ();
 
@@ -293,7 +297,7 @@ namespace CineGame.Host.Editor {
                     return;
             }
 
-            if (BuildOnUcb) {
+            if (UcbAvailable && BuildOnUcb) {
                 CloudBuild.Init ();
                 CloudBuild.CreateBuildTarget (CloudBuild.UcbPlatform.standalonelinux64, appName: GameType, branchName: LatestBranch, subdirectory: ScmSubdirectory, autoBuild: true);
                 if (!BuildOnlyForLinux) {
