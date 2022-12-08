@@ -115,6 +115,9 @@ namespace CineGame.Host {
                 var val = smartfoxObject.GetFloatArray (key);
                 return (val.Length == 3) ? new Color (val [0], val [1], val [2]) : new Color (val [0], val [1], val [2], val [3]);
             }
+            public string ToJson() {
+                return smartfoxObject.ToJson();
+            }
 
             public void PutInt (string key, int value) {
                 smartfoxObject.PutInt (key, value);
