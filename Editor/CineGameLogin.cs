@@ -35,6 +35,10 @@ namespace CineGame.Host.Editor
             CineGameSDK.OnError -= OnGameCodeError;
             CineGameSDK.OnError += OnGameCodeError;
             LoginRegionIndex = Mathf.Clamp (Array.IndexOf (LoginRegions, EditorPrefs.GetString ("CineGameMarketRegion", LoginRegions [0])), 0, LoginRegions.Length - 1);
+            if (Application.internetReachability == NetworkReachability.NotReachable) {
+                Debug.LogError ("Internet not reachable. Unable to refresh token.");
+                return;
+            }
             if (RefreshAccessToken ()) {
                 CineGameBuild.GetGameTypeFromSceneOrProject ();
             } else {
@@ -45,7 +49,9 @@ namespace CineGame.Host.Editor
         static void OnGameCodeError (int code) {
             Init ();
             EditorApplication.ExitPlaymode ();
-            if (code == (int)HttpStatusCode.Unauthorized) {
+            if (code == 0 || Application.internetReachability == NetworkReachability.NotReachable) {
+                EditorUtility.DisplayDialog (instance.titleContent.text, "No internet connection.", "OK");
+            } else if (code == (int)HttpStatusCode.Unauthorized) {
                 //If backend returns Unauthorized, the token probably has expired. Try to refresh it automatically if possible.
                 if (RefreshAccessToken ()) {
                     EditorUtility.DisplayDialog (instance.titleContent.text, "Access token refreshed. Please re-enter play mode", "OK");
@@ -53,6 +59,10 @@ namespace CineGame.Host.Editor
                 }
                 //User needs to manually log in.
                 EditorUtility.DisplayDialog (instance.titleContent.text, "You are not logged in. Please log in with your credentials!", "OK");
+            } else if (code == 9933) {
+                EditorUtility.DisplayDialog (instance.titleContent.text, "No connection to Smartfox server.", "OK");
+            } else {
+                EditorUtility.DisplayDialog (instance.titleContent.text, $"{(HttpStatusCode)code} while communicating with backend.", "OK");
             }
         }
 
@@ -70,11 +80,16 @@ namespace CineGame.Host.Editor
             var focusedControl = GUI.GetNameOfFocusedControl();
             var passwordEntered = focusedControl == ControlNames.Password && enterKeyPressed;
 
+            EditorGUILayout.Space ();
+
+            if (Application.internetReachability == NetworkReachability.NotReachable) {
+                EditorGUILayout.HelpBox ("Internet not reachable.", MessageType.Error);
+                return;
+            }
+
             if (!IsLoggedIn) {
                 EditorGUILayout.HelpBox ("Not logged in!", MessageType.Error);
             }
-
-            EditorGUILayout.Space();
 
             EditorGUILayout.BeginHorizontal ();
             EditorGUILayout.PrefixLabel ("Username:");

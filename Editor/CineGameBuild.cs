@@ -118,6 +118,11 @@ namespace CineGame.Host.Editor {
         void OnGUI () {
             EditorGUILayout.Space ();
 
+            if (Application.internetReachability == NetworkReachability.NotReachable) {
+                EditorGUILayout.HelpBox ("Internet not reachable.", MessageType.Error);
+                return;
+            }
+
             if (!HasLinux64BuildSupport) {
                 EditorGUILayout.HelpBox ("Linux64 build support required! Preferable IL2CPP", MessageType.Error);
                 return;

@@ -51,6 +51,13 @@ namespace CineGame.Host.Editor {
 		}
 
 		void OnGUI () {
+			EditorGUILayout.Space ();
+
+			if (Application.internetReachability == NetworkReachability.NotReachable) {
+				EditorGUILayout.HelpBox ("Internet not reachable.", MessageType.Error);
+				return;
+			}
+
 			if (LabelBoldStyle == null) {
 				LabelBoldStyle = new GUIStyle (GUI.skin.label);
 				LabelBoldStyle.alignment = TextAnchor.MiddleCenter;

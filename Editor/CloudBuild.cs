@@ -161,6 +161,12 @@ namespace CineGame.Host.Editor {
 		static string UcbApiKey;
 
 		void OnGUI () {
+			if (Application.internetReachability == NetworkReachability.NotReachable) {
+				EditorGUILayout.Space ();
+				EditorGUILayout.HelpBox ("Internet not reachable.", MessageType.Error);
+				return;
+			}
+
 			var labelStyle = GUI.skin.GetStyle ("Label");
 			var buttonStyle = GUI.skin.GetStyle ("Button");
 			buttonStyle.padding = new RectOffset (2, 2, 2, 2);
