@@ -1,9 +1,9 @@
 {
     "name": "com.cinegamesdk.host",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "displayName": "CineGame Host SDK",
     "description": "This is the SDK for creating hosts for CineGame",
-    "unity": "2019.4",
+    "unity": "2021.3",
     "documentationUrl": "https://github.com/cinemataztic/cinegame-sdk-samples",
     "changelogUrl": "https://github.com/cinemataztic/cinegame-sdk-samples",
     "licensesUrl": "https://github.com/cinemataztic/cinegame-sdk-samples",

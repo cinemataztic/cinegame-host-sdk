@@ -466,7 +466,7 @@ namespace CineGame.Host {
                             var dConfDb = (Dictionary<string, object>)Json.Deserialize (reader.ReadToEnd ());
                             var dCloudtaztic = (Dictionary<string, object>)dConfDb ["cloudtaztic"];
                             var dConfig = (Dictionary<string, object>)dCloudtaztic ["config"];
-                            var dPlayer = (Dictionary<string, object>)dCloudtaztic ["player"];
+                            var dPlayer = (Dictionary<string, object>)dConfig ["player"];
 #pragma warning disable 0618
                             Market = (string)dPlayer ["market"];
                             DeviceId =
