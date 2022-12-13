@@ -55,7 +55,6 @@ namespace CineGame.Host {
         /// </summary>
         /// 
         public struct Player {
-            public int SmartFoxID;
             public int BackendID;
             public Version AppVersion;
             public string Name;

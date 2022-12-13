@@ -377,7 +377,6 @@ namespace CineGame.Host {
                         CineGameSDK.Player newUser = new CineGameSDK.Player
                         {
                             BackendID = backendID,
-                            SmartFoxID = user.Id,
                             AppVersion = appVer,
                             Name = userName,
                             Age = userAge,
