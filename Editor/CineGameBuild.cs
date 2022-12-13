@@ -154,13 +154,19 @@ namespace CineGame.Host.Editor {
             }
 
             if (!IsBuilding) {
+                bool isDebug = (buildOptions & BuildOptions.Development) != 0;
+                isDebug = EditorGUILayout.Toggle (new GUIContent ("Debug build", "Make a debuggable/development build. This produces bigger and slower builds"), isDebug);
+                buildOptions = (BuildOptions)((int)buildOptions & (0x7fffffff ^ (int)(BuildOptions.Development | BuildOptions.AllowDebugging)));
+                if (isDebug) {
+                    buildOptions |= BuildOptions.Development | BuildOptions.AllowDebugging;
+                }
                 var _buildOnlyForLinux = EditorGUILayout.Toggle ("Build only for Linux", BuildOnlyForLinux);
                 if (_buildOnlyForLinux != BuildOnlyForLinux) {
                     BuildOnlyForLinux = _buildOnlyForLinux;
                     EditorPrefs.SetBool ("CinemaBuildOnlyForLinux", BuildOnlyForLinux);
                 }
                 if (UcbAvailable) {
-                    var _buildOnUcb = EditorGUILayout.Toggle ("Unity Cloud Build", BuildOnUcb);
+                    var _buildOnUcb = EditorGUILayout.Toggle (new GUIContent ("Unity Cloud Build", "If you have setup cloud services, you can build on Unity Cloud"), BuildOnUcb);
                     if (BuildOnUcb != _buildOnUcb) {
                         BuildOnUcb = _buildOnUcb;
                         EditorPrefs.SetBool ("CinemaBuildOnUcb", BuildOnUcb);
