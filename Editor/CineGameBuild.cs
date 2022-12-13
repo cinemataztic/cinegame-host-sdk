@@ -173,7 +173,7 @@ namespace CineGame.Host.Editor {
                     }
                 } else {
                     GUI.enabled = false;
-                    EditorGUILayout.Toggle (new GUIContent ("Unity Cloud Build", "Cloud Build Service not configured"), BuildOnUcb);
+                    EditorGUILayout.Toggle (new GUIContent ("Unity Cloud Build", "Cloud Build Service not configured"), false);
                     GUI.enabled = true;
                 }
 
