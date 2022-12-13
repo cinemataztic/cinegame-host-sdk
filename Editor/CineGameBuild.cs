@@ -389,10 +389,6 @@ namespace CineGame.Host.Editor {
 
             //LoginRegionIndex = Mathf.Clamp (Array.IndexOf (LoginRegions, EditorPrefs.GetString ("CinemaBuildMarketRegion", LoginRegions [0])), 0, LoginRegions.Length - 1);
 
-            //This is unfortunately necessary to make sure log from the Linux Player is uploaded to the cloud API in Cinemataztic Player 1.7.2 and before
-            PlayerSettings.companyName = "CinemaTaztic";
-            PlayerSettings.productName = "CinemaGame";
-
             BuildOnlyForLinux = EditorPrefs.GetBool ("CinemaBuildOnlyForLinux", false);
             BuildOnUcb = EditorPrefs.GetBool ("CinemaBuildOnUcb", true);
             CrtFilePath = EditorPrefs.GetString ("CinemaBuildCrtFile");
