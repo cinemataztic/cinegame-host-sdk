@@ -154,6 +154,12 @@ namespace CineGame.Host.Editor {
             }
 
             if (!IsBuilding) {
+                bool isCleanBuild = (buildOptions & BuildOptions.CleanBuildCache) != 0;
+                isCleanBuild = EditorGUILayout.Toggle (new GUIContent ("Clean build"), isCleanBuild);
+                buildOptions = (BuildOptions)((int)buildOptions & (0x7fffffff ^ (int)BuildOptions.CleanBuildCache));
+                if (isCleanBuild) {
+                    buildOptions |= BuildOptions.CleanBuildCache;
+                }
                 bool isDebug = (buildOptions & BuildOptions.Development) != 0;
                 isDebug = EditorGUILayout.Toggle (new GUIContent ("Debug build", "Make a debuggable/development build. This produces bigger and slower builds"), isDebug);
                 buildOptions = (BuildOptions)((int)buildOptions & (0x7fffffff ^ (int)(BuildOptions.Development | BuildOptions.AllowDebugging)));
