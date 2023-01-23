@@ -528,5 +528,15 @@ namespace CineGame.Host {
         internal static void SetMaxPlayers (int maxPlayers) {
             MaxPlayers = maxPlayers;
         }
+
+        internal static void KickUser (int backendId) {
+            User user = null;
+            try {
+                user = userDict [backendId];
+                sfs.Send (new KickUserRequest (user.Id, "getout"));
+            } catch (Exception e) {
+                Debug.LogErrorFormat ("SFS Error while sending kick message to {0}: {1}", user != null ? user.Name : backendId, e.Message);
+            }
+        }
     }
 }

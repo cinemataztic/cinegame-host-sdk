@@ -930,6 +930,20 @@ namespace CineGame.Host {
             SmartfoxClient.SendPrivateMessage (msg, backendId);
         }
 
+        /// <summary>
+		/// Kick player out of game
+		/// </summary>
+        public static void KickPlayer (int backendId) {
+            SmartfoxClient.KickUser (backendId);
+        }
+
+        /// <summary>
+		/// Kick supporter/spectator out of game
+		/// </summary>
+        public static void KickSupporter (int backendId) {
+            SmartfoxClient.KickUser (backendId);
+        }
+
         internal static string GetRegionProfanityUrl () {
 #pragma warning disable 0618
             var marketId = instance.Market;
