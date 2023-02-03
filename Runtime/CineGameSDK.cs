@@ -83,6 +83,10 @@ namespace CineGame.Host {
             public bool IsNull (string key) {
                 return smartfoxObject.IsNull (key);
             }
+            public string[] GetKeys()
+            {
+                return smartfoxObject.GetKeys();
+            }
             public int GetInt (string key) {
                 return smartfoxObject.GetInt (key);
             }
