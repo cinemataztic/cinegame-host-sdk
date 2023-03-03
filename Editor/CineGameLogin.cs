@@ -298,11 +298,11 @@ namespace CineGame.Host.Editor
 
         public void OnEnable()
         {
+            StayLoggedIn = EditorPrefs.GetBool ("CineGameStayLoggedIn");
+
             if (!IsLoggedIn) {
                 RefreshAccessToken ();
             }
-
-            StayLoggedIn = EditorPrefs.GetBool ("CineGameStayLoggedIn");
 
             titleContent = new GUIContent("CineGame Login", CineGameBuild.IconTexture);
 
