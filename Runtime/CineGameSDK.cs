@@ -399,9 +399,19 @@ namespace CineGame.Host {
         /// <summary>
 		/// MonoBehavior Start event
 		/// </summary>
-        void Start () {
+        IEnumerator Start () {
             if (instance != this)
-                return;
+                yield break;
+            var t = Time.realtimeSinceStartup;
+            while (Application.internetReachability == NetworkReachability.NotReachable) {
+                var _t = Time.realtimeSinceStartup;
+                //Log warning every second if internet is not reachable
+                if (_t - t > 1f) {
+                    t = _t;
+                    Debug.LogWarning ("WARNING Internet not reachable-- waiting to set up game");
+                }
+                yield return null;
+            }
             Setup ();
         }
 
