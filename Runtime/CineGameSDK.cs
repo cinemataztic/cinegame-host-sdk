@@ -649,6 +649,8 @@ namespace CineGame.Host {
                 mac = MacAddress,
                 deviceId = DeviceId,
                 platform = Application.platform.ToString (),
+                showId = Configuration.CINEMATAZTIC_SHOW_ID,
+                blockId = Configuration.CINEMATAZTIC_BLOCK_ID,
                 deviceInfo = DeviceInfo,
             };
 
