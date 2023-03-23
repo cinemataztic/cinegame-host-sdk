@@ -14,6 +14,7 @@ using MiniJSON;
 using System.Text.RegularExpressions;
 using Sfs2X.Entities.Data;
 
+using Newtonsoft.Json;
 namespace CineGame.Host {
 
     public class CineGameSDK : MonoBehaviour {
@@ -642,15 +643,16 @@ namespace CineGame.Host {
         internal void RequestGameCode () {
             Debug.Log ("Environment: " + (IsStagingEnv ? "staging" : "production"));
 
-            var json = string.Format ("{{\"hostName\":{0},\"gameType\":{1},\"mac\":{2},\"deviceId\":{3},\"platform\":{4},\"deviceInfo\":{5}}}",
-                Json.Serialize (Hostname),
-                Json.Serialize (Settings.GameType),
-                Json.Serialize (MacAddress),
-                Json.Serialize (DeviceId),
-                Json.Serialize (Application.platform.ToString ()),
-                Json.Serialize (DeviceInfo)
-            );
-            API (IsWebGL ? "game/create/webgl" : "game/create", json, delegate (HttpStatusCode statusCode, string response) {
+            dynamic req = new {
+                hostName = Hostname,
+                gameType = Settings.GameType,
+                mac = MacAddress,
+                deviceId = DeviceId,
+                platform = Application.platform.ToString (),
+                deviceInfo = DeviceInfo,
+            };
+
+            API (IsWebGL ? "game/create/webgl" : "game/create", (string)JsonConvert.SerializeObject (req), (statusCode, response) => {
                 if (statusCode == HttpStatusCode.OK) {
                     CreateResponse = Json.Deserialize (response) as Dictionary<string, object>;
                     //Debug.LogFormat ("API CreateGame response: {0}", response);
