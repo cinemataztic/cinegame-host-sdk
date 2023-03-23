@@ -33,14 +33,30 @@ namespace CineGame.Host {
 		}
 
 		/// <summary>
-		/// Seat layout, set by the Player software
+		/// Show ID from player software/dch if available
+		/// </summary>
+		public static string CINEMATAZTIC_SHOW_ID {
+			get { return System.Environment.GetEnvironmentVariable (PropertyNameFromAccessor (MethodBase.GetCurrentMethod ())); }
+			set { System.Environment.SetEnvironmentVariable (PropertyNameFromAccessor (MethodBase.GetCurrentMethod ()), value); }
+		}
+
+		/// <summary>
+		/// Block ID from player software/dch if available
+		/// </summary>
+		public static string CINEMATAZTIC_BLOCK_ID {
+			get { return System.Environment.GetEnvironmentVariable (PropertyNameFromAccessor (MethodBase.GetCurrentMethod ())); }
+			set { System.Environment.SetEnvironmentVariable (PropertyNameFromAccessor (MethodBase.GetCurrentMethod ()), value); }
+		}
+
+		/// <summary>
+		/// Seat layout, if available, set by the Player software
 		/// </summary>
 		public static string SEAT_LAYOUT {
 			get { return System.Environment.GetEnvironmentVariable (PropertyNameFromAccessor (MethodBase.GetCurrentMethod ())); }
 		}
 
 		/// <summary>
-		/// Current market, set by the Player software
+		/// Current market, set by the Player software. If not available, the default market from CineGameSettings is used
 		/// </summary>
 		public static string MARKET_ID {
 			get { return System.Environment.GetEnvironmentVariable (PropertyNameFromAccessor (MethodBase.GetCurrentMethod ())); }
