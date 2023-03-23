@@ -39,6 +39,7 @@ namespace CineGame.Host {
         public static bool GameEnded = false;
         public static bool GameEndSentToServer = false;
         public static Dictionary<string, object> CreateResponse;
+        private static string GameEndSerializedJson;
 
         /// <summary>
         /// Device Information
@@ -864,14 +865,16 @@ namespace CineGame.Host {
             GameEnded = true;
             SmartfoxClient.GameOver ();
 
-            var d = new Dictionary<string, object> ();
-            d ["gameCode"] = GameCode;
+            var d = new Dictionary<string, object> {
+                ["gameCode"] = GameCode
+            };
             if (users != null && users.Count > 0) {
                 var l = new List<object> ();
                 foreach (var u in users) {
-                    var dp = new Dictionary<string, object> ();
-                    dp.Add ("userId", u.BackendID);
-                    dp.Add ("points", u.Score);
+                    var dp = new Dictionary<string, object> {
+                        { "userId", u.BackendID },
+                        { "points", u.Score }
+                    };
                     l.Add (dp);
                 }
                 d.Add ("userPoints", l);
@@ -886,24 +889,29 @@ namespace CineGame.Host {
             if (miniGames != null && miniGames.Count > 0) {
                 var l = new List<object> ();
                 foreach (var usw in miniGames) {
-                    var dp = new Dictionary<string, object> ();
-                    dp.Add ("userIds", usw.WinnerIDs);
-                    dp.Add ("gameID", usw.MiniGameID);
+                    var dp = new Dictionary<string, object> {
+                        { "userIds", usw.WinnerIDs },
+                        { "gameID", usw.MiniGameID }
+                    };
                     l.Add (dp);
                 }
                 d.Add ("userSubgameWins", l);
             }
 
-            API (IsWebGL ? "game/end/webgl" : "game/end", Json.Serialize (d), delegate (HttpStatusCode statusCode, string response) {
+            GameEndSerializedJson = JsonConvert.SerializeObject (d);
+            SendGameEndToServer ();
+        }
+
+        private void SendGameEndToServer () {
+            API (IsWebGL ? "game/end/webgl" : "game/end", GameEndSerializedJson, delegate (HttpStatusCode statusCode, string response) {
                 if (statusCode == HttpStatusCode.OK) {
                     GameEndSentToServer = true;
                     Debug.Log ("API response end game: " + statusCode + " - " + response);
                 } else {
                     Debug.LogWarningFormat ("Error while sending 'game end' message to server - retry in 1 second: {0} {1}", statusCode, response);
-                    Invoke ("SendGameEndToServer", 1f);
+                    Invoke (nameof (SendGameEndToServer), 1f);
                 }
             });
-
         }
 
         internal static string GetGameType () {
