@@ -8,6 +8,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Net;
 using Newtonsoft.Json;
+using UnityEngine.UI;
+using TMPro;
 
 namespace CineGame.Host {
 
@@ -239,6 +241,28 @@ namespace CineGame.Host {
 
                 });
             }
+        }
+
+        public static void SetupEmoji (TMP_Text text, int index, Rect emojiUv) {
+            text.ForceMeshUpdate ();
+            var info = text.textInfo;
+
+            var newEmojiObj = new GameObject {
+                name = "Emoji_" + index
+            };
+            newEmojiObj.transform.parent = text.transform;
+            var newEmoji = newEmojiObj.AddComponent<RawImage> ();
+            newEmoji.rectTransform.sizeDelta = new Vector2 (text.fontSize, text.fontSize);
+            newEmoji.rectTransform.pivot = Vector2.zero;
+            newEmoji.rectTransform.anchorMin = new Vector2 (0f, 1f);
+            newEmoji.rectTransform.anchorMax = new Vector2 (0f, 1f);
+            newEmoji.uvRect = emojiUv;
+            newEmoji.transform.localScale = Vector3.one;
+            newEmoji.transform.localRotation = Quaternion.identity;
+
+            var emojiPos = info.characterInfo [index].bottomLeft / text.canvas.scaleFactor;
+            emojiPos.y -= newEmoji.rectTransform.sizeDelta.y / 4 - 1;
+            newEmoji.transform.localPosition = emojiPos;
         }
 
         IEnumerator E_SpeakGiphy (int backendID, string giphyId) {

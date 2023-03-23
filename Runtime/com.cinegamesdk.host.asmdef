@@ -1,6 +1,8 @@
 {
     "name": "com.cinegamesdk.host",
-    "references": [],
+    "references": [
+        "Unity.TextMeshPro"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
