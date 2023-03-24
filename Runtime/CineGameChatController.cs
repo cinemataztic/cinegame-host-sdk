@@ -243,7 +243,7 @@ namespace CineGame.Host {
             }
         }
 
-        public static void SetupEmoji (TMP_Text text, int index, Rect emojiUv) {
+        public static void SetupEmoji (Texture2D emojiAtlas, TMP_Text text, int index, Rect emojiUv) {
             text.ForceMeshUpdate ();
             var info = text.textInfo;
 
@@ -252,6 +252,7 @@ namespace CineGame.Host {
             };
             newEmojiObj.transform.parent = text.transform;
             var newEmoji = newEmojiObj.AddComponent<RawImage> ();
+            newEmoji.texture = emojiAtlas;
             newEmoji.rectTransform.sizeDelta = new Vector2 (text.fontSize, text.fontSize);
             newEmoji.rectTransform.pivot = Vector2.zero;
             newEmoji.rectTransform.anchorMin = new Vector2 (0f, 1f);
