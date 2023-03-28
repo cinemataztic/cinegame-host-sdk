@@ -940,20 +940,29 @@ namespace CineGame.Host {
 		/// </summary>
         public static void BroadcastObjectMessage (PlayerObjectMessage dataObj, bool toPlayers = true, bool toSpectators = false) {
             SmartfoxClient.BroadcastObjectMessage (dataObj.GetSmartFoxObject (), toPlayers: toPlayers, toSpectators: toSpectators);
+            CineGameBots.BroadcastObjectMessage (dataObj, toPlayers: toPlayers, toSpectators: toSpectators);
         }
 
         /// <summary>
 		/// Send private object message to specific CineGame user
 		/// </summary>
         public static void SendObjectMessage (PlayerObjectMessage dataObj, int backendId) {
-            SmartfoxClient.SendObjectMessage (dataObj.GetSmartFoxObject (), backendId);
+            if (backendId >= 0) {
+                SmartfoxClient.SendObjectMessage (dataObj.GetSmartFoxObject (), backendId);
+            } else {
+                CineGameBots.SendObjectMessage (dataObj, backendId);
+            }
         }
 
         /// <summary>
 		/// Send private string message to specific CineGame user
 		/// </summary>
         public static void SendPrivateMessage (string msg, int backendId) {
-            SmartfoxClient.SendPrivateMessage (msg, backendId);
+            if (backendId >= 0) {
+                SmartfoxClient.SendPrivateMessage (msg, backendId);
+            } else {
+                CineGameBots.SendStringMessage (msg, backendId);
+            }
         }
 
         /// <summary>
