@@ -261,7 +261,7 @@ namespace CineGame.Host {
             newEmoji.transform.localScale = Vector3.one;
             newEmoji.transform.localRotation = Quaternion.identity;
 
-            var emojiPos = info.characterInfo [index].bottomLeft / text.canvas.scaleFactor;
+            var emojiPos = info.characterInfo [index].bottomLeft;
             emojiPos.y -= newEmoji.rectTransform.sizeDelta.y / 4 - 1;
             newEmoji.transform.localPosition = emojiPos;
         }
