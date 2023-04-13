@@ -114,15 +114,8 @@ namespace CineGame.Host.Editor
                 EditorGUILayout.EndHorizontal();
                 if (loginPressed || passwordEntered)
                 {
-                    var bytes = System.Text.Encoding.UTF8.GetBytes (Password);
-                    for (int i = 0; i < bytes.Length; i++) {
-                        bytes [i] ^= 0x5a;
-                    }
-                    EditorPrefs.SetString ("CGSP", Convert.ToBase64String (bytes));
                     EditorPrefs.SetBool ("CineGameStayLoggedIn", StayLoggedIn);
-
-                    EditorPrefs.SetString("CineGameMarketRegion", LoginRegionDisplayName);
-
+                    EditorPrefs.SetString ("CineGameMarketRegion", LoginRegionDisplayName);
                     if (!GetAccessToken (Username, Password)) {
                         EditorUtility.DisplayDialog (titleContent.text, "Failed to login. Check username and password and that you are connected to the internet", "OK");
                     }
@@ -130,7 +123,14 @@ namespace CineGame.Host.Editor
             }
             else
             {
-                EditorGUILayout.LabelField ("Region:", LoginRegionDisplayName);
+                var _lri = EditorGUILayout.Popup (new GUIContent ("Region:"), LoginRegionIndex, LoginRegions);
+                if (LoginRegionIndex != _lri) {
+                    LoginRegionIndex = _lri;
+					EditorPrefs.SetString ("CineGameMarketRegion", LoginRegionDisplayName);
+					if (!GetAccessToken (Username, Password)) {
+                        EditorUtility.DisplayDialog (titleContent.text, "Failed to login. Check username and password and that you are connected to the internet", "OK");
+                    }
+                }
                 EditorGUILayout.Space ();
                 EditorGUILayout.BeginHorizontal();
                 EditorGUILayout.PrefixLabel(" ");
@@ -147,6 +147,9 @@ namespace CineGame.Host.Editor
             //EditorPrefs.DeleteKey("CineGameUserName");
             //Username = string.Empty;
             EditorPrefs.DeleteKey ("CGSP");
+            for (var i = 0; i < LoginRegions.Length; i++) {
+                EditorPrefs.DeleteKey ("CGSP_" + i);
+            }
             Password = string.Empty;
             EditorPrefs.DeleteKey ("CineGameStayLoggedIn");
             StayLoggedIn = false;
@@ -252,7 +255,15 @@ namespace CineGame.Host.Editor
                     //TODO there's a security issue here because login is across markets, but game-access list should be per market.
                     GameTypesAvailable = d.ContainsKey ("game-access") ? (d ["game-access"] as List<object>).Select (s => s as string).ToArray () : new string [0];
 
-                    EditorPrefs.SetString ("CineGameUserName", userName);
+                    EditorPrefs.SetString ("CineGameUserName_" + LoginRegionIndex, userName);
+
+                    var bytes = System.Text.Encoding.UTF8.GetBytes (Password);
+                    for (int i = 0; i < bytes.Length; i++) {
+                        bytes [i] ^= 0x5a;
+                    }
+                    var cgspB64 = Convert.ToBase64String (bytes);
+                    EditorPrefs.SetString ("CGSP", cgspB64);
+                    EditorPrefs.SetString ("CGSP_" + LoginRegionIndex, cgspB64);
 
                     CineGameBuild.GetGameTypeFromSceneOrProject ();
                     return true;
@@ -313,19 +324,26 @@ namespace CineGame.Host.Editor
         private static void OnEditorApplicationQuit () {
             if (!EditorPrefs.GetBool ("CineGameStayLoggedIn", false)) {
                 EditorPrefs.DeleteKey ("CGSP");
+                for (var i = 0; i < LoginRegions.Length; i++) {
+                    EditorPrefs.DeleteKey ("CGSP_" + i);
+                }
             }
         }
 
         private static bool CGSP () {
-            Username = EditorPrefs.GetString ("CineGameUserName");
-            if (!string.IsNullOrWhiteSpace (Username) && EditorPrefs.HasKey ("CGSP")) {
-                var bytes = Convert.FromBase64String (EditorPrefs.GetString ("CGSP"));
+            var regionUserKey = "CineGameUserName_" + LoginRegionIndex;
+            var regionCgspKey = "CGSP_" + LoginRegionIndex;
+            Username = EditorPrefs.HasKey (regionUserKey) ? EditorPrefs.GetString (regionUserKey) : EditorPrefs.GetString ("CineGameUserName");
+            var cgspKey = EditorPrefs.HasKey (regionCgspKey) ? regionCgspKey : "CGSP";
+            if (!string.IsNullOrWhiteSpace (Username) && EditorPrefs.HasKey (cgspKey)) {
+                var bytes = Convert.FromBase64String (EditorPrefs.GetString (cgspKey));
                 for (int i = 0; i < bytes.Length; i++) {
                     bytes [i] ^= 0x5a;
                 }
                 Password = System.Text.Encoding.UTF8.GetString (bytes);
                 return true;
             }
+            RemoveAccessToken ();
             return false;
         }
     }
