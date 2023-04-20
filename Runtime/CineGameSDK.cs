@@ -641,10 +641,21 @@ namespace CineGame.Host {
             instance.RequestGameCode ();
         }
 
-        internal void RequestGameCode () {
+		public class CreateGameRequest {
+			public string hostName;
+			public string gameType;
+			public string mac;
+			public string deviceId;
+			public string platform;
+			public string showId;
+			public string blockId;
+			public string deviceInfo;
+		}
+
+		internal void RequestGameCode () {
             Debug.Log ("Environment: " + (IsStagingEnv ? "staging" : "production"));
 
-            dynamic req = new {
+            var req = new CreateGameRequest {
                 hostName = Hostname,
                 gameType = Settings.GameType,
                 mac = MacAddress,
