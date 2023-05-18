@@ -471,30 +471,35 @@ namespace CineGame.Host {
 
             if (!IsWebGL && !Application.isEditor) {
 
-                var hostConfigFilename = Path.Combine (Environment.GetFolderPath (Environment.SpecialFolder.Personal), "conf-db.json");
-                try {
-                    // Read player/system info from ~/conf-db.json if it exists
-                    var file = new FileInfo (hostConfigFilename);
-                    if (file != null && file.Exists) {
-                        var reader = file.OpenText ();
-                        if (reader != null) {
-                            var dConfDb = (Dictionary<string, object>)Json.Deserialize (reader.ReadToEnd ());
-                            var dCloudtaztic = (Dictionary<string, object>)dConfDb ["cloudtaztic"];
-                            var dConfig = (Dictionary<string, object>)dCloudtaztic ["config"];
-                            var dPlayer = (Dictionary<string, object>)dConfig ["player"];
 #pragma warning disable 0618
-                            Market = (string)dPlayer ["market"];
-                            DeviceId =
-                                (string)dConfig ["_id"];
-                            Debug.Log ($"DeviceId from ~/conf-db.json:cloudtaztic.config._id: {DeviceId}");
-                            Debug.Log ($"Market from ~/conf-db.json:cloudtaztic.config.player.market: {Market} ({MarketDisplayNamesMap [Market]})");
+				DeviceId = Configuration.CINEMATAZTIC_SCREEN_ID;
+				Market = Configuration.CINEMATAZTIC_MARKET_ID;
+
+                if (string.IsNullOrWhiteSpace (DeviceId) || string.IsNullOrWhiteSpace (Market)) {
+                    var hostConfigFilename = Path.Combine (Environment.GetFolderPath (Environment.SpecialFolder.Personal), "conf-db.json");
+                    try {
+                        // Read player/system info from ~/conf-db.json if it exists
+                        var file = new FileInfo (hostConfigFilename);
+                        if (file != null && file.Exists) {
+                            var reader = file.OpenText ();
+                            if (reader != null) {
+                                var dConfDb = (Dictionary<string, object>)Json.Deserialize (reader.ReadToEnd ());
+                                var dCloudtaztic = (Dictionary<string, object>)dConfDb ["cloudtaztic"];
+                                var dConfig = (Dictionary<string, object>)dCloudtaztic ["config"];
+                                var dPlayer = (Dictionary<string, object>)dConfig ["player"];
+                                Market = (string)dPlayer ["market"];
+                                DeviceId =
+                                    (string)dConfig ["_id"];
+                                Debug.Log ($"DeviceId from ~/conf-db.json:cloudtaztic.config._id: {DeviceId}");
+                                Debug.Log ($"Market from ~/conf-db.json:cloudtaztic.config.player.market: {Market} ({MarketDisplayNamesMap [Market]})");
 #pragma warning restore
+                            }
+                        } else {
+                            Debug.LogFormat ("File not found: {0} - using fallback config", hostConfigFilename);
                         }
-                    } else {
-                        Debug.LogFormat ("File not found: {0} - using fallback config", hostConfigFilename);
+                    } catch (Exception e) {
+                        Debug.LogError ($"Exception while reading deviceId from {hostConfigFilename}-- falling back to systemInfo.deviceUniqueIdentifier. Exception: {e}");
                     }
-                } catch (Exception e) {
-                    Debug.LogError ($"Exception while reading deviceId from {hostConfigFilename}-- falling back to systemInfo.deviceUniqueIdentifier. Exception: {e}");
                 }
 
             }

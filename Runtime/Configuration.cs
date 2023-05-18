@@ -33,6 +33,22 @@ namespace CineGame.Host {
 		}
 
 		/// <summary>
+		/// Current Market ID from player software/dch
+		/// </summary>
+		public static string CINEMATAZTIC_MARKET_ID {
+			get { return System.Environment.GetEnvironmentVariable (PropertyNameFromAccessor (MethodBase.GetCurrentMethod ())); }
+			set { System.Environment.SetEnvironmentVariable (PropertyNameFromAccessor (MethodBase.GetCurrentMethod ()), value); }
+		}
+
+		/// <summary>
+		/// Screen ID from player software/dch
+		/// </summary>
+		public static string CINEMATAZTIC_SCREEN_ID {
+			get { return System.Environment.GetEnvironmentVariable (PropertyNameFromAccessor (MethodBase.GetCurrentMethod ())); }
+			set { System.Environment.SetEnvironmentVariable (PropertyNameFromAccessor (MethodBase.GetCurrentMethod ()), value); }
+		}
+
+		/// <summary>
 		/// Show ID from player software/dch if available
 		/// </summary>
 		public static string CINEMATAZTIC_SHOW_ID {
