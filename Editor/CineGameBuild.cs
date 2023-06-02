@@ -765,23 +765,28 @@ namespace CineGame.Host.Editor {
             if (SceneManager.sceneCount == 0)
                 return null;
             var sdks = FindObjectsOfType<CineGameSDK> ();
-            CineGameSettings settings;
+            CineGameSettings settings = null;
             if (sdks.Length == 0 || sdks.All (sdk => sdk.Settings == null)) {
                 var assetGuids = AssetDatabase.FindAssets ("t:CineGameSettings");
                 if (assetGuids.Length == 0) {
-                    settings = CreateInstance<CineGameSettings> ();
-                    settings.GameType = (sdks.Length != 0) ? sdks [0].GameType : CineGameLogin.GameTypesAvailable [0];
-                    settings.MarketId = (sdks.Length != 0) ? sdks [0].Market : CineGameSDK.MarketID.DEMO_CineGame;
-                    AssetDatabase.CreateAsset (settings, "Assets/CineGameSettings.asset");
-                    AssetDatabase.SaveAssets ();
-                    AssetDatabase.Refresh ();
-                    EditorUtility.DisplayDialog ("CineGameSDK", "No CineGameSettings asset found in project, created new", "OK");
-                    try {
-                        EditorUtility.FocusProjectWindow ();
-                    } catch (Exception ex) {
-                        Debug.LogError ("Exception ignored in FocusProjectWindow: " + ex);
+                    if (sdks.Length != 0 || CineGameLogin.GameTypesAvailable.Length != 0) {
+                        settings = CreateInstance<CineGameSettings> ();
+                        settings.GameType = (sdks.Length != 0) ? sdks [0].GameType : CineGameLogin.GameTypesAvailable [0];
+                        settings.MarketId = (sdks.Length != 0) ? sdks [0].Market : CineGameSDK.MarketID.DEMO_CineGame;
+                        AssetDatabase.CreateAsset (settings, "Assets/CineGameSettings.asset");
+                        AssetDatabase.SaveAssets ();
+                        AssetDatabase.Refresh ();
+                        EditorUtility.DisplayDialog ("CineGameSDK", "No CineGameSettings asset found in project, created new", "OK");
+                        try {
+                            EditorUtility.FocusProjectWindow ();
+                        } catch (Exception ex) {
+                            Debug.LogError ("Exception ignored in FocusProjectWindow: " + ex);
+                        }
+                        Selection.activeObject = settings;
+                    } else {
+                        EditorUtility.DisplayDialog (ProgressBarTitle, "ERROR: No gametypes available!", "OK");
+                        Debug.LogError ("No GameTypes available to user!");
                     }
-                    Selection.activeObject = settings;
                 } else {
                     settings = AssetDatabase.LoadAssetAtPath<CineGameSettings> (AssetDatabase.GUIDToAssetPath (assetGuids [0]));
                 }
@@ -815,16 +820,16 @@ namespace CineGame.Host.Editor {
                     if (CineGameLogin.GameTypesAvailable.Length > 0) {
                         newGameType = CineGameLogin.GameTypesAvailable [GameTypeIndex];
                         EditorUtility.DisplayDialog ("Unavailable gametype", $"GameType was set to {GameType} but user has no access to this, so we force it to {newGameType}", "OK");
+                        var so = new SerializedObject (settings);
+                        so.FindProperty ("GameType").stringValue = newGameType;
+                        so.ApplyModifiedProperties ();
+                        AssetDatabase.SaveAssets ();
+                        AssetDatabase.Refresh ();
                     } else {
                         var msg = $"GameType was set to {GameType} but user has no gametypes available.";
-                        Debug.LogWarning (msg);
-                        EditorUtility.DisplayDialog ("No gametypes available", msg, "OK");
+                        Debug.LogError (msg);
+                        EditorUtility.DisplayDialog ("ERROR: No gametypes available!", msg, "OK");
                     }
-                    var so = new SerializedObject (settings);
-                    so.FindProperty ("GameType").stringValue = newGameType;
-                    so.ApplyModifiedProperties ();
-                    AssetDatabase.SaveAssets ();
-                    AssetDatabase.Refresh ();
                 }
             }
 
