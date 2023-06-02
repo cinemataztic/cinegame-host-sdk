@@ -39,21 +39,25 @@ namespace CineGame.Host.Editor {
 				}
 			}
 
-			EditorGUILayout.BeginHorizontal ();
-			EditorGUILayout.PrefixLabel ("GameType:");
-			if (isLoggedIn) {
-				if (CineGameLogin.IsSuperAdmin) {
-					GameTypeProperty.stringValue = EditorGUILayout.TextField (GameTypeProperty.stringValue);
-				} else {
-					var _gti = EditorGUILayout.Popup (gameTypeIndex, CineGameLogin.GameTypesAvailable);
-					if (_gti != gameTypeIndex) {
-						SetGameTypeIndex (_gti);
+			using (new EditorGUI.DisabledScope (!isLoggedIn || (!CineGameLogin.IsSuperAdmin && CineGameLogin.GameTypesAvailable.Length == 0))) {
+				EditorGUILayout.BeginHorizontal ();
+				EditorGUILayout.PrefixLabel ("GameType:");
+				if (isLoggedIn) {
+					if (CineGameLogin.IsSuperAdmin) {
+						GameTypeProperty.stringValue = EditorGUILayout.TextField (GameTypeProperty.stringValue);
+					} else if (CineGameLogin.GameTypesAvailable.Length != 0) {
+						var _gti = EditorGUILayout.Popup (gameTypeIndex, CineGameLogin.GameTypesAvailable);
+						if (_gti != gameTypeIndex) {
+							SetGameTypeIndex (_gti);
+						}
+					} else {
+						EditorGUILayout.LabelField ("N/A");
 					}
+				} else {
+					EditorGUILayout.LabelField (GameTypeProperty.stringValue);
 				}
-			} else {
-				EditorGUILayout.LabelField (GameTypeProperty.stringValue);
+				EditorGUILayout.EndHorizontal ();
 			}
-			EditorGUILayout.EndHorizontal ();
 
 			EditorGUILayout.BeginHorizontal ();
 			EditorGUILayout.PrefixLabel (new GUIContent ("Default market:", "Only used in WebGL as fallback"));
