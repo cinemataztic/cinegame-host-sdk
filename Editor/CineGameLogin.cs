@@ -136,9 +136,9 @@ namespace CineGame.Host.Editor
             }
             else
             {
-                var _lri = EditorGUILayout.Popup (new GUIContent ("Market:"), MarketSlugIndex, MarketSlugs);
-                if (MarketSlugIndex != _lri) {
-                    MarketSlugIndex = _lri;
+                var _msi = EditorGUILayout.Popup (new GUIContent ("Market:"), MarketSlugIndex, MarketSlugs);
+                if (MarketSlugIndex != _msi) {
+                    MarketSlugIndex = _msi;
 					EditorPrefs.SetString ("CineGameMarket", CurrentMarketSlug);
 					if (!GetAccessToken (Username, Password)) {
                         EditorUtility.DisplayDialog (titleContent.text, "Failed to login. Check username and password and that you are connected to the internet", "OK");
