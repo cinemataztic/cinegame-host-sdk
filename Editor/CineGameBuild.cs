@@ -15,6 +15,7 @@ using System.IO;
 using System.Reflection;
 using System.Linq;
 using System.Text.RegularExpressions;
+using Newtonsoft.Json.Linq;
 
 namespace CineGame.Host.Editor {
 
@@ -675,8 +676,8 @@ namespace CineGame.Host.Editor {
                             break;
                         }
                     } else {
-                        var d = MiniJSON.Json.Deserialize (request.downloadHandler.text) as Dictionary<string, object>;
-                        resultMessage = string.Format ("Uploaded {1} build #{2} ({0} MBs total) in {3:##.000}s", totalMB, (string)d ["title"], (int)(long)d ["build"], (float)watch.ElapsedMilliseconds / 1000f);
+                        var d = JObject.Parse (request.downloadHandler.text);
+                        resultMessage = string.Format ("Uploaded {1} build #{2} ({0} MBs total) in {3:##.000}s", totalMB, (string)d ["title"], (int)d ["build"], watch.ElapsedMilliseconds / 1000f);
                         Debug.Log (resultMessage);
                         break;
                     }

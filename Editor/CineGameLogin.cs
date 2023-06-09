@@ -7,6 +7,8 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.Networking;
 
+using Newtonsoft.Json.Linq;
+
 namespace CineGame.Host.Editor
 {
     public class CineGameLogin : EditorWindow
@@ -30,11 +32,24 @@ namespace CineGame.Host.Editor
             return Event.current.type == EventType.KeyDown && Event.current.keyCode == keyCode;
         }
 
+        static string [] MarketSlugs;
+        static int MarketSlugIndex;
+        static string CurrentMarketSlug {
+            get {
+                if (MarketSlugs == null) {
+                    MarketSlugs = CineGameSDK.MarketSlugMap.Values.ToArray ();
+                }
+                return MarketSlugs [MarketSlugIndex];
+            }
+        }
+
         [InitializeOnLoadMethod]
         private static void OnLoad () {
             CineGameSDK.OnError -= OnGameCodeError;
             CineGameSDK.OnError += OnGameCodeError;
-            LoginRegionIndex = Mathf.Clamp (Array.IndexOf (LoginRegions, EditorPrefs.GetString ("CineGameMarketRegion", LoginRegions [0])), 0, LoginRegions.Length - 1);
+
+            MarketSlugs = CineGameSDK.MarketSlugMap.Values.ToArray ();
+            MarketSlugIndex = Mathf.Clamp (Array.IndexOf (MarketSlugs, EditorPrefs.GetString ("CineGameMarket", MarketSlugs [0])), 0, MarketSlugs.Length - 1);
             if (Application.internetReachability == NetworkReachability.NotReachable) {
                 Debug.LogError ("Internet not reachable. Unable to refresh token.");
                 return;
@@ -104,7 +119,7 @@ namespace CineGame.Host.Editor
 
             if (!IsLoggedIn)
             {
-                LoginRegionIndex = EditorGUILayout.Popup (new GUIContent ("Region:"), LoginRegionIndex, LoginRegions);
+                MarketSlugIndex = EditorGUILayout.Popup (new GUIContent ("Market:"), MarketSlugIndex, MarketSlugs);
                 GUI.SetNextControlName (ControlNames.Password);
                 Password = EditorGUILayout.PasswordField ("Password:", Password);
                 StayLoggedIn = EditorGUILayout.Toggle ("Stay logged in", StayLoggedIn);
@@ -115,7 +130,7 @@ namespace CineGame.Host.Editor
                 if (loginPressed || passwordEntered)
                 {
                     EditorPrefs.SetBool ("CineGameStayLoggedIn", StayLoggedIn);
-                    EditorPrefs.SetString ("CineGameMarketRegion", LoginRegionDisplayName);
+                    EditorPrefs.SetString ("CineGameMarket", CurrentMarketSlug);
                     if (!GetAccessToken (Username, Password)) {
                         EditorUtility.DisplayDialog (titleContent.text, "Failed to login. Check username and password and that you are connected to the internet", "OK");
                     }
@@ -123,10 +138,10 @@ namespace CineGame.Host.Editor
             }
             else
             {
-                var _lri = EditorGUILayout.Popup (new GUIContent ("Region:"), LoginRegionIndex, LoginRegions);
-                if (LoginRegionIndex != _lri) {
-                    LoginRegionIndex = _lri;
-					EditorPrefs.SetString ("CineGameMarketRegion", LoginRegionDisplayName);
+                var _msi = EditorGUILayout.Popup (new GUIContent ("Market:"), MarketSlugIndex, MarketSlugs);
+                if (MarketSlugIndex != _msi) {
+                    MarketSlugIndex = _msi;
+					EditorPrefs.SetString ("CineGameMarket", CurrentMarketSlug);
 					if (!GetAccessToken (Username, Password)) {
                         EditorUtility.DisplayDialog (titleContent.text, "Failed to login. Check username and password and that you are connected to the internet", "OK");
                     }
@@ -147,8 +162,8 @@ namespace CineGame.Host.Editor
             //EditorPrefs.DeleteKey("CineGameUserName");
             //Username = string.Empty;
             EditorPrefs.DeleteKey ("CGSP");
-            for (var i = 0; i < LoginRegions.Length; i++) {
-                EditorPrefs.DeleteKey ("CGSP_" + i);
+            for (var i = 0; i < MarketSlugs.Length; i++) {
+                EditorPrefs.DeleteKey ("CGSP_" + MarketSlugs [i]);
             }
             Password = string.Empty;
             EditorPrefs.DeleteKey ("CineGameStayLoggedIn");
@@ -160,29 +175,30 @@ namespace CineGame.Host.Editor
 
         static DateTime AccessTokenExpiry = DateTime.MinValue;
 
-        public static int LoginRegionIndex;
-        public static string [] LoginRegions = {
-            "Staging",
-            "Cinemataztic",
-            "Egmont (Nordisk Film)",
-            "Wide Eye Media",
-            "ITV India",
-        };
-        public static string LoginRegionDisplayName {
+        internal static Uri CinematazticApiBaseUri {
             get {
-                return LoginRegions [LoginRegionIndex];
+                return CurrentMarketSlug switch {
+                    "biospil-dk" => new Uri ("https://biospil.api.player.drf-1.cinemataztic.com/v2/"),
+                    "cinegame-en" => new Uri ("https://cinegame.en.api.player.eu-1.cinemataztic.com/v2/"),
+                    "finnkino-fi" => new Uri ("https://finnkino.fi.api.player.eu-1.cinemataztic.com/v2/"),
+                    "itv-in" => new Uri ("https://itv.in.api.player.asia-1.cinemataztic.com/v2/"),
+                    "redyplay-de" => new Uri ("https://weischer.de.api.player.eu-2.cinemataztic.com/v2/"),
+                    "wideeyemedia-ie" => new Uri ("https://wideeyemedia.ie.api.player.eu-2.cinemataztic.com/v2/"),
+                    _ => new Uri ("https://api.staging.cinemataztic.com/v2/"),
+                };
             }
         }
 
-        internal static Uri CinematazticApiBaseUri {
+        static Uri CinematazticAuthUri {
             get {
-                return LoginRegionIndex switch {
-                    0 => new Uri ("https://api.staging.cinemataztic.com/v2/"),
-                    1 => new Uri ("https://api.cinemataztic.com/v2/"),
-                    2 => new Uri ("https://biospil.api.player.drf-1.cinemataztic.com/v2/"),
-                    3 => new Uri ("https://wideeyemedia.ie.api.player.eu-2.cinemataztic.com/v2/"),
-                    4 => new Uri ("https://itv.in.api.player.asia-1.cinemataztic.com/v2/"),
-                    _ => new Uri ("https://api.staging.cinemataztic.com/v2/"),
+                return CurrentMarketSlug switch {
+                    "biospil-dk" => new Uri ("https://biospil.auth.iam.nordiskfilm.cinemataztic.com"),
+                    "cinegame-en" => new Uri ("https://cinegame.en.auth.iam.eu-1.cinemataztic.com"),
+                    "finnkino-fi" => new Uri ("https://finnkino.fi.auth.iam.eu-1.cinemataztic.com"),
+                    "itv-in" => new Uri ("https://itv.in.auth.iam.asia-1.cinemataztic.com"),
+                    "redyplay-de" => new Uri ("https://weischer.de.auth.iam.eu-2.cinemataztic.com"),
+                    "wideeyemedia-ie" => new Uri ("https://wideeyemedia.ie.auth.iam.eu-2.cinemataztic.com"),
+                    _ => new Uri ("https://auth.iam.staging.cinemataztic.com"),
                 };
             }
         }
@@ -200,16 +216,16 @@ namespace CineGame.Host.Editor
 
         public static bool GetAccessToken (string userName, string userPassword) {
             if (!string.IsNullOrEmpty (userName) && !string.IsNullOrEmpty (userPassword)) {
-                var tokenUri = GetTokenUri (LoginRegionIndex);
-                var jsonReq = "{\"type\":\"user\","
-                              + "\"email\":" + MiniJSON.Json.Serialize (userName) + ","
-                              + "\"password\":" + MiniJSON.Json.Serialize (userPassword)
-                              + "}";
+                var jsonReq = new JObject {
+                    ["type"] = "user",
+                    ["email"] = userName,
+                    ["password"] = userPassword,
+                };
                 var request = new UnityWebRequest (
-                                  tokenUri,
+                                  CinematazticAuthUri,
                                   "POST",
                                   new DownloadHandlerBuffer (),
-                                  new UploadHandlerRaw (System.Text.Encoding.UTF8.GetBytes (jsonReq))
+                                  new UploadHandlerRaw (System.Text.Encoding.UTF8.GetBytes (jsonReq.ToString ()))
                               );
                 //if (Debug.isDebugBuild) {
                 //    Debug.Log ($"{request.method} {request.url}");
@@ -229,8 +245,8 @@ namespace CineGame.Host.Editor
                     return false;
                 }
                 try {
-                    var d = MiniJSON.Json.Deserialize (request.downloadHandler.text) as Dictionary<string, object>;
-                    Configuration.CINEMATAZTIC_ACCESS_TOKEN = d ["access_token"] as string;
+                    var d = JObject.Parse (request.downloadHandler.text);
+                    Configuration.CINEMATAZTIC_ACCESS_TOKEN = (string)d ["access_token"];
                     AccessTokenExpiry = DateTime.Now.AddHours (0.8);
                     /*
                     var exp = (long)d ["exp"];
@@ -240,7 +256,7 @@ namespace CineGame.Host.Editor
                     }
                     */
 
-                    MarketIdsAvailable = (d ["markets"] as List<object>).Select (m => m as string).ToArray ();
+                    MarketIdsAvailable = (d ["markets"] as JArray).Select (m => (string)m).ToArray ();
                     MarketSlugsAvailable = MarketIdsAvailable.Select (id => CineGameSDK.MarketSlugMap.GetValueOrDefault (id, "???")).ToArray ();
 
                     var appNames = new List<string> (MarketIdsAvailable.Length);
@@ -249,13 +265,13 @@ namespace CineGame.Host.Editor
                     }
                     AppNamesAvailable = appNames.ToArray ();
 
-                    var roles = (d ["role"] as List<object>).Select (s => s as string);
+                    var roles = (d ["role"] as JArray).Select (s => (string)s);
                     IsSuperAdmin = roles.Contains ("super-admin");
 
                     //TODO there's a security issue here because login is across markets, but game-access list should be per market.
-                    GameTypesAvailable = d.ContainsKey ("game-access") ? (d ["game-access"] as List<object>).Select (s => s as string).ToArray () : new string [0];
+                    GameTypesAvailable = d.ContainsKey ("game-access") ? (d ["game-access"] as JArray).Select (s => (string)s).ToArray () : new string [0];
 
-                    EditorPrefs.SetString ("CineGameUserName_" + LoginRegionIndex, userName);
+                    EditorPrefs.SetString ("CineGameUserName_" + CurrentMarketSlug, userName);
 
                     var bytes = System.Text.Encoding.UTF8.GetBytes (Password);
                     for (int i = 0; i < bytes.Length; i++) {
@@ -263,7 +279,7 @@ namespace CineGame.Host.Editor
                     }
                     var cgspB64 = Convert.ToBase64String (bytes);
                     EditorPrefs.SetString ("CGSP", cgspB64);
-                    EditorPrefs.SetString ("CGSP_" + LoginRegionIndex, cgspB64);
+                    EditorPrefs.SetString ("CGSP_" + CurrentMarketSlug, cgspB64);
 
                     CineGameBuild.GetGameTypeFromSceneOrProject ();
                     return true;
@@ -272,23 +288,6 @@ namespace CineGame.Host.Editor
                 }
             }
             return false;
-        }
-
-        public static Uri GetTokenUri (int loginRegionIndex) {
-            switch (loginRegionIndex) {
-            case 0:
-                return new Uri ("https://auth.iam.staging.cinemataztic.com/");
-            case 1:
-                return new Uri ("https://auth.iam.eu-2.cinemataztic.com");
-            case 2:
-                return new Uri ("https://biospil.auth.iam.nordiskfilm.cinemataztic.com");
-            case 3:
-                return new Uri ("https://wideeyemedia.ie.auth.iam.eu-2.cinemataztic.com");
-            case 4:
-                return new Uri ("https://itv.in.auth.iam.asia-1.cinemataztic.com");
-            default:
-                return null;
-            }
         }
 
         public static bool RefreshAccessToken () {
@@ -324,15 +323,15 @@ namespace CineGame.Host.Editor
         private static void OnEditorApplicationQuit () {
             if (!EditorPrefs.GetBool ("CineGameStayLoggedIn", false)) {
                 EditorPrefs.DeleteKey ("CGSP");
-                for (var i = 0; i < LoginRegions.Length; i++) {
-                    EditorPrefs.DeleteKey ("CGSP_" + i);
+                for (var i = 0; i < MarketSlugs.Length; i++) {
+                    EditorPrefs.DeleteKey ("CGSP_" + MarketSlugs [i]);
                 }
             }
         }
 
         private static bool CGSP () {
-            var regionUserKey = "CineGameUserName_" + LoginRegionIndex;
-            var regionCgspKey = "CGSP_" + LoginRegionIndex;
+            var regionUserKey = "CineGameUserName_" + CurrentMarketSlug;
+            var regionCgspKey = "CGSP_" + CurrentMarketSlug;
             Username = EditorPrefs.HasKey (regionUserKey) ? EditorPrefs.GetString (regionUserKey) : EditorPrefs.GetString ("CineGameUserName");
             var cgspKey = EditorPrefs.HasKey (regionCgspKey) ? regionCgspKey : "CGSP";
             if (!string.IsNullOrWhiteSpace (Username) && EditorPrefs.HasKey (cgspKey)) {
