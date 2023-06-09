@@ -374,24 +374,25 @@ namespace CineGame.Host {
                             appVer = new Version (appVerString);
                         }
 
-                        CineGameSDK.Player newUser = new CineGameSDK.Player
-                        {
-                            BackendID = backendID,
-                            AppVersion = appVer,
-                            Name = userName,
-                            Age = userAge,
-                            Gender = userGender,
-                            Score = 0
-                        };
+                        CineGameChatController.RunProfanityFilter (userName, (filteredUserName) => {
+                            CineGameSDK.OnPlayerJoined?.Invoke (new CineGameSDK.Player {
+                                BackendID = backendID,
+                                AppVersion = appVer,
+                                Name = filteredUserName,
+                                Age = userAge,
+                                Gender = userGender,
+                                Score = 0
+                            });
 
-                        CineGameSDK.OnPlayerJoined?.Invoke(newUser);
-
-                        if (!string.IsNullOrWhiteSpace (avatarID)) {
-                            CineGameSDK.SetPlayerAvatar (backendID, avatarID);
-                        }
+                            if (!string.IsNullOrWhiteSpace (avatarID)) {
+                                CineGameSDK.SetPlayerAvatar (backendID, avatarID);
+                            }
+                        });
                     } else if (user.IsSpectator) {
                         var supportingID = dataObj.GetInt ("supportingId");
-                        CineGameSDK.OnSupporterJoined?.Invoke (backendID, supportingID, userName);
+                        CineGameChatController.RunProfanityFilter (userName, (filteredUserName) => {
+                            CineGameSDK.OnSupporterJoined?.Invoke (backendID, supportingID, filteredUserName);
+                        });
                     }
                 } else if (dataObj.ContainsKey ("avatar") && user.Properties != null) {
                     var avatarID = dataObj.GetUtfString ("avatar");

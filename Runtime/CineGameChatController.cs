@@ -39,11 +39,11 @@ namespace CineGame.Host {
         /// <summary>
 		/// Deserialized emoji UV map
 		/// </summary>
-        private Dictionary<string, Rect> emojiRects = new Dictionary<string, Rect> ();
+        private readonly Dictionary<string, Rect> emojiRects = new Dictionary<string, Rect> ();
 
         private static Regex regexp;
 
-        delegate void WordFilterCallback (string filteredMessage);
+        public delegate void WordFilterCallback (string filteredMessage);
         static readonly Queue<Action> _executionQueue = new Queue<Action> ();
 
         public static Action<int, string, Dictionary<string, Rect>> OnChatMessage;
@@ -149,7 +149,10 @@ namespace CineGame.Host {
             }
         }
 
-        void RunProfanityFilter (string input, WordFilterCallback callback) {
+        /// <summary>
+		/// Runs the profanity filter on another thread. Result is returned in the callback argument.
+		/// </summary>
+        public static void RunProfanityFilter (string input, WordFilterCallback callback) {
             System.Threading.ThreadPool.QueueUserWorkItem (delegate (object state) {
                 var filtered = regexp.Replace ((string)state, ReplacementString);
 
@@ -199,7 +202,7 @@ namespace CineGame.Host {
                     //Surrogate-tail emojis will throw an exception when logging. We will probably do nothing about it.
                 }
 
-                instance.RunProfanityFilter (chatMessage, delegate (string filteredMessage) {
+                RunProfanityFilter (chatMessage, delegate (string filteredMessage) {
                     string emojiMessage = filteredMessage;
                     Dictionary<string, Rect> emojiDictionary = new Dictionary<string, Rect> ();
 
