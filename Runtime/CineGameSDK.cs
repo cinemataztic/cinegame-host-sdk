@@ -1,5 +1,6 @@
 using System;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.IO;
 using System.Collections.Generic;
 using System.Net;
@@ -10,11 +11,11 @@ using System.Net.Sockets;
 using UnityEngine;
 using UnityEngine.Networking;
 
-using MiniJSON;
-using System.Text.RegularExpressions;
 using Sfs2X.Entities.Data;
 
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+
 namespace CineGame.Host {
 
     public class CineGameSDK : MonoBehaviour {
@@ -38,7 +39,7 @@ namespace CineGame.Host {
 
         public static bool GameEnded = false;
         public static bool GameEndSentToServer = false;
-        public static Dictionary<string, object> CreateResponse;
+        public static JObject CreateResponse;
         private static string GameEndSerializedJson;
 
         /// <summary>
@@ -478,14 +479,10 @@ namespace CineGame.Host {
                     if (file != null && file.Exists) {
                         var reader = file.OpenText ();
                         if (reader != null) {
-                            var dConfDb = (Dictionary<string, object>)Json.Deserialize (reader.ReadToEnd ());
-                            var dCloudtaztic = (Dictionary<string, object>)dConfDb ["cloudtaztic"];
-                            var dConfig = (Dictionary<string, object>)dCloudtaztic ["config"];
-                            var dPlayer = (Dictionary<string, object>)dConfig ["player"];
+                            var confDb = JObject.Parse (reader.ReadToEnd ());
 #pragma warning disable 0618
-                            Market = (string)dPlayer ["market"];
-                            DeviceId =
-                                (string)dConfig ["_id"];
+                            Market = (string)confDb ["cloudtaztic"] ["config"] ["player"] ["market"];
+                            DeviceId = (string)confDb ["cloudtaztic"] ["config"] ["_id"];
                             Debug.Log ($"DeviceId from ~/conf-db.json:cloudtaztic.config._id: {DeviceId}");
                             Debug.Log ($"Market from ~/conf-db.json:cloudtaztic.config.player.market: {Market} ({MarketDisplayNamesMap [Market]})");
 #pragma warning restore
@@ -526,17 +523,17 @@ namespace CineGame.Host {
                     var accessTokenParts = accessToken.Split ('.');
                     if (accessTokenParts.Length > 1) {
                         var payloadString = Encoding.UTF8.GetString (CineGameUtility.Base64UrlDecode (accessTokenParts [1]));
-                        var payloadJson = Json.Deserialize (payloadString) as Dictionary<string, object>;
-                        object o;
+                        var payloadJson = JObject.Parse (payloadString);
+                        JToken o;
                         if (payloadJson.TryGetValue ("email", out o)) {
                             UserEmail = (string)o;
                         }
                         if (payloadJson.TryGetValue ("_id", out o)) {
                             UserId = (string)o;
                         }
-                        if (payloadJson.ContainsKey ("name")) {
-                            var dName = (Dictionary<string, object>)payloadJson ["name"];
-                            UserName = dName ["first"] + " " + dName ["last"];
+                        if (payloadJson.TryGetValue ("name", out o)) {
+                            var nameObj = (JObject)o;
+                            UserName = nameObj ["first"] + " " + nameObj ["last"];
                         }
                         Debug.Log ($"Logging in as user/device {UserName} ({UserEmail}) id={UserId}");
                     }
@@ -641,7 +638,7 @@ namespace CineGame.Host {
             instance.RequestGameCode ();
         }
 
-		public class CreateGameRequest {
+		internal class CreateGameRequest {
 			public string hostName;
 			public string gameType;
 			public string mac;
@@ -666,9 +663,9 @@ namespace CineGame.Host {
                 deviceInfo = DeviceInfo,
             };
 
-            API (IsWebGL ? "game/create/webgl" : "game/create", (string)JsonConvert.SerializeObject (req), (statusCode, response) => {
+            API (IsWebGL ? "game/create/webgl" : "game/create", JsonConvert.SerializeObject (req), (statusCode, response) => {
                 if (statusCode == HttpStatusCode.OK) {
-                    CreateResponse = Json.Deserialize (response) as Dictionary<string, object>;
+                    CreateResponse = JObject.Parse (response);
                     //Debug.LogFormat ("API CreateGame response: {0}", response);
 
                     ParseConfig (CreateResponse);
@@ -676,7 +673,7 @@ namespace CineGame.Host {
                     GameCode = (string)CreateResponse ["gameCode"];
                     var gameZone = (string)CreateResponse ["gameZone"];
                     var gameServer = (string)CreateResponse ["gameServer"];
-                    var webGlSecure = (bool)CreateResponse.GetValueOrDefault ("webGlSecure", false);
+                    var webGlSecure = (bool)(CreateResponse ["webGlSecure"] ?? false);
                     SmartfoxClient.ConnectAndCreateGame (gameServer, GameCode, gameZone, GetGameType (), webGlSecure);
 
                     var creditsForParticipating = 0;
@@ -684,10 +681,10 @@ namespace CineGame.Host {
                     var creditsForWinning = 0;
                     var creditsForSupporterWinning = 0;
                     if (CreateResponse.ContainsKey ("creditsForParticipating")) {
-                        creditsForParticipating = (int)(long)CreateResponse ["creditsForParticipating"];
-                        creditsForSupporterParticipating = (int)(long)CreateResponse ["creditsForSupporterParticipating"];
-                        creditsForWinning = (int)(long)CreateResponse ["creditsForWinning"];
-                        creditsForSupporterWinning = (int)(long)CreateResponse ["creditsForSupporterWinning"];
+                        creditsForParticipating = (int)CreateResponse ["creditsForParticipating"];
+                        creditsForSupporterParticipating = (int)CreateResponse ["creditsForSupporterParticipating"];
+                        creditsForWinning = (int)CreateResponse ["creditsForWinning"];
+                        creditsForSupporterWinning = (int)CreateResponse ["creditsForSupporterWinning"];
                     }
 
                     if (CreateResponse.ContainsKey ("maxSupportersPerPlayer")) {
@@ -731,10 +728,9 @@ namespace CineGame.Host {
                     Debug.LogError ($"Avatar from non-whitelisted domain {uri.Host}");
                     return;
                 }
-            } else if (CreateResponse.TryGetValue ("avatarOptions", out object o)) {
-                var avatarOptions = (List<object>)o;
-                foreach (object ao in avatarOptions) {
-                    var avatarOption = (Dictionary<string, object>)ao;
+            } else if (CreateResponse.TryGetValue ("avatarOptions", out JToken o)) {
+                var avatarOptions = (JArray)o;
+                foreach (JObject avatarOption in avatarOptions) {
                     if ((string)avatarOption ["title"] == avatarID) {
                         uri = new Uri ((string)avatarOption ["imageUrl"]);
                         break;
@@ -789,7 +785,7 @@ namespace CineGame.Host {
         }
 
 
-        private void ParseConfig (Dictionary<string, object> d) {
+        private void ParseConfig (JObject d) {
             string wifiName = null, wifiPassword = null;
             long v;
             string s;

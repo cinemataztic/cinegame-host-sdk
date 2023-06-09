@@ -7,6 +7,8 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.Networking;
 
+using Newtonsoft.Json.Linq;
+
 namespace CineGame.Host.Editor
 {
     public class CineGameLogin : EditorWindow
@@ -214,15 +216,16 @@ namespace CineGame.Host.Editor
 
         public static bool GetAccessToken (string userName, string userPassword) {
             if (!string.IsNullOrEmpty (userName) && !string.IsNullOrEmpty (userPassword)) {
-                var jsonReq = "{\"type\":\"user\","
-                              + "\"email\":" + MiniJSON.Json.Serialize (userName) + ","
-                              + "\"password\":" + MiniJSON.Json.Serialize (userPassword)
-                              + "}";
+                var jsonReq = new JObject {
+                    ["type"] = "user",
+                    ["email"] = userName,
+                    ["password"] = userPassword,
+                };
                 var request = new UnityWebRequest (
                                   CinematazticAuthUri,
                                   "POST",
                                   new DownloadHandlerBuffer (),
-                                  new UploadHandlerRaw (System.Text.Encoding.UTF8.GetBytes (jsonReq))
+                                  new UploadHandlerRaw (System.Text.Encoding.UTF8.GetBytes (jsonReq.ToString ()))
                               );
                 //if (Debug.isDebugBuild) {
                 //    Debug.Log ($"{request.method} {request.url}");
@@ -242,8 +245,8 @@ namespace CineGame.Host.Editor
                     return false;
                 }
                 try {
-                    var d = MiniJSON.Json.Deserialize (request.downloadHandler.text) as Dictionary<string, object>;
-                    Configuration.CINEMATAZTIC_ACCESS_TOKEN = d ["access_token"] as string;
+                    var d = JObject.Parse (request.downloadHandler.text);
+                    Configuration.CINEMATAZTIC_ACCESS_TOKEN = (string)d ["access_token"];
                     AccessTokenExpiry = DateTime.Now.AddHours (0.8);
                     /*
                     var exp = (long)d ["exp"];
@@ -253,7 +256,7 @@ namespace CineGame.Host.Editor
                     }
                     */
 
-                    MarketIdsAvailable = (d ["markets"] as List<object>).Select (m => m as string).ToArray ();
+                    MarketIdsAvailable = (d ["markets"] as JArray).Select (m => (string)m).ToArray ();
                     MarketSlugsAvailable = MarketIdsAvailable.Select (id => CineGameSDK.MarketSlugMap.GetValueOrDefault (id, "???")).ToArray ();
 
                     var appNames = new List<string> (MarketIdsAvailable.Length);
@@ -262,11 +265,11 @@ namespace CineGame.Host.Editor
                     }
                     AppNamesAvailable = appNames.ToArray ();
 
-                    var roles = (d ["role"] as List<object>).Select (s => s as string);
+                    var roles = (d ["role"] as JArray).Select (s => (string)s);
                     IsSuperAdmin = roles.Contains ("super-admin");
 
                     //TODO there's a security issue here because login is across markets, but game-access list should be per market.
-                    GameTypesAvailable = d.ContainsKey ("game-access") ? (d ["game-access"] as List<object>).Select (s => s as string).ToArray () : new string [0];
+                    GameTypesAvailable = d.ContainsKey ("game-access") ? (d ["game-access"] as JArray).Select (s => (string)s).ToArray () : new string [0];
 
                     EditorPrefs.SetString ("CineGameUserName_" + CurrentMarketSlug, userName);
 
