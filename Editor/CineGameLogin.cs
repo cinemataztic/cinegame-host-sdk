@@ -134,6 +134,7 @@ namespace CineGame.Host.Editor
                     if (!GetAccessToken (Username, Password)) {
                         EditorUtility.DisplayDialog (titleContent.text, "Failed to login. Check username and password and that you are connected to the internet", "OK");
                     }
+                    ActiveEditorTracker.sharedTracker.ForceRebuild ();
                 }
             }
             else
@@ -145,6 +146,7 @@ namespace CineGame.Host.Editor
 					if (!GetAccessToken (Username, Password)) {
                         EditorUtility.DisplayDialog (titleContent.text, "Failed to login. Check username and password and that you are connected to the internet", "OK");
                     }
+                    ActiveEditorTracker.sharedTracker.ForceRebuild ();
                 }
                 EditorGUILayout.Space ();
                 EditorGUILayout.BeginHorizontal();
@@ -154,6 +156,7 @@ namespace CineGame.Host.Editor
                 if (logOutPressed)
                 {
                     Logout ();
+                    ActiveEditorTracker.sharedTracker.ForceRebuild ();
                 }
             }
         }
