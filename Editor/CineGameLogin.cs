@@ -196,7 +196,7 @@ namespace CineGame.Host.Editor
             get {
                 return CurrentMarketSlug switch {
                     "biospil-dk" => new Uri ("https://biospil.auth.iam.nordiskfilm.cinemataztic.com"),
-                    "cinegame-en" => new Uri ("https://cinegame.en.auth.iam.eu-1.cinemataztic.com"),
+                    "cinegame-en" => new Uri ("https://cinemataztic.en.auth.iam.eu-1.cinemataztic.com"),
                     "finnkino-fi" => new Uri ("https://finnkino.fi.auth.iam.eu-1.cinemataztic.com"),
                     "itv-in" => new Uri ("https://itv.in.auth.iam.asia-1.cinemataztic.com"),
                     "redyplay-de" => new Uri ("https://weischer.de.auth.iam.eu-2.cinemataztic.com"),
