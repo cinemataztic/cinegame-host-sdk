@@ -6,7 +6,7 @@ using UnityEngine;
 
 using Random = UnityEngine.Random;
 
-namespace CineGame.Host {
+namespace CineGame.SDK {
 
     public class CineGameBots : MonoBehaviour {
         private static CineGameBots instance;

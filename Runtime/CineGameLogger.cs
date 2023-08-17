@@ -4,7 +4,7 @@ using System.IO;
 using System.Reflection;
 using UnityEngine;
 
-namespace CineGame.Host {
+namespace CineGame.SDK {
 
     internal class CineGameLogger
     {

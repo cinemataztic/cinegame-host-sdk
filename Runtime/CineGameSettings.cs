@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace CineGame.Host {
+namespace CineGame.SDK {
 
 	[CreateAssetMenu ()]
 	public class CineGameSettings : ScriptableObject {

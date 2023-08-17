@@ -16,7 +16,7 @@ using Sfs2X.Entities.Data;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace CineGame.Host {
+namespace CineGame.SDK {
 
     public class CineGameSDK : MonoBehaviour {
         private static CineGameSDK instance;
@@ -25,9 +25,9 @@ namespace CineGame.Host {
         [HideInInspector]
         [Obsolete ("GameType should be set in the asset referenced from Settings property")]
         public string GameType;
-        [HideInInspector]
-        [Obsolete ("Market is determined runtime from environment, but default market for WebGL should be set in Settings property")]
-        public string Market;
+
+
+        public static string Market;
 
         private static string GameCode;
 
@@ -177,6 +177,10 @@ namespace CineGame.Host {
 		/// </summary>
         public static Action<Dictionary<string, object>> OnGameReady;
         /// <summary>
+        /// When the game code is available
+        /// </summary>
+        public static Action<string> OnGameCodeLoaded;
+        /// <summary>
 		/// When a WiFi network is available. Name,Password
 		/// </summary>
         public static Action<string, string> OnWiFiAvailable;
@@ -240,152 +244,15 @@ namespace CineGame.Host {
         }
 
         private static bool IsStagingEnv {
-            get { return Configuration.NODE_ENV != null && Configuration.NODE_ENV.Equals ("staging", StringComparison.InvariantCultureIgnoreCase); }
+            get { return Configuration.CLUSTER_NAME != null && Configuration.CLUSTER_NAME.Equals ("staging", StringComparison.InvariantCultureIgnoreCase); }
         }
 
         private static string ApiURL {
             get {
-                var URL = ApiURLs [(int)Region];
-                if (IsStagingEnv || IsWebGL) {
-                    //Replace production with staging cluster subdomain
-                    URL = Regex.Replace (URL, "(.+?)\\.[^.]+?\\.(cinemataztic\\.com.+)", "$1.staging.$2");
-                }
-                return URL;
+                return CineGameMarket.GetAPI();
             }
         }
 
-
-        [Serializable]
-        public enum APIRegion {
-            DK = 0,
-            NO = 1,
-            EN = 2,
-            FI = 3,
-            AU = 4,
-            AE = 5,
-            DE = 6,
-            EE = 7,
-            ES = 8,
-            IE = 9,
-            IN = 10,
-            NZ = 11,
-        };
-
-        /// <summary>
-        /// Market IDs from cloud
-        /// </summary>
-        public static class MarketID {
-            public const string BioSpil = "57ff5b54359bc3000f1e1303";
-            public const string KinoSpill = "57e79e40bb29b2000f22c704";
-            public const string CineGame = "57e79e61bb29b2000f22c705";
-            public const string Leffapeli = "5829676efd5ab2000f4eb252";
-            public const string CineGame_AUS = "5ba2a95eb81b02b3d8198f89";
-            public const string CineGame_IE = "618301a5be9b8d3befa0b589";
-            public const string CineGame_IN = "627049112c827460088db3fd";
-            public const string CineGame_NZ = "62a741d8709ea7ac02336c29";
-            public const string CineGame_UAE = "5c12f1c58c2a1a5509cad589";
-            public const string REDyPLAY = "5c44f3ba8c2a1a5509df3f6b";
-            public const string ForumFun = "5ced2b5a8c2a1a5509b0116b";
-            public const string CinesaFun = "5df786218c2a1a550974e19d";
-            public const string Baltoppen = "58750bffb2928c000f2ff481";
-            public const string DEMO_CineGame = "5b841697b81b02b3d8381244";
-            public const string Cinemataztic_dev = "594be135e9678d3bb75fe7aa";
-        }
-
-        static Dictionary<string, APIRegion> MarketToRegionMap = new Dictionary<string, APIRegion> {
-            { MarketID.BioSpil,     APIRegion.DK },
-            { MarketID.KinoSpill,   APIRegion.NO },
-            { MarketID.CineGame,    APIRegion.EN },
-            { MarketID.Leffapeli,   APIRegion.FI },
-            { MarketID.CineGame_AUS, APIRegion.AU },
-            { MarketID.CineGame_IE, APIRegion.IE },
-            { MarketID.CineGame_IN, APIRegion.IN },
-            { MarketID.CineGame_NZ, APIRegion.NZ },
-            { MarketID.CineGame_UAE, APIRegion.AE },
-            { MarketID.REDyPLAY,    APIRegion.DE },
-            { MarketID.ForumFun,    APIRegion.EE },
-            { MarketID.CinesaFun,   APIRegion.ES },
-            { MarketID.Baltoppen,   APIRegion.DK },
-            { MarketID.DEMO_CineGame, APIRegion.EN },
-            { MarketID.Cinemataztic_dev, APIRegion.EN },
-        };
-
-        public static Dictionary<string, string> MarketDisplayNamesMap = new Dictionary<string, string> {
-            { MarketID.BioSpil,         "BioSpil (DK)" },
-            { MarketID.KinoSpill,       "KinoSpill (NO)" },
-            { MarketID.CineGame,        "CineGame (EN)" },
-            { MarketID.Leffapeli,       "Leffapeli (FI)" },
-            { MarketID.CineGame_AUS,    "CineGame (AU)" },
-            { MarketID.CineGame_IE,     "CineGame (IE)" },
-            { MarketID.CineGame_IN,     "CineGame (IN)" },
-            { MarketID.CineGame_NZ,     "CineGame (NZ)" },
-            { MarketID.CineGame_UAE,    "CineGame (AE)" },
-            { MarketID.REDyPLAY,        "REDyPLAY (DE)" },
-            { MarketID.ForumFun,        "ForumFun (EE)" },
-            { MarketID.CinesaFun,       "CinesaFun (ES)" },
-            { MarketID.Baltoppen,       "Baltoppen (BioSpil)" },
-            { MarketID.DEMO_CineGame,   "DEMO CineGame" },
-            { MarketID.Cinemataztic_dev, "Cinemataztic-dev (CineGame)" },
-        };
-
-        public static Dictionary<string, string> MarketSlugMap = new Dictionary<string, string> {
-            { MarketID.BioSpil,         "biospil-dk" },
-            { MarketID.KinoSpill,       "kinospill-no" },
-            { MarketID.CineGame,        "cinegame-en" },
-            { MarketID.Leffapeli,       "leffapeli-fi" },
-            { MarketID.CineGame_AUS,    "cinemataztic-au" },
-            { MarketID.CineGame_IE,     "wideeyemedia-ie" },
-            { MarketID.CineGame_IN,     "itv-in" },
-            { MarketID.CineGame_NZ,     "valmorgan-nz" },
-            { MarketID.CineGame_UAE,    "cinemataztic-ae" },
-            { MarketID.REDyPLAY,        "redyplay-de" },
-            { MarketID.ForumFun,        "forumfun-ee" },
-            { MarketID.CinesaFun,       "cinesafun-es" },
-            { MarketID.Baltoppen,       "baltoppen-dk" },
-            { MarketID.DEMO_CineGame,   "demo-cinegame-en" },
-            { MarketID.Cinemataztic_dev, "cinemataztic-dev" },
-        };
-
-        public static APIRegion Region {
-            get {
-#if UNITY_EDITOR
-                if (instance == null) {
-                    instance = UnityEngine.Object.FindObjectOfType<CineGameSDK> ();
-                }
-#endif
-                if (instance != null) {
-#pragma warning disable 0618
-                    var marketId = instance.Market;
-#pragma warning restore
-                    if (string.IsNullOrWhiteSpace (marketId)) {
-                        marketId = instance.Settings?.MarketId;
-                    }
-                    return MarketToRegionMap [marketId];
-                }
-                Debug.LogError ("No instance of CineGameSDK-- returning default Region!");
-                return APIRegion.EN;
-            }
-        }
-
-        [Obsolete ("Use Region property instead")]
-        public static APIRegion GetRegion () {
-            return Region;
-        }
-
-        private static string [] ApiURLs = {
-            "https://biospil.cinegamecore.drf-1.cinemataztic.com/api/",		//DK
-			"https://kinospill.cinegamecore.drf-1.cinemataztic.com/api/",	//NO
-			"https://cinegame.cinegamecore.eu-1.cinemataztic.com/api/",		//EN
-			"https://leffapeli.cinegamecore.eu-1.cinemataztic.com/api/",	//FI
-			"https://cinegame-au.cinegamecore.au-1.cinemataztic.com/api/",	//AU
-			"https://cinegame-ae.cinegamecore.au-1.cinemataztic.com/api/",	//AE
-			"https://redyplay.cinegamecore.eu-2.cinemataztic.com/api/",  	//DE
-			"https://forumfun.cinegamecore.eu-1.cinemataztic.com/api/",		//EE
-			"https://cinesafun.cinegamecore.eu-2.cinemataztic.com/api/",	//ES
-            "https://cinegame-ie.cinegamecore.eu-2.cinemataztic.com/api/",  //IE
-			"https://cinegame-in.cinegamecore.asia-1.cinemataztic.com/api/",//IN
-			"https://cinegame-nz.cinegamecore.au-1.cinemataztic.com/api/",  //NZ
-		};
 
         /// <summary>
 		/// MonoBehavior Awake event
@@ -468,12 +335,13 @@ namespace CineGame.Host {
             QualitySettings.vSyncCount = 1;
             refreshRate = minFPS = avgFPS = Screen.currentResolution.refreshRate;
 
+            Market = Configuration.MARKET_ID;
             DeviceId = null;
 
             if (!IsWebGL && !Application.isEditor) {
 
     	          DeviceId = Configuration.CINEMATAZTIC_SCREEN_ID;
-		            Market = Configuration.CINEMATAZTIC_MARKET_ID;
+		           
 
                 if (string.IsNullOrWhiteSpace (DeviceId) || string.IsNullOrWhiteSpace (Market)) {
                     var hostConfigFilename = Path.Combine (Environment.GetFolderPath (Environment.SpecialFolder.Personal), "conf-db.json");
@@ -488,7 +356,7 @@ namespace CineGame.Host {
                                 Market = (string)confDb ["cloudtaztic"] ["config"] ["player"] ["market"];
                                 DeviceId = (string)confDb ["cloudtaztic"] ["config"] ["_id"];
                                 Debug.Log ($"DeviceId from ~/conf-db.json:cloudtaztic.config._id: {DeviceId}");
-                                Debug.Log ($"Market from ~/conf-db.json:cloudtaztic.config.player.market: {Market} ({MarketDisplayNamesMap [Market]})");
+                                Debug.Log ($"Market from ~/conf-db.json:cloudtaztic.config.player.market: {Market} ({CineGameMarket.GetName()})");
 #pragma warning restore
                             }
                         } else {
@@ -507,7 +375,7 @@ namespace CineGame.Host {
                 if (!string.IsNullOrEmpty (marketFromEnv)) {
 #pragma warning disable 0618
                     Market = marketFromEnv;
-                    Debug.Log ($"Market from environment: {Market} ({MarketDisplayNamesMap [Market]})");
+                    Debug.Log ($"Market from environment: {Market} ({CineGameMarket.GetName()})");
 #pragma warning restore
                 }
 
@@ -703,6 +571,8 @@ namespace CineGame.Host {
                         { "CreditsForWinning", creditsForWinning },
                         { "CreditsForSupporterWinning", creditsForSupporterWinning },
                     });
+
+                    OnGameCodeLoaded?.Invoke(GameCode);
 
                 } else if (statusCode == HttpStatusCode.Unauthorized) {
                     OnError?.Invoke (401);
@@ -993,7 +863,7 @@ namespace CineGame.Host {
 
         internal static string GetRegionProfanityUrl () {
 #pragma warning disable 0618
-            var marketId = instance.Market;
+            var marketId = Market;
 #pragma warning restore
             if (string.IsNullOrWhiteSpace (marketId)) {
                 marketId = instance.Settings?.MarketId;

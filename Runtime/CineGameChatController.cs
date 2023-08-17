@@ -11,7 +11,7 @@ using Newtonsoft.Json;
 using UnityEngine.UI;
 using TMPro;
 
-namespace CineGame.Host {
+namespace CineGame.SDK {
 
     public class CineGameChatController : MonoBehaviour {
 
@@ -61,7 +61,7 @@ namespace CineGame.Host {
 
             MaxChatMessageLength = 80;
 
-            if (CineGameSDK.Region == CineGameSDK.APIRegion.FI) {
+            if (CineGameSDK.Market == CineGameMarket.Markets.Leffapeli_Finnkino_FI) {
                 MaxChatMessageLength = 12;
             }
 

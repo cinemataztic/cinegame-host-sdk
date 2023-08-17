@@ -3,7 +3,7 @@ using System.ComponentModel;
 using System.Text;
 using UnityEngine;
 
-namespace CineGame.Host.Editor {
+namespace CineGame.SDK.Editor {
     internal static class ExternalProcess {
         public delegate bool ProgressDelegate (string sMessage, float percent);
 

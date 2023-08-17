@@ -13,7 +13,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.Networking;
 
-namespace CineGame.Host.Editor {
+namespace CineGame.SDK.Editor {
 
 	public class CloudBuild : EditorWindow {
 

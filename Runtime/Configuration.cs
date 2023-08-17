@@ -1,7 +1,7 @@
 ﻿using System.Reflection;
 
-namespace CineGame.Host {
-	internal static class Configuration {
+namespace CineGame.SDK {
+	public static class Configuration {
 		/// <summary>
 		/// Gets the property name from an accessor method (trim the compiler-generated 'get_' or 'set_' prefix).
 		/// </summary>
@@ -12,14 +12,16 @@ namespace CineGame.Host {
 		/// <summary>
 		/// Target directory where Player software expects all logs to end up
 		/// </summary>
-		public static string LOG_DIR {
+		public static string LOG_DIR
+		{
 			get { return System.Environment.GetEnvironmentVariable (PropertyNameFromAccessor (MethodBase.GetCurrentMethod ())); }
 		}
 
 		/// <summary>
 		/// Specifies whether SDK should contact production or staging env
 		/// </summary>
-		public static string NODE_ENV {
+		public static string CLUSTER_NAME
+        {
 			get { return System.Environment.GetEnvironmentVariable (PropertyNameFromAccessor (MethodBase.GetCurrentMethod ())); }
 			set { System.Environment.SetEnvironmentVariable (PropertyNameFromAccessor (MethodBase.GetCurrentMethod ()), value); }
 		}

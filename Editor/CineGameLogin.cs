@@ -9,7 +9,7 @@ using UnityEngine.Networking;
 
 using Newtonsoft.Json.Linq;
 
-namespace CineGame.Host.Editor
+namespace CineGame.SDK.Editor
 {
     public class CineGameLogin : EditorWindow
     {
@@ -37,7 +37,7 @@ namespace CineGame.Host.Editor
         static string CurrentMarketSlug {
             get {
                 if (MarketSlugs == null) {
-                    MarketSlugs = CineGameSDK.MarketSlugMap.Values.ToArray ();
+                    MarketSlugs = CineGameMarket.Names.Values.ToArray ();
                 }
                 return MarketSlugs [MarketSlugIndex];
             }
@@ -48,7 +48,7 @@ namespace CineGame.Host.Editor
             CineGameSDK.OnError -= OnGameCodeError;
             CineGameSDK.OnError += OnGameCodeError;
 
-            MarketSlugs = CineGameSDK.MarketSlugMap.Values.ToArray ();
+            MarketSlugs = CineGameMarket.Names.Values.ToArray ();
             MarketSlugIndex = Mathf.Clamp (Array.IndexOf (MarketSlugs, EditorPrefs.GetString ("CineGameMarket", MarketSlugs [0])), 0, MarketSlugs.Length - 1);
             if (Application.internetReachability == NetworkReachability.NotReachable) {
                 Debug.LogError ("Internet not reachable. Unable to refresh token.");
@@ -260,11 +260,11 @@ namespace CineGame.Host.Editor
                     */
 
                     MarketIdsAvailable = (d ["markets"] as JArray).Select (m => (string)m).ToArray ();
-                    MarketSlugsAvailable = MarketIdsAvailable.Select (id => CineGameSDK.MarketSlugMap.GetValueOrDefault (id, "???")).ToArray ();
+                    MarketSlugsAvailable = MarketIdsAvailable.Select (id => CineGameMarket.Names.GetValueOrDefault (id, "???")).ToArray ();
 
                     var appNames = new List<string> (MarketIdsAvailable.Length);
                     foreach (var id in MarketIdsAvailable) {
-                        appNames.Add (CineGameSDK.MarketDisplayNamesMap [id]);
+                        appNames.Add (CineGameMarket.Names [id]);
                     }
                     AppNamesAvailable = appNames.ToArray ();
 

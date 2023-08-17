@@ -3,7 +3,8 @@ using UnityEditor;
 
 using UnityEngine;
 
-namespace CineGame.Host.Editor {
+namespace CineGame.SDK.Editor
+{
 
 	[CustomEditor (typeof (CineGameSettings))]
 	public class CineGameSettingsEditor : UnityEditor.Editor {
@@ -67,7 +68,7 @@ namespace CineGame.Host.Editor {
 					SetMarketIndex (_mi);
 				}
 			} else {
-				EditorGUILayout.LabelField (CineGameSDK.MarketSlugMap [MarketIdProperty.stringValue]);
+				EditorGUILayout.LabelField (CineGameMarket.Names [MarketIdProperty.stringValue]);
 			}
 			EditorGUILayout.EndHorizontal ();
 

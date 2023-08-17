@@ -17,7 +17,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json.Linq;
 
-namespace CineGame.Host.Editor {
+namespace CineGame.SDK.Editor {
 
     internal class CineGameBuild : EditorWindow {
 
@@ -280,7 +280,7 @@ namespace CineGame.Host.Editor {
             if (_marketIndex >= 0 && _marketIndex < CineGameLogin.MarketIdsAvailable.Length) {
                 MarketIndex = _marketIndex;
                 var marketId = CineGameLogin.MarketIdsAvailable [_marketIndex];
-                MarketSlug = CineGameSDK.MarketSlugMap [marketId];
+                MarketSlug = CineGameMarket.Names [marketId];
                 Configuration.MARKET_ID = marketId;
             }
         }
@@ -771,8 +771,9 @@ namespace CineGame.Host.Editor {
                 if (assetGuids.Length == 0) {
                     if (sdks.Length != 0 || CineGameLogin.GameTypesAvailable.Length != 0) {
                         settings = CreateInstance<CineGameSettings> ();
-                        settings.GameType = (sdks.Length != 0) ? sdks [0].GameType : CineGameLogin.GameTypesAvailable [0];
-                        settings.MarketId = (sdks.Length != 0) ? sdks [0].Market : CineGameSDK.MarketID.DEMO_CineGame;
+                        // FIX
+                        //settings.GameType = (sdks.Length != 0) ? sdks [0].GameType : CineGameLogin.GameTypesAvailable [0];
+                        //settings.MarketId = (sdks.Length != 0) ? sdks [0].Market : CineGameMarket.Markets.CineGame_Cinemataztic_EN;
                         AssetDatabase.CreateAsset (settings, "Assets/CineGameSettings.asset");
                         AssetDatabase.SaveAssets ();
                         AssetDatabase.Refresh ();
@@ -844,8 +845,8 @@ namespace CineGame.Host.Editor {
                     so.ApplyModifiedProperties ();
                     AssetDatabase.SaveAssets ();
                     AssetDatabase.Refresh ();
-                    var oldMarketSlug = currentMarketId != null ? CineGameSDK.MarketSlugMap.GetValueOrDefault (currentMarketId, "???") : "(null)";
-                    var newMarketSlug = CineGameSDK.MarketSlugMap.GetValueOrDefault (newMarketId, "???");
+                    var oldMarketSlug = currentMarketId != null ? CineGameMarket.Names.GetValueOrDefault (currentMarketId, "???") : "(null)";
+                    var newMarketSlug = CineGameMarket.Names.GetValueOrDefault (newMarketId, "???");
 
                     var msg = $"Game fallback market was set to {oldMarketSlug} but user has no access to this, so we force it to {newMarketSlug}";
                     Debug.LogWarning (msg);

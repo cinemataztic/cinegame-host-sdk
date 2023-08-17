@@ -9,7 +9,7 @@ using Sfs2X.Entities;
 using Sfs2X.Entities.Data;
 using Sfs2X.Entities.Variables;
 
-namespace CineGame.Host {
+namespace CineGame.SDK {
 
     internal class SmartfoxClient {
 

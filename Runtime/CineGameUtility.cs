@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Security.Cryptography;
 
-namespace CineGame.Host
+namespace CineGame.SDK
 {
     public static class CineGameUtility
 	{
