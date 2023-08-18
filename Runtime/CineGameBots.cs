@@ -219,7 +219,8 @@ namespace CineGame.SDK {
             }
 
             internal IEnumerator Start () {
-                var pl = new CineGameSDK.Player {
+                var pl = new CineGameSDK.User
+                {
                     BackendID = BackendID,
                     Name = Name,
                 };

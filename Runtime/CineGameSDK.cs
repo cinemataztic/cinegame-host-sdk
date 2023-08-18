@@ -57,13 +57,24 @@ namespace CineGame.SDK {
         /// User
         /// </summary>
         /// 
-        public struct Player {
+        public struct User {
             public int BackendID;
             public Version AppVersion;
             public string Name;
             public int Age;
             public string Gender;
             public int Score;
+        }
+
+        /// <summary>
+        /// Supporter
+        /// </summary>
+        /// 
+        public struct Supporter
+        {
+            public int BackendID;
+            public int SupportingID;
+            public string Name;
         }
 
         public class PlayerObjectMessage {
@@ -196,7 +207,7 @@ namespace CineGame.SDK {
         /// <summary>
 		/// When a player joins OR rejoins the game
 		/// </summary>
-        public static Action<Player> OnPlayerJoined;
+        public static Action<User> OnPlayerJoined;
         /// <summary>
 		/// When a player leaves the game
 		/// </summary>
@@ -216,7 +227,7 @@ namespace CineGame.SDK {
         /// <summary>
 		/// When a supporter/spectator joins
 		/// </summary>
-        public static Action<int, int, string> OnSupporterJoined;
+        public static Action<Supporter> OnSupporterJoined;
         /// <summary>
 		/// When a player avatar 2D texture is loaded or changed (can happen multiple times)
 		/// </summary>
@@ -736,11 +747,11 @@ namespace CineGame.SDK {
             }
         }
 
-        public static void EndGame (List<Player> users, List<Player> winners = null, List<MiniGame> miniGames = null) {
+        public static void EndGame (List<User> users, List<User> winners = null, List<MiniGame> miniGames = null) {
             instance.SendDataToServer (users, winners, miniGames);
         }
 
-        private void SendDataToServer (List<Player> users, List<Player> winners = null, List<MiniGame> miniGames = null) {
+        private void SendDataToServer (List<User> users, List<User> winners = null, List<MiniGame> miniGames = null) {
             //Reset average FPS. This will log an error if the average FPS has been low without recovering
             avgFPS = refreshRate;
 

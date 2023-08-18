@@ -375,7 +375,7 @@ namespace CineGame.SDK {
                         }
 
                         CineGameChatController.RunProfanityFilter (userName, (filteredUserName) => {
-                            CineGameSDK.OnPlayerJoined?.Invoke (new CineGameSDK.Player {
+                            CineGameSDK.OnPlayerJoined?.Invoke (new CineGameSDK.User {
                                 BackendID = backendID,
                                 AppVersion = appVer,
                                 Name = filteredUserName,
@@ -391,7 +391,13 @@ namespace CineGame.SDK {
                     } else if (user.IsSpectator) {
                         var supportingID = dataObj.GetInt ("supportingId");
                         CineGameChatController.RunProfanityFilter (userName, (filteredUserName) => {
-                            CineGameSDK.OnSupporterJoined?.Invoke (backendID, supportingID, filteredUserName);
+                            CineGameSDK.OnSupporterJoined?.Invoke(new CineGameSDK.Supporter
+                            {
+                                BackendID = backendID,
+                                SupportingID = supportingID,
+                                Name = filteredUserName
+                            });
+
                         });
                     }
                 } else if (dataObj.ContainsKey ("avatar") && user.Properties != null) {
