@@ -81,7 +81,7 @@ namespace CineGame.SDK.Editor
             }
         }
 
-        [MenuItem ("CineGame/Login")]
+        [MenuItem ("CineGame SDK/Login")]
         internal static void Init () {
             if (instance == null) {
                 instance = GetWindow<CineGameLogin> ("CineGame Login", typeof (CloudBuild), typeof (CineGameTest), typeof (CineGameBuild));
@@ -181,9 +181,9 @@ namespace CineGame.SDK.Editor
         internal static Uri CinematazticApiBaseUri {
             get {
                 return CurrentMarketSlug switch {
-                    "biospil-dk" => new Uri ("https://biospil.api.player.drf-1.cinemataztic.com/v2/"),
+                    "BioSpil_DRF_DK" => new Uri ("https://biospil.api.player.drf-1.cinemataztic.com/v2/"),
                     "cinegame-en" => new Uri ("https://cinegame.en.api.player.eu-1.cinemataztic.com/v2/"),
-                    "finnkino-fi" => new Uri ("https://finnkino.fi.api.player.eu-1.cinemataztic.com/v2/"),
+                    "Leffapeli_Finnkino_FI" => new Uri ("https://finnkino.fi.api.player.eu-1.cinemataztic.com/v2/"),
                     "itv-in" => new Uri ("https://itv.in.api.player.asia-1.cinemataztic.com/v2/"),
                     "redyplay-de" => new Uri ("https://weischer.de.api.player.eu-2.cinemataztic.com/v2/"),
                     "wideeyemedia-ie" => new Uri ("https://wideeyemedia.ie.api.player.eu-2.cinemataztic.com/v2/"),
@@ -197,7 +197,7 @@ namespace CineGame.SDK.Editor
                 return CurrentMarketSlug switch {
                     "biospil-dk" => new Uri ("https://biospil.auth.iam.nordiskfilm.cinemataztic.com"),
                     "cinegame-en" => new Uri ("https://cinemataztic.en.auth.iam.eu-1.cinemataztic.com"),
-                    "finnkino-fi" => new Uri ("https://finnkino.fi.auth.iam.eu-1.cinemataztic.com"),
+                    "Leffapeli_Finnkino_FI" => new Uri ("https://finnkino.fi.auth.iam.eu-1.cinemataztic.com"),
                     "itv-in" => new Uri ("https://itv.in.auth.iam.asia-1.cinemataztic.com"),
                     "redyplay-de" => new Uri ("https://weischer.de.auth.iam.eu-2.cinemataztic.com"),
                     "wideeyemedia-ie" => new Uri ("https://wideeyemedia.ie.auth.iam.eu-2.cinemataztic.com"),
@@ -264,7 +264,11 @@ namespace CineGame.SDK.Editor
 
                     var appNames = new List<string> (MarketIdsAvailable.Length);
                     foreach (var id in MarketIdsAvailable) {
-                        appNames.Add (CineGameMarket.Names [id]);
+                        CineGameMarket.Names.TryGetValue(id, out string marketName);
+                        if (marketName != null)
+                        {
+                            appNames.Add(marketName);
+                        }
                     }
                     AppNamesAvailable = appNames.ToArray ();
 

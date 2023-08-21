@@ -416,7 +416,7 @@ namespace CineGame.SDK.Editor {
         }
 
 
-        [MenuItem ("CineGame/Build")]
+        [MenuItem ("CineGame SDK/Build")]
         internal static void Init () {
             if (instance == null) {
                 instance = GetWindow<CineGameBuild> (ProgressBarTitle, typeof (CloudBuild), typeof (CineGameTest), typeof(CineGameLogin));

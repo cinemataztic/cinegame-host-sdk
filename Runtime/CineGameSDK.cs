@@ -15,6 +15,9 @@ using Sfs2X.Entities.Data;
 
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using static CineGame.SDK.CineGameMarket;
+using UnityEditor;
+using UnityEngine.SceneManagement;
 
 namespace CineGame.SDK {
 
@@ -22,20 +25,13 @@ namespace CineGame.SDK {
         private static CineGameSDK instance;
 
         public CineGameSettings Settings;
-        [HideInInspector]
-        [Obsolete ("GameType should be set in the asset referenced from Settings property")]
-        public string GameType;
 
-
+        public static string GameID;
         public static string Market;
 
         private static string GameCode;
 
         private static int GetGameCodeTries = 0;
-        private float refreshRate;
-        private float avgFPS;
-        private float minFPS;
-        private int numAvgFpsWarnings = 3;
 
         public static bool GameEnded = false;
         public static bool GameEndSentToServer = false;
@@ -274,7 +270,28 @@ namespace CineGame.SDK {
                 return;
             }
             instance = this;
+
+            if(Settings != null)
+            {
+                GameID = Settings.GameType;
+
+            }
+
             SetDeviceInfo ();
+
+#if UNITY_EDITOR
+            if (Settings != null)
+            {
+                Market = Settings.MarketId;
+            }
+            else
+            {
+                Market = EditorPrefs.GetString("CineGameMarket");
+            }
+#else
+            Market = Configuration.MARKET_ID;
+#endif
+
         }
 
         /// <summary>
@@ -303,12 +320,6 @@ namespace CineGame.SDK {
             if (instance != this)
                 return;
             SmartfoxClient.Update ();
-            var newAvgFPS = avgFPS * 0.99f + (1f / Time.unscaledDeltaTime) * 0.01f;
-            if (refreshRate > 25f && newAvgFPS < 25f && avgFPS >= 25f && numAvgFpsWarnings-- > 0) {
-                Debug.LogError ($"Average framerate dropped to {minFPS}");
-            }
-            avgFPS = newAvgFPS;
-            minFPS = Mathf.Min (minFPS, avgFPS);
         }
 
         /// <summary>
@@ -325,7 +336,7 @@ namespace CineGame.SDK {
                SystemInfo.operatingSystem
             );
 
-            CineGameLogger.GameType = Settings.GameType;
+            CineGameLogger.GameType = GameID;
 
             if (Screen.currentResolution.refreshRate < 25) {
                 Debug.LogError ($"ERROR: Refresh rate too low: {Screen.currentResolution.refreshRate}");
@@ -344,9 +355,7 @@ namespace CineGame.SDK {
             GameEndSentToServer = false;
 
             QualitySettings.vSyncCount = 1;
-            refreshRate = minFPS = avgFPS = Screen.currentResolution.refreshRate;
 
-            Market = Configuration.MARKET_ID;
             DeviceId = null;
 
             if (!IsWebGL && !Application.isEditor) {
@@ -381,7 +390,6 @@ namespace CineGame.SDK {
             }
 
             if (!IsWebGL) {
-
                 var marketFromEnv = Configuration.MARKET_ID;
                 if (!string.IsNullOrEmpty (marketFromEnv)) {
 #pragma warning disable 0618
@@ -439,9 +447,12 @@ namespace CineGame.SDK {
                 Debug.Log ($"DeviceId from deviceUniqueIdentifier: {did}");
             }
 
-            Invoke ("RequestGameCode", .1f);
-
             OnSetupCompleted?.Invoke ();
+
+            if(Settings != null)
+            {
+                Invoke("RequestGameCode", .1f);
+            }
         }
 
         /// <summary>
@@ -480,6 +491,13 @@ namespace CineGame.SDK {
                 Debug.LogErrorFormat ("Exception while trying to determine adapter MAC Address: {0}", e);
                 MacAddress = null;
             }
+        }
+
+        public static void StartGame(string gameID, int maxPlayers)
+        {
+            GameID = gameID;
+
+            RequestGameCodeStatic();
         }
 
 
@@ -534,11 +552,16 @@ namespace CineGame.SDK {
 		}
 
 		internal void RequestGameCode () {
+
+            Debug.Log("Game: " + GameID);
+            Debug.Log("Market: " + Market);
+            //Debug.Log("Cluster Name: " + clusterName);
+            //Debug.Log("Player Capacity: " + maxPlayers);
             Debug.Log ("Environment: " + (IsStagingEnv ? "staging" : "production"));
 
             var req = new CreateGameRequest {
                 hostName = Hostname,
-                gameType = Settings.GameType,
+                gameType = GameID,
                 mac = MacAddress,
                 deviceId = DeviceId,
                 platform = Application.platform.ToString (),
@@ -742,9 +765,7 @@ namespace CineGame.SDK {
                 }
             }
 
-            if (OnWiFiAvailable != null) {
-                OnWiFiAvailable?.Invoke (wifiName, wifiPassword);
-            }
+            OnWiFiAvailable?.Invoke(wifiName, wifiPassword);
         }
 
         public static void EndGame (List<User> users, List<User> winners = null, List<MiniGame> miniGames = null) {
@@ -752,8 +773,6 @@ namespace CineGame.SDK {
         }
 
         private void SendDataToServer (List<User> users, List<User> winners = null, List<MiniGame> miniGames = null) {
-            //Reset average FPS. This will log an error if the average FPS has been low without recovering
-            avgFPS = refreshRate;
 
             GameEnded = true;
             SmartfoxClient.GameOver ();

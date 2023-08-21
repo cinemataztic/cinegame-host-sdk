@@ -141,7 +141,7 @@ namespace CineGame.SDK.Editor {
 			Repaint ();
 		}
 
-		[MenuItem ("CineGame/Test")]
+		[MenuItem ("CineGame SDK/Test")]
 		internal static void Init () {
 			if (instance == null) {
 				instance = GetWindow<CineGameTest> ("CineGame Test", typeof (CineGameLogin), typeof (CineGameBuild), typeof (CineGameTest));

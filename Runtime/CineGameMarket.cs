@@ -42,7 +42,7 @@ namespace CineGame.SDK
 
         public static string GetID()
         {
-            return Configuration.CINEMATAZTIC_MARKET_ID;
+            return CineGameSDK.Market;
         }
 
         public static Dictionary<string, string> Names = new Dictionary<string, string>
@@ -63,7 +63,7 @@ namespace CineGame.SDK
 
         public static string GetName()
         {
-            return Names[Configuration.CINEMATAZTIC_MARKET_ID];
+            return Names[CineGameSDK.Market];
         }
 
         public static Dictionary<string, int> Durations = new Dictionary<string, int>
@@ -84,7 +84,7 @@ namespace CineGame.SDK
 
         public static int GetDuration()
         {
-            return Durations[Configuration.CINEMATAZTIC_MARKET_ID];
+            return Durations[CineGameSDK.Market];
         }
 
         public static Dictionary<string, string> APIs = new Dictionary<string, string>
@@ -105,7 +105,8 @@ namespace CineGame.SDK
 
         public static string GetAPI()
         {
-            string url = APIs[Configuration.CINEMATAZTIC_MARKET_ID];
+
+            string url = APIs[CineGameSDK.Market];
             string clusterName = Configuration.CLUSTER_NAME;
 
             if (!String.IsNullOrEmpty(clusterName))
