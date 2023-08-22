@@ -10,7 +10,7 @@ namespace CineGame.SDK.Editor {
         [MenuItem("CineGame SDK/Environment/Production", true)]
         public static bool GetProduction()
         {
-            if (EditorPrefs.GetString("CineGameEnvironment") == "Production")
+            if (EditorPrefs.GetString("CineGameEnvironment") == "production")
             {
                 return false;
             }
@@ -23,14 +23,14 @@ namespace CineGame.SDK.Editor {
         [MenuItem("CineGame SDK/Environment/Production", false)]
         public static void SetProduction()
         {
-            EditorPrefs.SetString("CineGameEnvironment", "Production");
+            EditorPrefs.SetString("CineGameEnvironment", "production");
             Debug.Log("CineGame Environment: Production");
         }
 
         [MenuItem("CineGame SDK/Environment/Staging", true)]
         public static bool GetStaging()
         {
-            if (EditorPrefs.GetString("CineGameEnvironment") == "Staging")
+            if (EditorPrefs.GetString("CineGameEnvironment") == "staging")
             {
                 return false;
             }
@@ -43,14 +43,14 @@ namespace CineGame.SDK.Editor {
         [MenuItem("CineGame SDK/Environment/Staging", false)]
         public static void SetStaging()
         {
-            EditorPrefs.SetString("CineGameEnvironment", "Staging");
+            EditorPrefs.SetString("CineGameEnvironment", "staging");
             Debug.Log("CineGame Environment: Staging");
         }
 
         [MenuItem("CineGame SDK/Environment/Development", true)]
         public static bool GetDevelopment()
         {
-            if (EditorPrefs.GetString("CineGameEnvironment") == "Development")
+            if (EditorPrefs.GetString("CineGameEnvironment") == "dev")
             {
                 return false;
             }
@@ -63,7 +63,7 @@ namespace CineGame.SDK.Editor {
         [MenuItem("CineGame SDK/Environment/Development", false)]
         public static void SetDevelopment()
         {
-            EditorPrefs.SetString("CineGameEnvironment", "Development");
+            EditorPrefs.SetString("CineGameEnvironment", "dev");
             Debug.Log("CineGame Environment: Development");
         }
     }

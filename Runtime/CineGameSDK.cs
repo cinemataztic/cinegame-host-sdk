@@ -18,6 +18,7 @@ using Newtonsoft.Json.Linq;
 using static CineGame.SDK.CineGameMarket;
 using UnityEditor;
 using UnityEngine.SceneManagement;
+using System.Security.Policy;
 
 namespace CineGame.SDK {
 
@@ -48,6 +49,22 @@ namespace CineGame.SDK {
         public static string UserEmail;
         public static string UserName;
         public static string UserId;
+
+
+        /// <summary>
+        /// Game Request
+        /// </summary>
+        internal class CreateGameRequest
+        {
+            public string hostName;
+            public string gameType;
+            public string mac;
+            public string deviceId;
+            public string platform;
+            public string showId;
+            public string blockId;
+            public string deviceInfo;
+        }
 
         /// <summary>
         /// User
@@ -254,12 +271,6 @@ namespace CineGame.SDK {
             get { return Configuration.CLUSTER_NAME != null && Configuration.CLUSTER_NAME.Equals ("staging", StringComparison.InvariantCultureIgnoreCase); }
         }
 
-        private static string ApiURL {
-            get {
-                return CineGameMarket.GetAPI();
-            }
-        }
-
 
         /// <summary>
 		/// MonoBehavior Awake event
@@ -271,13 +282,21 @@ namespace CineGame.SDK {
             }
             instance = this;
 
-            if(Settings != null)
+            Setup();
+        }
+
+        void Setup () {
+
+            DeviceId = null;
+            GameEnded = false;
+            GameEndSentToServer = false;
+
+            QualitySettings.vSyncCount = 1;
+
+            if (Settings != null)
             {
                 GameID = Settings.GameType;
-
             }
-
-            SetDeviceInfo ();
 
 #if UNITY_EDITOR
             if (Settings != null)
@@ -292,116 +311,23 @@ namespace CineGame.SDK {
             Market = Configuration.MARKET_ID;
 #endif
 
-        }
-
-        /// <summary>
-		/// MonoBehavior Start event
-		/// </summary>
-        IEnumerator Start () {
-            if (instance != this)
-                yield break;
-            var t = Time.realtimeSinceStartup;
-            while (Application.internetReachability == NetworkReachability.NotReachable) {
-                var _t = Time.realtimeSinceStartup;
-                //Log warning every second if internet is not reachable
-                if (_t - t > 1f) {
-                    t = _t;
-                    Debug.LogWarning ("WARNING Internet not reachable-- waiting to set up game");
-                }
-                yield return null;
+            if (!IsWebGL && !Application.isEditor)
+            {
+                DeviceId = Configuration.CINEMATAZTIC_SCREEN_ID;
             }
-            Setup ();
-        }
 
-        /// <summary>
-		/// MonoBehavior Update event
-		/// </summary>
-        void Update () {
-            if (instance != this)
-                return;
-            SmartfoxClient.Update ();
-        }
-
-        /// <summary>
-		/// Collect Device/System Info, used for updating backend db of players
-		/// </summary>
-        void SetDeviceInfo () {
-            Hostname = Environment.MachineName;
-
-            DeviceInfo = string.Format ("{0}, {1}, {2} cores. {3} MB RAM. Graphics: {4} {5} ({6} {7}) Resolution: {8} OS: {9}",
-               SystemInfo.deviceModel, SystemInfo.processorType, SystemInfo.processorCount,
-               SystemInfo.systemMemorySize,
-               SystemInfo.graphicsDeviceVendor, SystemInfo.graphicsDeviceName, SystemInfo.graphicsDeviceVendorID, SystemInfo.graphicsDeviceID,
-               Screen.currentResolution,
-               SystemInfo.operatingSystem
-            );
-
-            CineGameLogger.GameType = GameID;
-
-            if (Screen.currentResolution.refreshRate < 25) {
-                Debug.LogError ($"ERROR: Refresh rate too low: {Screen.currentResolution.refreshRate}");
-            }
-        }
-
-        void Setup () {
-
-            GetMacAddress ();
+            SetDeviceInfo();
+            GetMacAddress();
 
             if (!Application.isEditor) {
                 Cursor.visible = false;
             }
 
-            GameEnded = false;
-            GameEndSentToServer = false;
-
-            QualitySettings.vSyncCount = 1;
-
-            DeviceId = null;
-
-            if (!IsWebGL && !Application.isEditor) {
-
-    	          DeviceId = Configuration.CINEMATAZTIC_SCREEN_ID;
-		           
-
-                if (string.IsNullOrWhiteSpace (DeviceId) || string.IsNullOrWhiteSpace (Market)) {
-                    var hostConfigFilename = Path.Combine (Environment.GetFolderPath (Environment.SpecialFolder.Personal), "conf-db.json");
-                    try {
-                        // Read player/system info from ~/conf-db.json if it exists
-                        var file = new FileInfo (hostConfigFilename);
-                        if (file != null && file.Exists) {
-                            var reader = file.OpenText ();
-                            if (reader != null) {
-                                var confDb = JObject.Parse (reader.ReadToEnd ());
-#pragma warning disable 0618
-                                Market = (string)confDb ["cloudtaztic"] ["config"] ["player"] ["market"];
-                                DeviceId = (string)confDb ["cloudtaztic"] ["config"] ["_id"];
-                                Debug.Log ($"DeviceId from ~/conf-db.json:cloudtaztic.config._id: {DeviceId}");
-                                Debug.Log ($"Market from ~/conf-db.json:cloudtaztic.config.player.market: {Market} ({CineGameMarket.GetName()})");
-#pragma warning restore
-                            }
-                        } else {
-                            Debug.LogFormat ("File not found: {0} - using fallback config", hostConfigFilename);
-                        }
-                    } catch (Exception e) {
-                        Debug.LogError ($"Exception while reading deviceId from {hostConfigFilename}-- falling back to systemInfo.deviceUniqueIdentifier. Exception: {e}");
-                    }
-                }
-
-            }
-
             if (!IsWebGL) {
-                var marketFromEnv = Configuration.MARKET_ID;
-                if (!string.IsNullOrEmpty (marketFromEnv)) {
-#pragma warning disable 0618
-                    Market = marketFromEnv;
-                    Debug.Log ($"Market from environment: {Market} ({CineGameMarket.GetName()})");
-#pragma warning restore
-                }
-
                 //Get access token from environment. If this is run in editor, the CinemaBuild script should already have retrieved a fresh token at load, if username and password were already filled in.
                 //If this is run as standalone, the desktop player software should already have set it.
                 //You can since january 2020 no longer run standalone builds without the player software.
-                var accessToken = Configuration.CINEMATAZTIC_ACCESS_TOKEN;
+                string accessToken = Configuration.CINEMATAZTIC_ACCESS_TOKEN;
 
                 if (string.IsNullOrEmpty (accessToken)) {
                     Debug.LogError ("Missing API key (jwt). Please check that the environment variable has been initialized by editor or player software!");
@@ -448,10 +374,29 @@ namespace CineGame.SDK {
             }
 
             OnSetupCompleted?.Invoke ();
+        }
 
-            if(Settings != null)
+
+        /// <summary>
+        /// Collect Device/System Info, used for updating backend db of players
+        /// </summary>
+        void SetDeviceInfo()
+        {
+            Hostname = Environment.MachineName;
+
+            DeviceInfo = string.Format("{0}, {1}, {2} cores. {3} MB RAM. Graphics: {4} {5} ({6} {7}) Resolution: {8} OS: {9}",
+               SystemInfo.deviceModel, SystemInfo.processorType, SystemInfo.processorCount,
+               SystemInfo.systemMemorySize,
+               SystemInfo.graphicsDeviceVendor, SystemInfo.graphicsDeviceName, SystemInfo.graphicsDeviceVendorID, SystemInfo.graphicsDeviceID,
+               Screen.currentResolution,
+               SystemInfo.operatingSystem
+            );
+
+            CineGameLogger.GameType = GameID;
+
+            if (Screen.currentResolution.refreshRate < 25)
             {
-                Invoke("RequestGameCode", .1f);
+                Debug.LogError($"ERROR: Refresh rate too low: {Screen.currentResolution.refreshRate}");
             }
         }
 
@@ -465,7 +410,7 @@ namespace CineGame.SDK {
             }
 
             try {
-                var hostname = new Uri (ApiURL).Host;
+                var hostname = new Uri (CineGameMarket.GetAPI()).Host;
                 string localAddr;
                 using (var u = new UdpClient (hostname, 1)) {
                     localAddr = ((IPEndPoint)u.Client.LocalEndPoint).Address.ToString ();
@@ -493,70 +438,65 @@ namespace CineGame.SDK {
             }
         }
 
-        public static void StartGame(string gameID, int maxPlayers)
+        /// <summary>
+        /// MonoBehavior Start event
+        /// </summary>
+        IEnumerator Start()
         {
-            GameID = gameID;
+            if (instance != this)
+                yield break;
+            var t = Time.realtimeSinceStartup;
+            while (Application.internetReachability == NetworkReachability.NotReachable)
+            {
+                var _t = Time.realtimeSinceStartup;
+                //Log warning every second if internet is not reachable
+                if (_t - t > 1f)
+                {
+                    t = _t;
+                    Debug.LogWarning("WARNING Internet not reachable-- waiting to set up game");
+                }
+                yield return null;
+            }
 
+            if (Settings != null)
+            {
+                Invoke("RequestGameCode", .1f);
+            }
+        }
+
+        /// <summary>
+        /// MonoBehavior Update event
+        /// </summary>
+        void Update()
+        {
+            if (instance != this)
+                return;
+            SmartfoxClient.Update();
+        }
+
+        public static void StartGame()
+        {
             RequestGameCodeStatic();
-        }
-
-
-        static void API (string uri, string json, BackendCallback callback = null) {
-            if (Debug.isDebugBuild) {
-                Debug.LogFormat ("POST {0} {1}", uri, json);
-            }
-            var request = new UnityWebRequest (
-                ApiURL + uri,
-                "POST",
-                new DownloadHandlerBuffer (),
-                new UploadHandlerRaw (Encoding.UTF8.GetBytes (json))
-            );
-            var enHeaders = BackendHeaders.GetEnumerator ();
-            while (enHeaders.MoveNext ()) {
-                request.SetRequestHeader (enHeaders.Current.Key, enHeaders.Current.Value);
-            }
-            instance.StartCoroutine (instance.E_Backend (request, callback));
-        }
-
-        private IEnumerator E_Backend (UnityWebRequest request, BackendCallback callback) {
-            var timeBegin = Time.realtimeSinceStartup;
-            yield return request.SendWebRequest ();
-            var statusCode = (HttpStatusCode)request.responseCode;
-            callback?.Invoke (statusCode, request.downloadHandler.text);
-        }
-
-        static void PostFile (string uri, string filename, byte [] file, BackendCallback callback = null) {
-            var wwwForm = new WWWForm ();
-            wwwForm.AddBinaryData ("file", file, filename);
-            var request = UnityWebRequest.Post (ApiURL + uri, wwwForm);
-            var enHeaders = BackendHeaders.GetEnumerator ();
-            while (enHeaders.MoveNext ()) {
-                request.SetRequestHeader (enHeaders.Current.Key, enHeaders.Current.Value);
-            }
-            instance.StartCoroutine (instance.E_Backend (request, callback));
         }
 
         internal static void RequestGameCodeStatic () {
             instance.RequestGameCode ();
         }
 
-		internal class CreateGameRequest {
-			public string hostName;
-			public string gameType;
-			public string mac;
-			public string deviceId;
-			public string platform;
-			public string showId;
-			public string blockId;
-			public string deviceInfo;
-		}
-
 		internal void RequestGameCode () {
+
+            string clusterName;
+
+#if UNITY_EDITOR
+            clusterName = EditorPrefs.GetString("CineGameEnvironment");
+#else
+            clusterName = Configuration.CLUSTER_NAME;
+#endif
 
             Debug.Log("Game: " + GameID);
             Debug.Log("Market: " + Market);
-            //Debug.Log("Cluster Name: " + clusterName);
-            //Debug.Log("Player Capacity: " + maxPlayers);
+            Debug.Log("Cluster Name: " + clusterName);
+            Debug.Log("Player Capacity: " + SmartfoxClient.MaxPlayers);
             Debug.Log ("Environment: " + (IsStagingEnv ? "staging" : "production"));
 
             var req = new CreateGameRequest {
@@ -581,7 +521,7 @@ namespace CineGame.SDK {
                     var gameZone = (string)CreateResponse ["gameZone"];
                     var gameServer = (string)CreateResponse ["gameServer"];
                     var webGlSecure = (bool)(CreateResponse ["webGlSecure"] ?? false);
-                    SmartfoxClient.ConnectAndCreateGame (gameServer, GameCode, gameZone, GetGameType (), webGlSecure);
+                    SmartfoxClient.ConnectAndCreateGame (gameServer, GameCode, gameZone, GameID, webGlSecure);
 
                     var creditsForParticipating = 0;
                     var creditsForSupporterParticipating = 0;
@@ -646,7 +586,7 @@ namespace CineGame.SDK {
                     }
                 }
                 if (uri == null) {
-                    Debug.LogError ($"GameType {GetGameType ()} does not support avatarID={avatarID}");
+                    Debug.LogError ($"GameType {GameID} does not support avatarID={avatarID}");
                     return;
                 }
             }
@@ -826,11 +766,45 @@ namespace CineGame.SDK {
             });
         }
 
-        internal static string GetGameType () {
-            if (string.IsNullOrEmpty (instance.Settings.GameType)) {
-                Debug.LogError ("<b>FATAL ERROR</b> GetGameType() called before property initialized!");
+        static void API(string uri, string json, BackendCallback callback = null)
+        {
+            if (Debug.isDebugBuild)
+            {
+                Debug.LogFormat("POST {0} {1}", uri, json);
             }
-            return instance.Settings.GameType;
+            var request = new UnityWebRequest(
+                CineGameMarket.GetAPI() + uri,
+                "POST",
+                new DownloadHandlerBuffer(),
+                new UploadHandlerRaw(Encoding.UTF8.GetBytes(json))
+            );
+            var enHeaders = BackendHeaders.GetEnumerator();
+            while (enHeaders.MoveNext())
+            {
+                request.SetRequestHeader(enHeaders.Current.Key, enHeaders.Current.Value);
+            }
+            instance.StartCoroutine(instance.E_Backend(request, callback));
+        }
+
+        private IEnumerator E_Backend(UnityWebRequest request, BackendCallback callback)
+        {
+            var timeBegin = Time.realtimeSinceStartup;
+            yield return request.SendWebRequest();
+            var statusCode = (HttpStatusCode)request.responseCode;
+            callback?.Invoke(statusCode, request.downloadHandler.text);
+        }
+
+        static void PostFile(string uri, string filename, byte[] file, BackendCallback callback = null)
+        {
+            var wwwForm = new WWWForm();
+            wwwForm.AddBinaryData("file", file, filename);
+            var request = UnityWebRequest.Post(CineGameMarket.GetAPI() + uri, wwwForm);
+            var enHeaders = BackendHeaders.GetEnumerator();
+            while (enHeaders.MoveNext())
+            {
+                request.SetRequestHeader(enHeaders.Current.Key, enHeaders.Current.Value);
+            }
+            instance.StartCoroutine(instance.E_Backend(request, callback));
         }
 
         /// <summary>

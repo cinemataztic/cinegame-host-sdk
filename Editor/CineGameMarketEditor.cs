@@ -1,31 +1,88 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using System.Security.Cryptography;
 using UnityEditor;
 using UnityEngine;
+using static CineGame.SDK.Editor.CineGameLogin;
 
 namespace CineGame.SDK.Editor
 {
-    internal class CineGameMarketEditor
+    public static class CineGameMarketEditor
     {
-        [MenuItem("CineGame SDK/Market/Leffapeli", true)]
-        public static bool GetLeffapeli()
+
+        public static Action<string> OnMarketChanged;
+
+        [InitializeOnLoadMethod]
+        private static void OnLoad()
         {
-            if (EditorPrefs.GetString("CineGameMarket") == CineGameMarket.Markets.Leffapeli_Finnkino_FI)
+            if (!EditorPrefs.HasKey("CineGameMarket"))
             {
-                return false;
-            }
-            else
-            {
-                return true;
+                EditorPrefs.SetString("CineGameMarket", CineGameMarket.Markets.CineGame_Cinemataztic_EN);
+                CineGameMarketEditor.OnMarketChanged?.Invoke(CineGameMarket.Markets.CineGame_Cinemataztic_EN);
             }
         }
+    }
 
-        [MenuItem("CineGame SDK/Market/Leffapeli", false)]
-        public static void SetProduction()
+    public class CineGameMarketEditorWindow : EditorWindow
+    {
+        static CineGameMarketEditorWindow instance;
+
+        private string market;
+        private int marketIndex;
+        private string[] marketNames;
+
+        [MenuItem("CineGame SDK/Market", false, 1)]
+        internal static void Init()
         {
-            EditorPrefs.SetString("CineGameMarket", CineGameMarket.Markets.Leffapeli_Finnkino_FI);
-            CineGameMarket.Names.TryGetValue(CineGameMarket.Markets.Leffapeli_Finnkino_FI, out string marketName);
-            Debug.Log(string.Format("CineGame Market: {0} ({1})" + marketName, CineGameMarket.Markets.Leffapeli_Finnkino_FI));
+            if (instance == null)
+            {
+                instance = GetWindow<CineGameMarketEditorWindow>("CineGame Market");
+            }
+
+            instance.market = EditorPrefs.GetString("CineGameMarket");
+            instance.marketNames = CineGameMarket.Names.Values.ToArray();
+
+            if(CineGameMarket.Names.TryGetValue(instance.market, out string marketName))
+            {
+                for (int i = 0; i < instance.marketNames.Length; i++)
+                {
+                    if (instance.marketNames[i] == marketName)
+                    {
+                        instance.marketIndex = i;
+                    }
+                }
+            }
+
+            if (!CineGameLogin.RefreshAccessToken())
+            {
+                CineGameLogin.Init();
+            }
+
+            instance.Focus();
+        }
+
+        private void OnGUI()
+        {
+            EditorGUILayout.BeginHorizontal();
+            EditorGUI.BeginChangeCheck();
+            int guiMarketIndex = EditorGUILayout.Popup(new GUIContent("Market:"), marketIndex, marketNames);
+
+            if (EditorGUI.EndChangeCheck())
+            {
+                marketIndex = guiMarketIndex;
+                EditorPrefs.SetString("CineGameMarket", CineGameMarket.MarketIDs[marketIndex]);
+                CineGameMarketEditor.OnMarketChanged?.Invoke(CineGameMarket.MarketIDs[marketIndex]);
+                Debug.Log(string.Format("CineGame Market: {0} ({1})", CineGameMarket.Names.Values.ToArray()[marketIndex], CineGameMarket.MarketIDs[marketIndex]));
+
+                if(!CineGameLogin.RefreshAccessToken())
+                {
+                    CineGameLogin.Init();
+                }
+            }
+
+            EditorGUILayout.EndHorizontal();
         }
     }
 }

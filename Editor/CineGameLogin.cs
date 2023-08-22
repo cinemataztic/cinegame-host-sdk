@@ -8,6 +8,7 @@ using UnityEngine;
 using UnityEngine.Networking;
 
 using Newtonsoft.Json.Linq;
+using static CineGame.SDK.CineGameMarket;
 
 namespace CineGame.SDK.Editor
 {
@@ -18,6 +19,22 @@ namespace CineGame.SDK.Editor
         static string Username;
         static string Password;
         static bool StayLoggedIn;
+
+        public static Dictionary<string, string> AuthAPIs = new Dictionary<string, string>
+        {
+            { Markets.BioSpil_DRF_DK, "https://drf.dk.auth.iam.drf-1.cinemataztic.com/" },
+            { Markets.CineGame_Cinemataztic_AE, "https://auth.iam.eu-2.cinemataztic.com/" },
+            { Markets.CineGame_Cinemataztic_EN, "https://cinemataztic.en.auth.iam.eu-1.cinemataztic.com/" },
+            { Markets.CineGame_ITV_IN, "https://itv.in.auth.iam.asia-1.cinemataztic.com/" },
+            { Markets.CineGame_ValMorgan_AU, "https://valmorgan.au.auth.iam.au-1.cinemataztic.com/" },
+            { Markets.CineGame_ValMorgan_NZ, "https://valmorgan.nz.auth.iam.au-1.cinemataztic.com/" },
+            { Markets.CineGame_WideEyeMedia_IE, "https://wideeyemedia.ie.auth.iam.eu-2.cinemataztic.com/" },
+            { Markets.CinesaFun_Cinesa_ES, "https://cinesa.es.auth.iam.eu-2.cinemataztic.com/" },
+            { Markets.ForumFun_Cinemataztic_EE, "https://finnkino.ee.auth.iam.eu-1.cinemataztic.com/" },
+            { Markets.KinoSpill_DRF_NO, "https://mdn.no.auth.iam.drf-1.cinemataztic.com/" },
+            { Markets.Leffapeli_Finnkino_FI, "https://finnkino.fi.auth.iam.eu-1.cinemataztic.com/" },
+            { Markets.REDyPLAY_Weicher_DE, "https://weischer.de.auth.iam.eu-2.cinemataztic.com/" }
+        };
 
         public static bool IsLoggedIn {
             get {
@@ -81,7 +98,7 @@ namespace CineGame.SDK.Editor
             }
         }
 
-        [MenuItem ("CineGame SDK/Login")]
+        //[MenuItem ("CineGame SDK/Login")]
         internal static void Init () {
             if (instance == null) {
                 instance = GetWindow<CineGameLogin> ("CineGame Login", typeof (CloudBuild), typeof (CineGameTest), typeof (CineGameBuild));
@@ -119,7 +136,6 @@ namespace CineGame.SDK.Editor
 
             if (!IsLoggedIn)
             {
-                MarketSlugIndex = EditorGUILayout.Popup (new GUIContent ("Market:"), MarketSlugIndex, MarketSlugs);
                 GUI.SetNextControlName (ControlNames.Password);
                 Password = EditorGUILayout.PasswordField ("Password:", Password);
                 StayLoggedIn = EditorGUILayout.Toggle ("Stay logged in", StayLoggedIn);
@@ -130,7 +146,6 @@ namespace CineGame.SDK.Editor
                 if (loginPressed || passwordEntered)
                 {
                     EditorPrefs.SetBool ("CineGameStayLoggedIn", StayLoggedIn);
-                    EditorPrefs.SetString ("CineGameMarket", CurrentMarketSlug);
                     if (!GetAccessToken (Username, Password)) {
                         EditorUtility.DisplayDialog (titleContent.text, "Failed to login. Check username and password and that you are connected to the internet", "OK");
                     }
@@ -139,16 +154,6 @@ namespace CineGame.SDK.Editor
             }
             else
             {
-                var _msi = EditorGUILayout.Popup (new GUIContent ("Market:"), MarketSlugIndex, MarketSlugs);
-                if (MarketSlugIndex != _msi) {
-                    MarketSlugIndex = _msi;
-					EditorPrefs.SetString ("CineGameMarket", CurrentMarketSlug);
-					if (!GetAccessToken (Username, Password)) {
-                        EditorUtility.DisplayDialog (titleContent.text, "Failed to login. Check username and password and that you are connected to the internet", "OK");
-                    }
-                    ActiveEditorTracker.sharedTracker.ForceRebuild ();
-                }
-                EditorGUILayout.Space ();
                 EditorGUILayout.BeginHorizontal();
                 EditorGUILayout.PrefixLabel(" ");
                 var logOutPressed = GUILayout.Button("Log Out", GUILayout.MaxWidth(200f));
@@ -161,6 +166,7 @@ namespace CineGame.SDK.Editor
             }
         }
 
+        [MenuItem ("CineGame SDK/Logout")]
         public static void Logout () {
             //EditorPrefs.DeleteKey("CineGameUserName");
             //Username = string.Empty;
@@ -192,20 +198,6 @@ namespace CineGame.SDK.Editor
             }
         }
 
-        static Uri CinematazticAuthUri {
-            get {
-                return CurrentMarketSlug switch {
-                    "biospil-dk" => new Uri ("https://biospil.auth.iam.nordiskfilm.cinemataztic.com"),
-                    "cinegame-en" => new Uri ("https://cinemataztic.en.auth.iam.eu-1.cinemataztic.com"),
-                    "Leffapeli_Finnkino_FI" => new Uri ("https://finnkino.fi.auth.iam.eu-1.cinemataztic.com"),
-                    "itv-in" => new Uri ("https://itv.in.auth.iam.asia-1.cinemataztic.com"),
-                    "redyplay-de" => new Uri ("https://weischer.de.auth.iam.eu-2.cinemataztic.com"),
-                    "wideeyemedia-ie" => new Uri ("https://wideeyemedia.ie.auth.iam.eu-2.cinemataztic.com"),
-                    _ => new Uri ("https://auth.iam.staging.cinemataztic.com"),
-                };
-            }
-        }
-
         public static bool IsSuperAdmin;
         public static string [] MarketIdsAvailable;
         public static string [] MarketSlugsAvailable;
@@ -225,7 +217,7 @@ namespace CineGame.SDK.Editor
                     ["password"] = userPassword,
                 };
                 var request = new UnityWebRequest (
-                                  CinematazticAuthUri,
+                                  AuthAPIs[EditorPrefs.GetString("CineGameMarket")],
                                   "POST",
                                   new DownloadHandlerBuffer (),
                                   new UploadHandlerRaw (System.Text.Encoding.UTF8.GetBytes (jsonReq.ToString ()))
