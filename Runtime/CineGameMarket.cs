@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System;
 using System.Text.RegularExpressions;
+using UnityEditor;
 
 namespace CineGame.SDK
 {
@@ -107,7 +108,13 @@ namespace CineGame.SDK
         {
 
             string url = APIs[CineGameSDK.Market];
-            string clusterName = Configuration.CLUSTER_NAME;
+            string clusterName;
+
+#if UNITY_EDITOR
+            clusterName = EditorPrefs.GetString("CineGameEnvironment");
+#else
+            clusterName = Configuration.CLUSTER_NAME;
+#endif
 
             if (!String.IsNullOrEmpty(clusterName))
             {

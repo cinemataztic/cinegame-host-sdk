@@ -16,6 +16,7 @@ using System.Reflection;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json.Linq;
+using static CineGame.SDK.CineGameMarket;
 
 namespace CineGame.SDK.Editor {
 
@@ -53,7 +54,8 @@ namespace CineGame.SDK.Editor {
         static int KeychainCertIndex;
         static string [] KeychainCertNames;
 
-        static string MarketSlug;
+        static string MarketEnvironment;
+        static string MarketName;
 
         static int MarketIndex;
         static int GameTypeIndex;
@@ -92,6 +94,22 @@ namespace CineGame.SDK.Editor {
         static bool HasWinBuildSupport, HasMacOSBuildSupport, HasLinux64BuildSupport, HasLinuxIl2cppSupport;
         static bool BuildOnlyForLinux;
         static bool BuildOnUcb;
+
+        public static Dictionary<string, string> CloudAPIs = new Dictionary<string, string>
+        {
+            { Markets.BioSpil_DRF_DK, "https://drf.dk.api.player.drf-1.cinemataztic.com/" },
+            { Markets.CineGame_Cinemataztic_AE, "https://cinemataztic.ae.api.player.au-1.cinemataztic.com/" },
+            { Markets.CineGame_Cinemataztic_EN, "https://cinemataztic.en.api.player.eu-1.cinemataztic.com/" },
+            { Markets.CineGame_ITV_IN, "https://itv.in.api.player.asia-1.cinemataztic.com/" },
+            { Markets.CineGame_ValMorgan_AU, "https://valmorgan.au.api.player.au-1.cinemataztic.com/" },
+            { Markets.CineGame_ValMorgan_NZ, "https://valmorgan.nz.api.player.au-1.cinemataztic.com/" },
+            { Markets.CineGame_WideEyeMedia_IE, "https://wideeyemedia.ie.api.player.eu-2.cinemataztic.com/" },
+            { Markets.CinesaFun_Cinesa_ES, "https://cinesafun.es.api.player.eu-2.cinemataztic.com/" },
+            { Markets.ForumFun_Cinemataztic_EE, "https://forumfun.ee.api.player.eu-1.cinemataztic.com/" },
+            { Markets.KinoSpill_DRF_NO, "https://mdn.no.api.player.drf-1.cinemataztic.com/" },
+            { Markets.Leffapeli_Finnkino_FI, "https://finnkino.fi.api.player.eu-1.cinemataztic.com/" },
+            { Markets.REDyPLAY_Weicher_DE, "https://weischer.de.api.player.eu-2.cinemataztic.com/" }
+        };
 
         static bool UcbAvailable {
             get {
@@ -137,14 +155,12 @@ namespace CineGame.SDK.Editor {
                 return;
             }
 
-            var gtTooltip = "GameType extracted from CineGameSettings asset";
-            EditorGUILayout.LabelField (new GUIContent ("GameType: ", gtTooltip), new GUIContent (GameType, gtTooltip));
+            MarketEnvironment = char.ToUpper(EditorPrefs.GetString("CineGameEnvironment")[0]) + EditorPrefs.GetString("CineGameEnvironment").Substring(1);
+            MarketName = CineGameMarket.Names[EditorPrefs.GetString("CineGameMarket")];
 
-            var _marketIndex = Mathf.Clamp (MarketIndex, 0, CineGameLogin.MarketSlugsAvailable.Length);
-            _marketIndex = EditorGUILayout.Popup (new GUIContent ("Current market:", "Market to upload game build to. Also used for testing inside the Editor"), _marketIndex, CineGameLogin.MarketSlugsAvailable);
-            if (MarketIndex != _marketIndex) {
-                SetMarketIndex (_marketIndex);
-            }
+            EditorGUILayout.LabelField("Environment: ", MarketEnvironment);
+            EditorGUILayout.LabelField("Market: ", MarketName);
+            EditorGUILayout.LabelField("Game ID: ", GameType);
 
             if (!string.IsNullOrEmpty (LatestCommit)) {
                 EditorGUILayout.Space ();
@@ -230,6 +246,16 @@ namespace CineGame.SDK.Editor {
                 if (GUILayout.Button ("Build " + GameType + " for " + (BuildOnlyForLinux ? "Linux" : "all platforms"))) {
                     OnClickBuild ();
                 }
+
+                var macPath = GetOutputPath(GameType, BuildTarget.StandaloneOSX);
+                var winPath = GetOutputPath(GameType, BuildTarget.StandaloneWindows);
+                var linuxPath = GetOutputPath(GameType, BuildTarget.StandaloneLinux64);
+
+                if ((File.Exists(macPath) || File.Exists(winPath) || File.Exists(linuxPath)) && GUILayout.Button("Upload " + GameType + " for " + MarketName))
+                {
+                    //Any of the three builds exist and user has clicked on Upload button
+                    OnClickUpload();
+                }
             } else {
                 Rect r = EditorGUILayout.BeginVertical ();
                 EditorGUI.ProgressBar (r, buildProgress, progressMessage);
@@ -262,26 +288,6 @@ namespace CineGame.SDK.Editor {
                     EditorGUILayout.EndScrollView ();
                     EditorGUILayout.EndVertical ();
                 }
-
-                var macPath = GetOutputPath (GameType, BuildTarget.StandaloneOSX);
-                var winPath = GetOutputPath (GameType, BuildTarget.StandaloneWindows);
-                var linuxPath = GetOutputPath (GameType, BuildTarget.StandaloneLinux64);
-
-                if ((File.Exists (macPath) || File.Exists (winPath) || File.Exists (linuxPath)) && GUILayout.Button ("Upload " + GameType + " for " + MarketSlug)) {
-                    //Any of the three builds exist and user has clicked on Upload button
-                    OnClickUpload ();
-                }
-
-            }
-        }
-
-
-        static void SetMarketIndex (int _marketIndex) {
-            if (_marketIndex >= 0 && _marketIndex < CineGameLogin.MarketIdsAvailable.Length) {
-                MarketIndex = _marketIndex;
-                var marketId = CineGameLogin.MarketIdsAvailable [_marketIndex];
-                MarketSlug = CineGameMarket.Names [marketId];
-                Configuration.MARKET_ID = marketId;
             }
         }
 
@@ -365,7 +371,7 @@ namespace CineGame.SDK.Editor {
                 return;
             }
 
-            if (!EditorUtility.DisplayDialog (ProgressBarTitle, "Are you sure you want to upload " + GameType + " to " + MarketSlug + "?", "OK", "Cancel")) {
+            if (!EditorUtility.DisplayDialog (ProgressBarTitle, "Are you sure you want to upload " + GameType + " to " + MarketName + "?", "OK", "Cancel")) {
                 return;
             }
 
@@ -416,7 +422,7 @@ namespace CineGame.SDK.Editor {
         }
 
 
-        [MenuItem ("CineGame SDK/Build")]
+        [MenuItem ("CineGame SDK/Build", false, 3)]
         internal static void Init () {
             if (instance == null) {
                 instance = GetWindow<CineGameBuild> (ProgressBarTitle, typeof (CloudBuild), typeof (CineGameTest), typeof(CineGameLogin));
@@ -584,7 +590,7 @@ namespace CineGame.SDK.Editor {
         }
 
         IEnumerator E_UploadGame () {
-            progressMessage = string.Format ("Uploading {0} to {1} ...", GameType, MarketSlug);
+            progressMessage = string.Format ("Uploading {0} to {1} ...", GameType, MarketName);
             RepaintWindow ();
             yield return null;
 
@@ -606,9 +612,56 @@ namespace CineGame.SDK.Editor {
                     form.AddBinaryData ("linux", File.ReadAllBytes (linuxPath), Path.GetFileName (linuxPath), mimeType);
                 }
                 form.AddField ("gameType", GameType);
-                form.AddField ("market", CineGameLogin.MarketIdsAvailable [MarketIndex]);
 
-                GetLatestCommit ();
+
+                string marketSlug = string.Empty;
+
+                switch (EditorPrefs.GetString("CineGameMarket"))
+                {
+                    case CineGameMarket.Markets.BioSpil_DRF_DK:
+                        marketSlug = "biospil-dk";
+                        break;
+                    case CineGameMarket.Markets.CineGame_Cinemataztic_AE:
+                        marketSlug = "cinemataztic-ae";
+                        break;
+                    case CineGameMarket.Markets.CineGame_ValMorgan_AU:
+                        marketSlug = "cinemataztic-au";
+                        break;
+                    case CineGameMarket.Markets.CineGame_Cinemataztic_EN:
+                        marketSlug = "cinegame-en";
+                        break;
+                    case CineGameMarket.Markets.CineGame_WideEyeMedia_IE:
+                        marketSlug = "wideeyemedia-ie";
+                        break;
+                    case CineGameMarket.Markets.CineGame_ITV_IN:
+                        marketSlug = "ivt-in";
+                        break;
+                    case CineGameMarket.Markets.CineGame_ValMorgan_NZ:
+                        marketSlug = "valmorgan-nz";
+                        break;
+                    case CineGameMarket.Markets.CinesaFun_Cinesa_ES:
+                        marketSlug = "cinesafun-es";
+                        break;
+                    case CineGameMarket.Markets.ForumFun_Cinemataztic_EE:
+                        marketSlug = "forumfun-ee";
+                        break;
+                    case CineGameMarket.Markets.KinoSpill_DRF_NO:
+                        marketSlug = "kinospill-no";
+                        break;
+                    case CineGameMarket.Markets.Leffapeli_Finnkino_FI:
+                        marketSlug = "leffapeli-fi";
+                        break;
+                    case CineGameMarket.Markets.REDyPLAY_Weicher_DE:
+                        marketSlug = "redyplay-de";
+                        break;
+                    default:
+                        Debug.LogError("Missing Market Slug");
+                        break;
+                }
+
+                form.AddField("market", marketSlug);
+
+                GetLatestCommit();
                 if (!string.IsNullOrEmpty (LatestBranch)) {
                     form.AddField ("commit-branch", LatestBranch);
                 }
@@ -635,10 +688,28 @@ namespace CineGame.SDK.Editor {
                 headers ["Authorization"] = string.Format ("Bearer {0}", Configuration.CINEMATAZTIC_ACCESS_TOKEN);
                 //headers["Keep-Alive"] = string.Format ("timeout={0}", UPLOAD_REQUEST_TIMEOUT);
 
+                string url = CloudAPIs[EditorPrefs.GetString("CineGameMarket")];
+
+                string clusterName = EditorPrefs.GetString("CineGameEnvironment");
+                if (!String.IsNullOrEmpty(clusterName))
+                {
+                    switch (clusterName)
+                    {
+                        case "dev":
+                            url = Regex.Replace(url, "(.+?)\\.[^.]+?\\.(cinemataztic\\.com.+)", "$1.dev.$2");
+                            break;
+                        case "staging":
+                            url = Regex.Replace(url, "(.+?)\\.[^.]+?\\.(cinemataztic\\.com.+)", "$1.staging.$2");
+                            break;
+                        default:
+                            break;
+                    }
+                }
+
                 var watch = new System.Diagnostics.Stopwatch ();
                 watch.Start ();
 
-                var request = UnityWebRequest.Post (new Uri (CineGameLogin.CinematazticApiBaseUri, "build-hook/upload"), form);
+                var request = UnityWebRequest.Post (url + "build-hook/upload", form);
                 var enHeaders = headers.GetEnumerator ();
                 while (enHeaders.MoveNext ()) {
                     request.SetRequestHeader (enHeaders.Current.Key, enHeaders.Current.Value);
@@ -769,13 +840,11 @@ namespace CineGame.SDK.Editor {
             if (sdks.Length == 0 || sdks.All (sdk => sdk.Settings == null)) {
                 var assetGuids = AssetDatabase.FindAssets ("t:CineGameSettings");
                 if (assetGuids.Length == 0) {
-                    if (sdks.Length != 0 || CineGameLogin.GameTypesAvailable.Length != 0)
+                    if (sdks.Length != 0)
                     {
-                        return SceneManager.GetActiveScene().name;
-                        /*
                         settings = CreateInstance<CineGameSettings>();
-                        settings.GameType = (sdks.Length != 0) ? sdks [0].GameType : CineGameLogin.GameTypesAvailable [0];
-                        settings.MarketId = (sdks.Length != 0) ? sdks [0].Market : CineGameMarket.Markets.CineGame_Cinemataztic_EN;
+                        settings.GameType = CineGameLogin.GameTypesAvailable [0];
+                        settings.MarketId = CineGameMarket.Markets.CineGame_Cinemataztic_EN;
                         AssetDatabase.CreateAsset(settings, "Assets/CineGameSettings.asset");
                         AssetDatabase.SaveAssets();
                         AssetDatabase.Refresh();
@@ -789,12 +858,11 @@ namespace CineGame.SDK.Editor {
                             Debug.LogError("Exception ignored in FocusProjectWindow: " + ex);
                         }
                         Selection.activeObject = settings;
-                        */
                     }
                     else
                     {
-                        EditorUtility.DisplayDialog(ProgressBarTitle, "ERROR: No gametypes available!", "OK");
-                        Debug.LogError("No GameTypes available to user!");
+                        GameType = SceneManager.GetActiveScene().name;
+                        return GameType;
                     }
                 } else {
                     settings = AssetDatabase.LoadAssetAtPath<CineGameSettings> (AssetDatabase.GUIDToAssetPath (assetGuids [0]));
@@ -840,31 +908,6 @@ namespace CineGame.SDK.Editor {
                         EditorUtility.DisplayDialog ("ERROR: No gametypes available!", msg, "OK");
                     }
                 }
-            }
-
-            if (CineGameLogin.MarketIdsAvailable != null) {
-                var currentMarketId = settings.MarketId;
-                var _mi = Array.IndexOf (CineGameLogin.MarketIdsAvailable, currentMarketId);
-                if (_mi == -1) {
-                    _mi = 0;
-                    var newMarketId = CineGameLogin.MarketIdsAvailable [0];
-                    var so = new SerializedObject (settings);
-                    so.FindProperty ("MarketId").stringValue = newMarketId;
-                    so.ApplyModifiedProperties ();
-                    AssetDatabase.SaveAssets ();
-                    AssetDatabase.Refresh ();
-                    var oldMarketSlug = currentMarketId != null ? CineGameMarket.Names.GetValueOrDefault (currentMarketId, "???") : "(null)";
-                    var newMarketSlug = CineGameMarket.Names.GetValueOrDefault (newMarketId, "???");
-
-                    var msg = $"Game fallback market was set to {oldMarketSlug} but user has no access to this, so we force it to {newMarketSlug}";
-                    Debug.LogWarning (msg);
-                    EditorUtility.DisplayDialog ("CineGameSDK", msg, "OK");
-                }
-                SetMarketIndex (_mi);
-            } else {
-                var msg = "No markets available. Contact admin.";
-                Debug.LogError (msg);
-                EditorUtility.DisplayDialog ("CineGameSDK", msg, "OK");
             }
 
             return GameType;

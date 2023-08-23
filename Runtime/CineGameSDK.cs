@@ -497,7 +497,6 @@ namespace CineGame.SDK {
             Debug.Log("Market: " + Market);
             Debug.Log("Cluster Name: " + clusterName);
             Debug.Log("Player Capacity: " + SmartfoxClient.MaxPlayers);
-            Debug.Log ("Environment: " + (IsStagingEnv ? "staging" : "production"));
 
             var req = new CreateGameRequest {
                 hostName = Hostname,

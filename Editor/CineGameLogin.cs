@@ -9,6 +9,8 @@ using UnityEngine.Networking;
 
 using Newtonsoft.Json.Linq;
 using static CineGame.SDK.CineGameMarket;
+using System.Security.Policy;
+using System.Text.RegularExpressions;
 
 namespace CineGame.SDK.Editor
 {
@@ -79,8 +81,6 @@ namespace CineGame.SDK.Editor
         }
 
         static void OnGameCodeError (int code) {
-            Init ();
-            EditorApplication.ExitPlaymode ();
             if (code == 0 || Application.internetReachability == NetworkReachability.NotReachable) {
                 EditorUtility.DisplayDialog (instance.titleContent.text, "No internet connection.", "OK");
             } else if (code == (int)HttpStatusCode.Unauthorized) {
@@ -91,14 +91,13 @@ namespace CineGame.SDK.Editor
                 }
                 //User needs to manually log in.
                 EditorUtility.DisplayDialog (instance.titleContent.text, "You are not logged in. Please log in with your credentials!", "OK");
+                Init();
             } else if (code == 9933) {
                 EditorUtility.DisplayDialog (instance.titleContent.text, "No connection to Smartfox server.", "OK");
-            } else {
-                EditorUtility.DisplayDialog (instance.titleContent.text, $"{(HttpStatusCode)code} while communicating with backend.", "OK");
             }
         }
 
-        //[MenuItem ("CineGame SDK/Login")]
+        [MenuItem ("CineGame SDK/Login")]
         internal static void Init () {
             if (instance == null) {
                 instance = GetWindow<CineGameLogin> ("CineGame Login", typeof (CloudBuild), typeof (CineGameTest), typeof (CineGameBuild));
@@ -166,7 +165,6 @@ namespace CineGame.SDK.Editor
             }
         }
 
-        [MenuItem ("CineGame SDK/Logout")]
         public static void Logout () {
             //EditorPrefs.DeleteKey("CineGameUserName");
             //Username = string.Empty;
@@ -183,20 +181,6 @@ namespace CineGame.SDK.Editor
         }
 
         static DateTime AccessTokenExpiry = DateTime.MinValue;
-
-        internal static Uri CinematazticApiBaseUri {
-            get {
-                return CurrentMarketSlug switch {
-                    "BioSpil_DRF_DK" => new Uri ("https://biospil.api.player.drf-1.cinemataztic.com/v2/"),
-                    "cinegame-en" => new Uri ("https://cinegame.en.api.player.eu-1.cinemataztic.com/v2/"),
-                    "Leffapeli_Finnkino_FI" => new Uri ("https://finnkino.fi.api.player.eu-1.cinemataztic.com/v2/"),
-                    "itv-in" => new Uri ("https://itv.in.api.player.asia-1.cinemataztic.com/v2/"),
-                    "redyplay-de" => new Uri ("https://weischer.de.api.player.eu-2.cinemataztic.com/v2/"),
-                    "wideeyemedia-ie" => new Uri ("https://wideeyemedia.ie.api.player.eu-2.cinemataztic.com/v2/"),
-                    _ => new Uri ("https://api.staging.cinemataztic.com/v2/"),
-                };
-            }
-        }
 
         public static bool IsSuperAdmin;
         public static string [] MarketIdsAvailable;
@@ -216,8 +200,27 @@ namespace CineGame.SDK.Editor
                     ["email"] = userName,
                     ["password"] = userPassword,
                 };
+
+                string url = AuthAPIs[EditorPrefs.GetString("CineGameMarket")];
+
+                string clusterName = EditorPrefs.GetString("CineGameEnvironment");
+                if (!String.IsNullOrEmpty(clusterName))
+                {
+                    switch (clusterName)
+                    {
+                        case "dev":
+                            url = Regex.Replace(url, "(.+?)\\.[^.]+?\\.(cinemataztic\\.com.+)", "$1.dev.$2");
+                            break;
+                        case "staging":
+                            url = Regex.Replace(url, "(.+?)\\.[^.]+?\\.(cinemataztic\\.com.+)", "$1.staging.$2");
+                            break;
+                        default:
+                            break;
+                    }
+                }
+
                 var request = new UnityWebRequest (
-                                  AuthAPIs[EditorPrefs.GetString("CineGameMarket")],
+                                  url,
                                   "POST",
                                   new DownloadHandlerBuffer (),
                                   new UploadHandlerRaw (System.Text.Encoding.UTF8.GetBytes (jsonReq.ToString ()))

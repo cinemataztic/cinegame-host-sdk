@@ -351,7 +351,7 @@ namespace CineGame.SDK.Editor {
 			return $"{dtLocal:M} {dtLocal:yyyy}";
 		}
 
-		[MenuItem ("CineGame SDK/Cloud Build")]
+		[MenuItem ("CineGame SDK/Cloud Build", false, 3)]
 		public static void Init () {
 			if (instance == null) {
 				instance = GetWindow<CloudBuild> ("Cloud Build", typeof (CineGameLogin), typeof (CineGameTest), typeof (CineGameBuild));

@@ -25,6 +25,7 @@ namespace CineGame.SDK.Editor {
         {
             EditorPrefs.SetString("CineGameEnvironment", "production");
             Debug.Log("CineGame Environment: Production");
+            CineGameLogin.RefreshAccessToken();
         }
 
         [MenuItem("CineGame SDK/Environment/Staging", true)]
@@ -45,6 +46,7 @@ namespace CineGame.SDK.Editor {
         {
             EditorPrefs.SetString("CineGameEnvironment", "staging");
             Debug.Log("CineGame Environment: Staging");
+            CineGameLogin.RefreshAccessToken();
         }
 
         [MenuItem("CineGame SDK/Environment/Development", true)]
@@ -65,6 +67,7 @@ namespace CineGame.SDK.Editor {
         {
             EditorPrefs.SetString("CineGameEnvironment", "dev");
             Debug.Log("CineGame Environment: Development");
+            CineGameLogin.RefreshAccessToken();
         }
     }
 }

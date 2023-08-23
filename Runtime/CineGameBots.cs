@@ -112,8 +112,25 @@ namespace CineGame.SDK {
         }
 
         private void Update () {
-            if (Input.GetKeyDown (KeyCode.P) && (Input.GetKey (KeyCode.LeftShift) || Input.GetKey (KeyCode.RightShift))) {
+
+            if (Input.GetKey(KeyCode.B) && Input.GetKeyDown(KeyCode.Alpha1)) {
                 SpawnBot (spawnImmediately: true);
+            }
+
+            if (Input.GetKey(KeyCode.B) && Input.GetKeyDown(KeyCode.Alpha2))
+            {
+                for (int i = 0; i < 5; i++)
+                {
+                    SpawnBot(spawnImmediately: true);
+                }
+            }
+
+            if (Input.GetKey(KeyCode.B) && Input.GetKeyDown(KeyCode.Alpha3))
+            {
+                for (int i = 0; i < 10; i++)
+                {
+                    SpawnBot(spawnImmediately: true);
+                }
             }
         }
 
