@@ -92,33 +92,33 @@ namespace CineGame.SDK
         {
             { Markets.BioSpil_DRF_DK, "https://biospil.cinegamecore.drf-1.cinemataztic.com/api/" },
             { Markets.CineGame_Cinemataztic_AE, "https://cinegame-ae.cinegamecore.au-1.cinemataztic.com/api/" },
-            { Markets.CineGame_Cinemataztic_EN, "https://cinegame.cinegamecore.eu-1.cinemataztic.com/api/" },
+            { Markets.CineGame_Cinemataztic_EN, "https://cinegame-en.cinegamecore.eu-1.cinemataztic.com/api/" },
             { Markets.CineGame_ITV_IN, "https://cinegame-in.cinegamecore.asia-1.cinemataztic.com/api/" },
             { Markets.CineGame_ValMorgan_AU, "https://cinegame-au.cinegamecore.au-1.cinemataztic.com/api/" },
             { Markets.CineGame_ValMorgan_NZ, "https://cinegame-nz.cinegamecore.au-1.cinemataztic.com/api/" },
             { Markets.CineGame_WideEyeMedia_IE, "https://cinegame-ie.cinegamecore.eu-2.cinemataztic.com/api/" },
-            { Markets.CinesaFun_Cinesa_ES, "https://cinesafun.cinegamecore.eu-2.cinemataztic.com/api/" },
+            { Markets.CinesaFun_Cinesa_ES, "https://cinesafun-es.cinegamecore.eu-2.cinemataztic.com/api/" },
             { Markets.ForumFun_Cinemataztic_EE, "https://forumfun.cinegamecore.eu-1.cinemataztic.com/api/" },
-            { Markets.KinoSpill_DRF_NO, "https://kinospill.cinegamecore.drf-1.cinemataztic.com/api/" },
-            { Markets.Leffapeli_Finnkino_FI, "https://leffapeli.cinegamecore.eu-1.cinemataztic.com/api/" },
-            { Markets.REDyPLAY_Weicher_DE, "https://redyplay.cinegamecore.eu-2.cinemataztic.com/api/" }
+            { Markets.KinoSpill_DRF_NO, "https://kinospill-no.cinegamecore.drf-1.cinemataztic.com/api/" },
+            { Markets.Leffapeli_Finnkino_FI, "https://finnkino-fi.cinegamecore.eu-1.cinemataztic.com/api/" },
+            { Markets.REDyPLAY_Weicher_DE, "https://redyplay-de.cinegamecore.eu-2.cinemataztic.com/api/" }
         };
 
         public static string GetAPI()
         {
 
             string url = APIs[CineGameSDK.Market];
-            string clusterName;
+            string cineGameEnvironment;
 
 #if UNITY_EDITOR
-            clusterName = EditorPrefs.GetString("CineGameEnvironment");
+            cineGameEnvironment = EditorPrefs.GetString("CineGameEnvironment");
 #else
-            clusterName = Configuration.CLUSTER_NAME;
+            cineGameEnvironment = Configuration.CLUSTER_NAME;
 #endif
 
-            if (!String.IsNullOrEmpty(clusterName))
+            if (!String.IsNullOrEmpty(cineGameEnvironment))
             {
-                switch (clusterName)
+                switch (cineGameEnvironment)
                 {
                     case "dev":
                         url = Regex.Replace(url, "(.+?)\\.[^.]+?\\.(cinemataztic\\.com.+)", "$1.dev.$2");

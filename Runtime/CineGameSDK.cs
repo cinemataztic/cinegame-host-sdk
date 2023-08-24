@@ -29,6 +29,7 @@ namespace CineGame.SDK {
 
         public static string GameID;
         public static string Market;
+        public static string CineGameEnvironment;
 
         private static string GameCode;
 
@@ -392,7 +393,7 @@ namespace CineGame.SDK {
                SystemInfo.operatingSystem
             );
 
-            CineGameLogger.GameType = GameID;
+            CineGameLogger.GameID = GameID;
 
             if (Screen.currentResolution.refreshRate < 25)
             {
@@ -485,17 +486,15 @@ namespace CineGame.SDK {
 
 		internal void RequestGameCode () {
 
-            string clusterName;
-
 #if UNITY_EDITOR
-            clusterName = EditorPrefs.GetString("CineGameEnvironment");
+            CineGameEnvironment = EditorPrefs.GetString("CineGameEnvironment");
 #else
-            clusterName = Configuration.CLUSTER_NAME;
+            CineGameEnvironment = Configuration.CLUSTER_NAME;
 #endif
 
             Debug.Log("Game: " + GameID);
             Debug.Log("Market: " + Market);
-            Debug.Log("Cluster Name: " + clusterName);
+            Debug.Log("Environment: " + CineGameEnvironment);
             Debug.Log("Player Capacity: " + SmartfoxClient.MaxPlayers);
 
             var req = new CreateGameRequest {
@@ -646,9 +645,7 @@ namespace CineGame.SDK {
 
                 case "wifiCode":
                     s = (string)en.Current.Value;
-
                     wifiPassword = s;
-
                     Debug.LogFormat ("Wifi password set to {0}", s);
                     break;
 
@@ -704,7 +701,10 @@ namespace CineGame.SDK {
                 }
             }
 
-            OnWiFiAvailable?.Invoke(wifiName, wifiPassword);
+            if(wifiName != null || wifiPassword != null)
+            {
+                OnWiFiAvailable?.Invoke(wifiName, wifiPassword);
+            }
         }
 
         public static void EndGame (List<User> users, List<User> winners = null, List<MiniGame> miniGames = null) {
@@ -881,7 +881,6 @@ namespace CineGame.SDK {
             }
             SmartfoxClient.Disconnect ();
             PlayerPrefs.DeleteAll ();
-            CineGameLogger.OnApplicationQuit ();
         }
 
     }

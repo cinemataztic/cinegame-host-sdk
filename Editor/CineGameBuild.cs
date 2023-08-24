@@ -690,10 +690,10 @@ namespace CineGame.SDK.Editor {
 
                 string url = CloudAPIs[EditorPrefs.GetString("CineGameMarket")];
 
-                string clusterName = EditorPrefs.GetString("CineGameEnvironment");
-                if (!String.IsNullOrEmpty(clusterName))
+                string cineGameEnvironment = EditorPrefs.GetString("CineGameEnvironment");
+                if (!String.IsNullOrEmpty(cineGameEnvironment))
                 {
-                    switch (clusterName)
+                    switch (cineGameEnvironment)
                     {
                         case "dev":
                             url = Regex.Replace(url, "(.+?)\\.[^.]+?\\.(cinemataztic\\.com.+)", "$1.dev.$2");
