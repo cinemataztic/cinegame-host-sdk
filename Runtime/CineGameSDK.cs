@@ -296,7 +296,7 @@ namespace CineGame.SDK {
 
             if (Settings != null)
             {
-                GameID = Settings.GameType;
+                GameID = Settings.GameID;
             }
 
 #if UNITY_EDITOR
@@ -584,7 +584,7 @@ namespace CineGame.SDK {
                     }
                 }
                 if (uri == null) {
-                    Debug.LogError ($"GameType {GameID} does not support avatarID={avatarID}");
+                    Debug.LogError ($"GameID {GameID} does not support avatarID={avatarID}");
                     return;
                 }
             }

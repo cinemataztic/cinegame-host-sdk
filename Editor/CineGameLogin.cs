@@ -74,7 +74,7 @@ namespace CineGame.SDK.Editor
                 return;
             }
             if (RefreshAccessToken ()) {
-                CineGameBuild.GetGameTypeFromSceneOrProject ();
+                CineGameBuild.GetGameIDFromSceneOrProject ();
             } else {
                 Logout ();
             }
@@ -177,7 +177,7 @@ namespace CineGame.SDK.Editor
             StayLoggedIn = false;
             RemoveAccessToken ();
             MarketIdsAvailable = null;
-            GameTypesAvailable = null;
+            GameIDsAvailable = null;
         }
 
         static DateTime AccessTokenExpiry = DateTime.MinValue;
@@ -186,11 +186,11 @@ namespace CineGame.SDK.Editor
         public static string [] MarketIdsAvailable;
         public static string [] MarketSlugsAvailable;
         public static string [] AppNamesAvailable;
-        public static string [] GameTypesAvailable;
+        public static string [] GameIDsAvailable;
 
         public static class ControlNames {
             public const string Password = "Password";
-            public const string GameType = "GameType";
+            public const string GameID = "GameID";
         }
 
         public static bool GetAccessToken (string userName, string userPassword) {
@@ -271,7 +271,7 @@ namespace CineGame.SDK.Editor
                     IsSuperAdmin = roles.Contains ("super-admin");
 
                     //TODO there's a security issue here because login is across markets, but game-access list should be per market.
-                    GameTypesAvailable = d.ContainsKey ("game-access") ? (d ["game-access"] as JArray).Select (s => (string)s).ToArray () : new string [0];
+                    GameIDsAvailable = d.ContainsKey ("game-access") ? (d ["game-access"] as JArray).Select (s => (string)s).ToArray () : new string [0];
 
                     EditorPrefs.SetString ("CineGameUserName_" + CurrentMarketSlug, userName);
 
@@ -283,7 +283,7 @@ namespace CineGame.SDK.Editor
                     EditorPrefs.SetString ("CGSP", cgspB64);
                     EditorPrefs.SetString ("CGSP_" + CurrentMarketSlug, cgspB64);
 
-                    CineGameBuild.GetGameTypeFromSceneOrProject ();
+                    CineGameBuild.GetGameIDFromSceneOrProject ();
                     return true;
                 } catch (Exception e) {
                     Debug.LogErrorFormat ("Exception while parsing JSON {0}: {1}", request.downloadHandler.text, e.ToString ());

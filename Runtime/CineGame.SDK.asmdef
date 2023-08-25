@@ -1,5 +1,6 @@
 {
-    "name": "com.cinegamesdk.host",
+    "name": "CineGame.SDK",
+    "rootNamespace": "",
     "references": [
         "Unity.TextMeshPro"
     ],

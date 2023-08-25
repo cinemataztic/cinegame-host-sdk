@@ -984,8 +984,8 @@ namespace CineGame.SDK.Editor {
 		}
 
 		IEnumerator E_Download (UcbBuild build) {
-			var gameType = GetGameTypeForBuild (build);
-			var path = CineGameBuild.GetOutputPath (gameType, BuildPlatformTargetMap [build.platform]);
+			var gameID = GetGameIDForBuild (build);
+			var path = CineGameBuild.GetOutputPath (gameID, BuildPlatformTargetMap [build.platform]);
 			using (var request = UnityWebRequest.Get (build.links.download_primary.href)) {
 				//No auth header needed
 				request.downloadHandler = new DownloadHandlerFile (path);
@@ -1009,7 +1009,7 @@ namespace CineGame.SDK.Editor {
 					GetCloudBuildTargets ();
 				} else {
 					CineGameBuild.Init ();
-					CineGameBuild.GameType = gameType;
+					CineGameBuild.GameID = gameID;
 				}
 			}
 		}
@@ -1022,8 +1022,8 @@ namespace CineGame.SDK.Editor {
 		}
 
 		IEnumerator E_Install (UcbBuild build) {
-			var gameType = GetGameTypeForBuild (build);
-			var path = CineGameBuild.GetOutputPath (gameType, BuildPlatformTargetMap [build.platform]);
+			var gameID = GetGameIDForBuild (build);
+			var path = CineGameBuild.GetOutputPath (gameID, BuildPlatformTargetMap [build.platform]);
 			if (!File.Exists (path)) {
 				yield return StartCoroutine (E_Download (build));
 				if (!File.Exists (path)) {
@@ -1065,8 +1065,7 @@ namespace CineGame.SDK.Editor {
 			}
 		}
 
-		static string GetGameTypeForBuild (UcbBuild build) {
-			//return CineGameBuild.GameType;
+		static string GetGameIDForBuild (UcbBuild build) {
 			return build.buildTargetName.Split (' ') [0];
 		}
 

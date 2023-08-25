@@ -40,7 +40,7 @@ namespace CineGame.SDK.Editor {
         static string resultMessage = string.Empty;
         //contains result description from last scene build+upload
 
-        internal static string GameType;
+        internal static string GameID;
 
         /// <summary>
 		/// Path to certificate for signing Windows builds
@@ -57,8 +57,7 @@ namespace CineGame.SDK.Editor {
         static string MarketEnvironment;
         static string MarketName;
 
-        static int MarketIndex;
-        static int GameTypeIndex;
+        static int GameIDIndex;
 
         static string LatestCommit;
         static string LatestBranch;
@@ -160,7 +159,7 @@ namespace CineGame.SDK.Editor {
 
             EditorGUILayout.LabelField("Environment: ", MarketEnvironment);
             EditorGUILayout.LabelField("Market: ", MarketName);
-            EditorGUILayout.LabelField("Game ID: ", GameType);
+            EditorGUILayout.LabelField("Game ID: ", GameID);
 
             if (!string.IsNullOrEmpty (LatestCommit)) {
                 EditorGUILayout.Space ();
@@ -243,15 +242,15 @@ namespace CineGame.SDK.Editor {
                     EditorGUILayout.Space ();
                 }
 
-                if (GUILayout.Button ("Build " + GameType + " for " + (BuildOnlyForLinux ? "Linux" : "all platforms"))) {
+                if (GUILayout.Button ("Build " + GameID + " for " + (BuildOnlyForLinux ? "Linux" : "all platforms"))) {
                     OnClickBuild ();
                 }
 
-                var macPath = GetOutputPath(GameType, BuildTarget.StandaloneOSX);
-                var winPath = GetOutputPath(GameType, BuildTarget.StandaloneWindows);
-                var linuxPath = GetOutputPath(GameType, BuildTarget.StandaloneLinux64);
+                var macPath = GetOutputPath(GameID, BuildTarget.StandaloneOSX);
+                var winPath = GetOutputPath(GameID, BuildTarget.StandaloneWindows);
+                var linuxPath = GetOutputPath(GameID, BuildTarget.StandaloneLinux64);
 
-                if ((File.Exists(macPath) || File.Exists(winPath) || File.Exists(linuxPath)) && GUILayout.Button("Upload " + GameType + " for " + MarketName))
+                if ((File.Exists(macPath) || File.Exists(winPath) || File.Exists(linuxPath)) && GUILayout.Button("Upload " + GameID + " for " + MarketName))
                 {
                     //Any of the three builds exist and user has clicked on Upload button
                     OnClickUpload();
@@ -294,7 +293,7 @@ namespace CineGame.SDK.Editor {
 
         void OnSceneOpened (Scene scene, OpenSceneMode mode) {
             if (CineGameLogin.IsLoggedIn && !IsBuilding && !EditorApplication.isPlayingOrWillChangePlaymode) {
-                GetGameTypeFromSceneOrProject ();
+                GetGameIDFromSceneOrProject ();
                 //RepaintWindow ();
             }
         }
@@ -323,10 +322,10 @@ namespace CineGame.SDK.Editor {
 
             if (UcbAvailable && BuildOnUcb) {
                 CloudBuild.Init ();
-                CloudBuild.CreateBuildTarget (CloudBuild.UcbPlatform.standalonelinux64, appName: GameType, branchName: LatestBranch, subdirectory: ScmSubdirectory, autoBuild: true);
+                CloudBuild.CreateBuildTarget (CloudBuild.UcbPlatform.standalonelinux64, appName: GameID, branchName: LatestBranch, subdirectory: ScmSubdirectory, autoBuild: true);
                 if (!BuildOnlyForLinux) {
-                    CloudBuild.CreateBuildTarget (CloudBuild.UcbPlatform.standaloneosxuniversal, appName: GameType, branchName: LatestBranch, subdirectory: ScmSubdirectory, autoBuild: true);
-                    CloudBuild.CreateBuildTarget (CloudBuild.UcbPlatform.standalonewindows64,  appName: GameType, branchName: LatestBranch, subdirectory: ScmSubdirectory, autoBuild: true);
+                    CloudBuild.CreateBuildTarget (CloudBuild.UcbPlatform.standaloneosxuniversal, appName: GameID, branchName: LatestBranch, subdirectory: ScmSubdirectory, autoBuild: true);
+                    CloudBuild.CreateBuildTarget (CloudBuild.UcbPlatform.standalonewindows64,  appName: GameID, branchName: LatestBranch, subdirectory: ScmSubdirectory, autoBuild: true);
                 }
                 return;
             }
@@ -354,9 +353,9 @@ namespace CineGame.SDK.Editor {
             //    EditorPrefs.SetString ("CinemaBuildKeychainSearchPattern", KeychainSearchPattern);
             //}
 
-            if (string.IsNullOrEmpty (GameType)) {
-                EditorUtility.DisplayDialog (ProgressBarTitle, "No GameType set! Did you add a SystemController component to the scene?", "OK");
-                Debug.LogError ("No GameType set. Game will not be built.");
+            if (string.IsNullOrEmpty (GameID)) {
+                EditorUtility.DisplayDialog (ProgressBarTitle, "No GameID set! Did you add a SystemController component to the scene?", "OK");
+                Debug.LogError ("No GameID set. Game will not be built.");
                 return;
             }
 
@@ -371,7 +370,7 @@ namespace CineGame.SDK.Editor {
                 return;
             }
 
-            if (!EditorUtility.DisplayDialog (ProgressBarTitle, "Are you sure you want to upload " + GameType + " to " + MarketName + "?", "OK", "Cancel")) {
+            if (!EditorUtility.DisplayDialog (ProgressBarTitle, "Are you sure you want to upload " + GameID + " to " + MarketName + "?", "OK", "Cancel")) {
                 return;
             }
 
@@ -415,7 +414,7 @@ namespace CineGame.SDK.Editor {
 
             titleContent = new GUIContent ("CineGame Build", IconTexture);
 
-            GetGameTypeFromSceneOrProject ();
+            GetGameIDFromSceneOrProject ();
 
             EditorSceneManager.sceneOpened -= OnSceneOpened;
             EditorSceneManager.sceneOpened += OnSceneOpened;
@@ -476,7 +475,7 @@ namespace CineGame.SDK.Editor {
                     } catch (Exception) {
                     }
 
-                    var outPath = string.Format ("{0}/{1}_{2}", tmpDir, GameType, platformName);
+                    var outPath = string.Format ("{0}/{1}_{2}", tmpDir, GameID, platformName);
                     Debug.Log ("Temp build path: " + outPath);
 
                     //Make sure GUI is updated before starting build
@@ -542,7 +541,7 @@ namespace CineGame.SDK.Editor {
 
                         var spct = buildProgress;
                         var fakepct = 0f;
-                        if (!CompressBuild (tmpDir, GetOutputPath (GameType, buildTarget), delegate (string sMessage, float percent) {
+                        if (!CompressBuild (tmpDir, GetOutputPath (GameID, buildTarget), delegate (string sMessage, float percent) {
                             percent = fakepct;
                             fakepct += (1f - fakepct) * .01f;
                             if (EditorUtility.DisplayCancelableProgressBar (ProgressBarTitle, sMessage, percent)) {
@@ -574,7 +573,7 @@ namespace CineGame.SDK.Editor {
                 Debug.LogError (resultMessage);
             } else {
                 IsBuilding = false;
-                resultMessage = string.Format ("Build {0} succeeded in {1:##.000} seconds.", GameType, (float)watch.ElapsedMilliseconds / 1000f);
+                resultMessage = string.Format ("Build {0} succeeded in {1:##.000} seconds.", GameID, (float)watch.ElapsedMilliseconds / 1000f);
                 Debug.Log (resultMessage);
                 if (Application.platform == RuntimePlatform.OSXEditor) {
                     ExtractBuildReportFromEditorLog ();
@@ -590,16 +589,16 @@ namespace CineGame.SDK.Editor {
         }
 
         IEnumerator E_UploadGame () {
-            progressMessage = string.Format ("Uploading {0} to {1} ...", GameType, MarketName);
+            progressMessage = string.Format ("Uploading {0} to {1} ...", GameID, MarketName);
             RepaintWindow ();
             yield return null;
 
             //Try uploading all three builds until we succeed
             var cancelUpload = false;
             while (!cancelUpload) {
-                var macPath = GetOutputPath (GameType, BuildTarget.StandaloneOSX);
-                var winPath = GetOutputPath (GameType, BuildTarget.StandaloneWindows);
-                var linuxPath = GetOutputPath (GameType, BuildTarget.StandaloneLinux64);
+                var macPath = GetOutputPath (GameID, BuildTarget.StandaloneOSX);
+                var winPath = GetOutputPath (GameID, BuildTarget.StandaloneWindows);
+                var linuxPath = GetOutputPath (GameID, BuildTarget.StandaloneLinux64);
                 var mimeType = System.Net.Mime.MediaTypeNames.Application.Zip;
                 var form = new WWWForm ();
                 if (File.Exists (macPath)) {
@@ -611,7 +610,7 @@ namespace CineGame.SDK.Editor {
                 if (File.Exists (linuxPath)) {
                     form.AddBinaryData ("linux", File.ReadAllBytes (linuxPath), Path.GetFileName (linuxPath), mimeType);
                 }
-                form.AddField ("gameType", GameType);
+                form.AddField ("gameType", GameID);
 
 
                 string marketSlug = string.Empty;
@@ -829,10 +828,10 @@ namespace CineGame.SDK.Editor {
 
 
         /// <summary>
-        /// Determine the GameType from either currently loaded levels or the project.
-		/// If no CineGameSettings are found, one is created. If different GameTypes are referenced in loaded scenes, error is displayed
+        /// Determine the GameID from either currently loaded levels or the project.
+		/// If no CineGameSettings are found, one is created. If different GameIDs are referenced in loaded scenes, error is displayed
         /// </summary>
-        internal static string GetGameTypeFromSceneOrProject () {
+        internal static string GetGameIDFromSceneOrProject () {
             if (SceneManager.sceneCount == 0)
                 return null;
             var sdks = FindObjectsOfType<CineGameSDK> ();
@@ -843,7 +842,7 @@ namespace CineGame.SDK.Editor {
                     if (sdks.Length != 0)
                     {
                         settings = CreateInstance<CineGameSettings>();
-                        settings.GameType = CineGameLogin.GameTypesAvailable [0];
+                        settings.GameID = CineGameLogin.GameIDsAvailable [0];
                         settings.MarketId = CineGameMarket.Markets.CineGame_Cinemataztic_EN;
                         AssetDatabase.CreateAsset(settings, "Assets/CineGameSettings.asset");
                         AssetDatabase.SaveAssets();
@@ -861,8 +860,8 @@ namespace CineGame.SDK.Editor {
                     }
                     else
                     {
-                        GameType = SceneManager.GetActiveScene().name;
-                        return GameType;
+                        GameID = SceneManager.GetActiveScene().name;
+                        return GameID;
                     }
                 } else {
                     settings = AssetDatabase.LoadAssetAtPath<CineGameSettings> (AssetDatabase.GUIDToAssetPath (assetGuids [0]));
@@ -876,41 +875,41 @@ namespace CineGame.SDK.Editor {
                 settings = sdks.First (sdk => sdk.Settings != null).Settings;
                 var diff_found = false;
                 foreach (var sdk in sdks) {
-                    if (sdk.Settings != null && sdk.Settings.GameType != settings.GameType) {
+                    if (sdk.Settings != null && sdk.Settings.GameID != settings.GameID) {
                         diff_found = true;
                         break;
                     }
                 }
                 if (diff_found) {
-                    Debug.LogError ("Multiple gametypes loaded at once: " + string.Join (",", sdks.Where (sdk => sdk.Settings != null).Select (sdk => sdk.Settings.GameType)));
-                    EditorUtility.DisplayDialog ("CineGameSDK", "You cannot have multiple gametypes loaded at once.", "OK");
+                    Debug.LogError ("Multiple game IDs loaded at once: " + string.Join (",", sdks.Where (sdk => sdk.Settings != null).Select (sdk => sdk.Settings.GameID)));
+                    EditorUtility.DisplayDialog ("CineGameSDK", "You cannot have multiple game ids loaded at once.", "OK");
                 }
             }
-            GameType = settings.GameType;
+            GameID = settings.GameID;
 
-            if (!CineGameLogin.IsSuperAdmin && CineGameLogin.GameTypesAvailable != null) {
-                //Non-super-admins are only allowed a subset of gametypes to choose from
-                GameTypeIndex = Array.IndexOf (CineGameLogin.GameTypesAvailable, GameType);
-                if (GameTypeIndex == -1) {
-                    GameTypeIndex = 0;
-                    string newGameType = "N/A";
-                    if (CineGameLogin.GameTypesAvailable.Length > 0) {
-                        newGameType = CineGameLogin.GameTypesAvailable [GameTypeIndex];
-                        EditorUtility.DisplayDialog ("Unavailable gametype", $"GameType was set to {GameType} but user has no access to this, so we force it to {newGameType}", "OK");
+            if (!CineGameLogin.IsSuperAdmin && CineGameLogin.GameIDsAvailable != null) {
+                //Non-super-admins are only allowed a subset of GameIDs to choose from
+                GameIDIndex = Array.IndexOf (CineGameLogin.GameIDsAvailable, GameID);
+                if (GameIDIndex == -1) {
+                    GameIDIndex = 0;
+                    string newGameID = "N/A";
+                    if (CineGameLogin.GameIDsAvailable.Length > 0) {
+                        newGameID = CineGameLogin.GameIDsAvailable [GameIDIndex];
+                        EditorUtility.DisplayDialog ("Unavailable GameID", $"GameID was set to {GameID} but user has no access to this, so we force it to {newGameID}", "OK");
                         var so = new SerializedObject (settings);
-                        so.FindProperty ("GameType").stringValue = newGameType;
+                        so.FindProperty ("GameID").stringValue = newGameID;
                         so.ApplyModifiedProperties ();
                         AssetDatabase.SaveAssets ();
                         AssetDatabase.Refresh ();
                     } else {
-                        var msg = $"GameType was set to {GameType} but user has no gametypes available.";
+                        var msg = $"GameID was set to {GameID} but user has no GameIDs available.";
                         Debug.LogError (msg);
-                        EditorUtility.DisplayDialog ("ERROR: No gametypes available!", msg, "OK");
+                        EditorUtility.DisplayDialog ("ERROR: No GameIDs available!", msg, "OK");
                     }
                 }
             }
 
-            return GameType;
+            return GameID;
         }
 
         //[MenuItem("CinemaTaztic/Pack Textures")]
@@ -921,9 +920,9 @@ namespace CineGame.SDK.Editor {
                 var ap = AssetDatabase.GetAssetPath (tex);
                 if (!string.IsNullOrEmpty (ap)) {
                     var ti = (TextureImporter)AssetImporter.GetAtPath (ap);
-                    if (ti != null && ti.spritePackingTag != GameType) {
+                    if (ti != null && ti.spritePackingTag != GameID) {
                         Debug.LogFormat ("Changing packing tag of sprite texture {0} ...", tex.name);
-                        ti.spritePackingTag = GameType;
+                        ti.spritePackingTag = GameID;
                     }
                 }
             }
@@ -998,7 +997,7 @@ namespace CineGame.SDK.Editor {
 
                     //Filter out assets taking up less than 0.0% build size
                     var sb = new System.Text.StringBuilder (buildReport.Length);
-                    sb.AppendFormat ("Build report for {0}:\n{1}\n", GameType, DateTime.Now.ToString ("f"));
+                    sb.AppendFormat ("Build report for {0}:\n{1}\n", GameID, DateTime.Now.ToString ("f"));
                     var reader = new StringReader (buildReport);
                     string line;
                     if (reader != null) {
@@ -1084,8 +1083,8 @@ namespace CineGame.SDK.Editor {
 
         const string outputPathFormat = "../Builds/{0}_{1}.zip";
 
-        internal static string GetOutputPath (string gameType, BuildTarget target) {
-            return string.Format (outputPathFormat, gameType, target);
+        internal static string GetOutputPath (string gameID, BuildTarget target) {
+            return string.Format (outputPathFormat, gameID, target);
         }
     }
 

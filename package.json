@@ -1,7 +1,7 @@
 {
-    "name": "com.cinegamesdk.host",
-    "version": "0.1.1",
-    "displayName": "CineGame Host SDK",
+    "name": "com.cinemataztic.cinegame.sdk",
+    "version": "0.2.0",
+    "displayName": "CineGame SDK",
     "description": "This is the SDK for creating hosts for CineGame",
     "unity": "2021.3",
     "documentationUrl": "https://github.com/cinemataztic/cinegame-sdk-samples",
@@ -18,7 +18,7 @@
     ],
     "author": {
         "name": "Cinemataztic",
-        "email": "ae@cinemataztic.com",
+        "email": "game@cinemataztic.com",
         "url": "https://cinega.me"
     }
 }

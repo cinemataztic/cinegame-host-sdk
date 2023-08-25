@@ -1,5 +1,5 @@
 {
-    "name": "com.cinegamesdk.hosteditor",
+    "name": "CineGame.SDK.Editor",
     "rootNamespace": "",
     "references": [
         "GUID:615c136d1462046fb967099cc5c02af3",

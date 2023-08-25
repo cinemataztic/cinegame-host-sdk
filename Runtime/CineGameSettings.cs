@@ -4,7 +4,7 @@ namespace CineGame.SDK {
 
 	[CreateAssetMenu ()]
 	public class CineGameSettings : ScriptableObject {
-		public string GameType;
+		public string GameID;
 		/// <summary>
 		/// Default market used in WebGL builds
 		/// </summary>

@@ -4,8 +4,8 @@ using System.Runtime.CompilerServices;
 // Information about this assembly is defined by the following attributes. 
 // Change them to the values specific to your project.
 
-[assembly: AssemblyTitle ("com.cinegamesdk.hosteditor")]
-[assembly: AssemblyDescription ("UnityEditor scripts for editing, building and uploading host cinema games")]
+[assembly: AssemblyTitle ("CineGame.SDK.Editor")]
+[assembly: AssemblyDescription ("UnityEditor scripts for editing, building and uploading CineGames")]
 [assembly: AssemblyConfiguration ("")]
 [assembly: AssemblyCompany ("Cinemataztic")]
 [assembly: AssemblyProduct ("CineGameSDK")]

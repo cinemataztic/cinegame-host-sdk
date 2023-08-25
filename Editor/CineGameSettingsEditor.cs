@@ -9,11 +9,11 @@ namespace CineGame.SDK.Editor
 	[CustomEditor (typeof (CineGameSettings))]
 	public class CineGameSettingsEditor : UnityEditor.Editor {
 
-		SerializedProperty GameTypeProperty;
+		SerializedProperty GameIDProperty;
 		SerializedProperty MarketIdProperty;
 		SerializedProperty LoopProperty;
 		int marketIndex;
-		int gameTypeIndex;
+		int gameIDIndex;
 
 		public override void OnInspectorGUI () {
 			// Update the serializedObject - always do this in the beginning of OnInspectorGUI.
@@ -21,8 +21,8 @@ namespace CineGame.SDK.Editor
 
 			var isLoggedIn = CineGameLogin.IsLoggedIn;
 
-			if (GameTypeProperty == null) {
-				GameTypeProperty = serializedObject.FindProperty ("GameType");
+			if (GameIDProperty == null) {
+				GameIDProperty = serializedObject.FindProperty ("GameID");
 				MarketIdProperty = serializedObject.FindProperty ("MarketId");
 				LoopProperty = serializedObject.FindProperty ("Loop");
 
@@ -32,30 +32,30 @@ namespace CineGame.SDK.Editor
 						SetMarketIndex (0);
 					}
 					if (!CineGameLogin.IsSuperAdmin) {
-						gameTypeIndex = Array.IndexOf (CineGameLogin.GameTypesAvailable, GameTypeProperty.stringValue);
-						if (gameTypeIndex == -1) {
-							SetGameTypeIndex (0);
+						gameIDIndex = Array.IndexOf (CineGameLogin.GameIDsAvailable, GameIDProperty.stringValue);
+						if (gameIDIndex == -1) {
+							SetGameIDIndex (0);
 						}
 					}
 				}
 			}
 
-			using (new EditorGUI.DisabledScope (!isLoggedIn || (!CineGameLogin.IsSuperAdmin && CineGameLogin.GameTypesAvailable.Length == 0))) {
+			using (new EditorGUI.DisabledScope (!isLoggedIn || (!CineGameLogin.IsSuperAdmin && CineGameLogin.GameIDsAvailable.Length == 0))) {
 				EditorGUILayout.BeginHorizontal ();
-				EditorGUILayout.PrefixLabel ("GameType:");
+				EditorGUILayout.PrefixLabel ("GameID:");
 				if (isLoggedIn) {
 					if (CineGameLogin.IsSuperAdmin) {
-						GameTypeProperty.stringValue = EditorGUILayout.TextField (GameTypeProperty.stringValue);
-					} else if (CineGameLogin.GameTypesAvailable.Length != 0) {
-						var _gti = EditorGUILayout.Popup (gameTypeIndex, CineGameLogin.GameTypesAvailable);
-						if (_gti != gameTypeIndex) {
-							SetGameTypeIndex (_gti);
+						GameIDProperty.stringValue = EditorGUILayout.TextField (GameIDProperty.stringValue);
+					} else if (CineGameLogin.GameIDsAvailable.Length != 0) {
+						var _gti = EditorGUILayout.Popup (gameIDIndex, CineGameLogin.GameIDsAvailable);
+						if (_gti != gameIDIndex) {
+							SetGameIDIndex (_gti);
 						}
 					} else {
 						EditorGUILayout.LabelField ("N/A");
 					}
 				} else {
-					EditorGUILayout.LabelField (GameTypeProperty.stringValue);
+					EditorGUILayout.LabelField (GameIDProperty.stringValue);
 				}
 				EditorGUILayout.EndHorizontal ();
 			}
@@ -78,7 +78,7 @@ namespace CineGame.SDK.Editor
 				EditorGUILayout.LabelField ("Please log in to edit values");
 			}
 			if (CineGameLogin.IsSuperAdmin) {
-				EditorGUILayout.LabelField ("Super admin: Free to edit the GameType");
+				EditorGUILayout.LabelField ("Super admin: Free to edit the GameID");
 			}
 
 			// Apply changes to the serializedObject - always do this in the end of OnInspectorGUI.
@@ -90,9 +90,9 @@ namespace CineGame.SDK.Editor
 			MarketIdProperty.stringValue = CineGameLogin.MarketIdsAvailable [marketIndex];
 		}
 
-		void SetGameTypeIndex (int i) {
-			gameTypeIndex = i;
-			GameTypeProperty.stringValue = CineGameLogin.GameTypesAvailable [gameTypeIndex];
+		void SetGameIDIndex (int i) {
+			gameIDIndex = i;
+			GameIDProperty.stringValue = CineGameLogin.GameIDsAvailable [gameIDIndex];
 		}
 	}
 

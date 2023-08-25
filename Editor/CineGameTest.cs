@@ -99,7 +99,7 @@ namespace CineGame.SDK.Editor {
 			}
 			EditorGUILayout.EndHorizontal ();
 
-			EditorGUILayout.LabelField ("GameType:", CineGameBuild.GameType);
+			EditorGUILayout.LabelField ("GameID:", CineGameBuild.GameID);
 
 			if (!IsBuilding) {
 				bool isDebug = (buildOptions & BuildOptions.Development) != 0;
@@ -108,7 +108,7 @@ namespace CineGame.SDK.Editor {
 				if (isDebug) {
 					buildOptions |= BuildOptions.Development | BuildOptions.AllowDebugging;
 				}
-				if (GUILayout.Button ("Build And Test " + CineGameBuild.GameType)) {
+				if (GUILayout.Button ("Build And Test " + CineGameBuild.GameID)) {
 					OnClickBuildAndUpload ();
 					//GUIUtility.ExitGUI ();
 				}
@@ -220,14 +220,14 @@ namespace CineGame.SDK.Editor {
 			bool success = true;
 
 			try {
-				progressMessage = string.Format ("Building {0} for Linux64 ...", CineGameBuild.GameType);
+				progressMessage = string.Format ("Building {0} for Linux64 ...", CineGameBuild.GameID);
 
 				//Make sure target dir is empty
 				try {
 					Directory.Delete (tmpDir, true);
 				} catch (Exception) { }
 
-				var targetFile = string.Format ("{0}/{1}_Linux64", tmpDir, CineGameBuild.GameType);
+				var targetFile = string.Format ("{0}/{1}_Linux64", tmpDir, CineGameBuild.GameID);
 				Debug.LogFormat ("Build output: {0}", targetFile);
 
 				//Build player
@@ -354,7 +354,7 @@ namespace CineGame.SDK.Editor {
 		}
 
 		static bool UploadBuild (string sInDir, ExternalProcess.ProgressDelegate progress = null) {
-			var linuxSafeFilename = GetLinuxSafeFilename (CineGameBuild.GameType);
+			var linuxSafeFilename = GetLinuxSafeFilename (CineGameBuild.GameID);
 			var identityOption = GetIdentityOption ();
 			EditorUtility.DisplayProgressBar (instance.titleContent.text, "Uploading build to test machine ...", .5f);
 			ExternalProcess.Run ("ssh", $"{identityOption} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no player@{IP} \"rm -rf /home/player/test_games/{linuxSafeFilename}\"");
@@ -375,7 +375,7 @@ namespace CineGame.SDK.Editor {
 		}
 
 		static void TestBuild () {
-			var linuxSafeFilename = GetLinuxSafeFilename (CineGameBuild.GameType);
+			var linuxSafeFilename = GetLinuxSafeFilename (CineGameBuild.GameID);
 			var remoteCmd = $"sh -c 'pkill UnityGame; rm -f /home/player/.config/unity3d/{PlayerSettings.companyName}/{PlayerSettings.productName}/Player.log; cd /home/player/test_games/{linuxSafeFilename}; export DISPLAY=:0; ln -fs *.x86_64 UnityGame; nohup ./UnityGame > /dev/null 2>&1 &'"; ;
 			EditorUtility.DisplayProgressBar (instance.titleContent.text, "Running game on test machine ...", .5f);
 			ExternalProcess.Run ("ssh", $"{GetIdentityOption ()} -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no player@{IP} \"{remoteCmd}\"");

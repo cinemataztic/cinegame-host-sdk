@@ -28,7 +28,7 @@ namespace CineGame.SDK {
 		/// </summary>
         static float LastKeepAliveTime = 0f;
 
-        static string GameServer, GameZone, GameType, GameCode;
+        static string GameServer, GameZone, GameID, GameCode;
         static bool WebglSecure = false;
 
         /// <summary>
@@ -88,11 +88,11 @@ namespace CineGame.SDK {
         }
 
 
-        internal static void ConnectAndCreateGame (string gameServer, string gameCode, string gameZone, string gameType, bool webGlSecure = false) {
+        internal static void ConnectAndCreateGame (string gameServer, string gameCode, string gameZone, string gameID, bool webGlSecure = false) {
             GameServer = gameServer;
             GameCode = gameCode;
             GameZone = gameZone;
-            GameType = gameType;
+            GameID = gameID;
             WebglSecure = webGlSecure;
             if (sfs != null && sfs.IsConnected && sfs.MySelf != null) {
                 CreateAndJoinRoom ();
@@ -264,7 +264,7 @@ namespace CineGame.SDK {
             roomSettings.IsGame = true;
             roomSettings.MaxUsers = (short)MaxPlayers;
             roomSettings.MaxSpectators = (short)MaxSpectators;
-            roomSettings.Variables.Add (new SFSRoomVariable ("GameType", GameType));
+            roomSettings.Variables.Add (new SFSRoomVariable ("GameID", GameID));
             roomSettings.Variables.Add (new SFSRoomVariable ("HostId", sfs.MySelf.Id));
             if (Debug.isDebugBuild) {
                 roomSettings.Variables.Add (new SFSRoomVariable ("IsTest", true));
