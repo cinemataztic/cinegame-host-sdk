@@ -19,6 +19,7 @@ using static CineGame.SDK.CineGameMarket;
 using UnityEditor;
 using UnityEngine.SceneManagement;
 using System.Security.Policy;
+using static CineGame.SDK.CineGameSeatController;
 
 namespace CineGame.SDK {
 
@@ -210,9 +211,13 @@ namespace CineGame.SDK {
 		/// </summary>
         public static Action<string, string> OnWiFiAvailable;
         /// <summary>
-		/// When seats layout json is loaded
+		/// When seats layout is loaded
 		/// </summary>
-        public static Action<string> OnSeatsLoaded;
+        public static Action<Dictionary<string, Seat[]>> OnSeatsLoaded;
+        /// <summary>
+        /// When a seat gets taken by user
+        /// </summary>
+        public static Action<int, Seat> OnSeatTaken;
         /// <summary>
 		/// When profanity regex for the current market is ready to use
 		/// </summary>
@@ -373,7 +378,6 @@ namespace CineGame.SDK {
                     did;
                 Debug.Log ($"DeviceId from deviceUniqueIdentifier: {did}");
             }
-
             OnSetupCompleted?.Invoke ();
         }
 
@@ -463,6 +467,8 @@ namespace CineGame.SDK {
             {
                 Invoke("RequestGameCode", .1f);
             }
+
+            CineGameSeatController.Setup();
         }
 
         /// <summary>

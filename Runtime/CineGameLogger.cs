@@ -18,7 +18,6 @@ namespace CineGame.SDK {
         public static string LogPath;
 
         static string BuildTime;
-        static int NumLogErrors = 0;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         static void OnBeforeSceneLoad()
