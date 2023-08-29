@@ -264,7 +264,7 @@ namespace CineGame.SDK {
             roomSettings.IsGame = true;
             roomSettings.MaxUsers = (short)MaxPlayers;
             roomSettings.MaxSpectators = (short)MaxSpectators;
-            roomSettings.Variables.Add (new SFSRoomVariable ("GameID", GameID));
+            roomSettings.Variables.Add (new SFSRoomVariable ("GameType", GameID));
             roomSettings.Variables.Add (new SFSRoomVariable ("HostId", sfs.MySelf.Id));
             if (Debug.isDebugBuild) {
                 roomSettings.Variables.Add (new SFSRoomVariable ("IsTest", true));
