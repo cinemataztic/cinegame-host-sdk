@@ -2,11 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using Newtonsoft.Json;
 using UnityEngine;
-using static CineGame.SDK.CineGameSeatController;
 using UnityEngine.UI;
 using System.Text;
-using Unity.VisualScripting.Antlr3.Runtime.Misc;
-using static UnityEditor.Progress;
 
 namespace CineGame.SDK
 {
