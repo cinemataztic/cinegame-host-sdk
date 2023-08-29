@@ -467,8 +467,6 @@ namespace CineGame.SDK {
             {
                 Invoke("RequestGameCode", .1f);
             }
-
-            CineGameSeatController.Setup();
         }
 
         /// <summary>
@@ -567,6 +565,11 @@ namespace CineGame.SDK {
                     OnError?.Invoke ((int)statusCode);
                 }
             });
+        }
+
+        public static void RequestSeat(bool state)
+        {
+            CineGameSeatController.Activate(state);
         }
 
 
