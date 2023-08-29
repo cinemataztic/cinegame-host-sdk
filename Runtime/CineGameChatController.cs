@@ -10,6 +10,7 @@ using System.Net;
 using Newtonsoft.Json;
 using UnityEngine.UI;
 using TMPro;
+using static Codice.CM.WorkspaceServer.WorkspaceTreeDataStore;
 
 namespace CineGame.SDK {
 
@@ -115,7 +116,9 @@ namespace CineGame.SDK {
                     Debug.LogError ("Profanities unavailable to download, and no cache exists. Chat will be unfiltered!");
                 }
             } else {
-                File.WriteAllText (filename, profanitiesRegexStr);
+                FileInfo file = new System.IO.FileInfo(filename);
+                file.Directory.Create(); 
+                File.WriteAllText(file.FullName, profanitiesRegexStr);
             }
             if (!string.IsNullOrEmpty (profanitiesRegexStr)) {
                 regexp = new Regex (profanitiesRegexStr, RegexOptions.Compiled | RegexOptions.IgnoreCase);
