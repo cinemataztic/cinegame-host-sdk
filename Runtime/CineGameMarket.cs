@@ -101,8 +101,10 @@ namespace CineGame.SDK
             { Markets.ForumFun_Cinemataztic_EE, "https://forumfun.cinegamecore.eu-1.cinemataztic.com/api/" },
             { Markets.KinoSpill_DRF_NO, "https://kinospill-no.cinegamecore.drf-1.cinemataztic.com/api/" },
             { Markets.Leffapeli_Finnkino_FI, "https://finnkino-fi.cinegamecore.eu-1.cinemataztic.com/api/" },
-            { Markets.REDyPLAY_Weicher_DE, "https://redyplay-de.cinegamecore.eu-2.cinemataztic.com/api/" }
+            { Markets.REDyPLAY_Weicher_DE, "https://redyplay.cinegamecore.eu-2.cinemataztic.com/api/" }
         };
+
+        //https://redyplay-de.cinegamecore.eu-2.cinemataztic.com/api/
 
         public static string GetAPI()
         {
