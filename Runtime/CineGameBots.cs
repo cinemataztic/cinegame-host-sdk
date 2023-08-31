@@ -138,12 +138,20 @@ namespace CineGame.SDK {
             //Bots are identified by a negative (virtual) BackendID
             var id = -BotIndex++;
             BotIds.Add (id);
+
+            bool leaveAndRejoin = false;
+
+            if(ProbLeaveAndRejoin > 0f)
+            {
+                leaveAndRejoin = Random.value < ProbLeaveAndRejoin / 100f;
+            }
+
             var botScript = new LobbyBot (
                 id,
                 Names [BotIndex % NamesShuffled.Count], //"bot" + id,
                 AvatarsShuffled [BotIndex % AvatarsShuffled.Count],
                 spawnImmediately ? 0f : Random.Range (MinTimeBeforeJoin, MaxTimeBeforeJoin),
-                Random.value < ProbLeaveAndRejoin / 100f,
+                leaveAndRejoin,
                 ProbChat,
                 ChatMessages
                 );
@@ -201,6 +209,7 @@ namespace CineGame.SDK {
             readonly float TimeBeforeJoin;
             readonly float ProbChat;
             readonly string [] ChatMessages;
+            readonly bool ReaveAndRejoin;
 
             internal LobbyBot (int id, string name, string avatarId, float timeBeforeJoin, bool leaveAndRejoin, float probChat, string [] chatMessages) {
                 BackendID = id;
@@ -209,6 +218,7 @@ namespace CineGame.SDK {
                 TimeBeforeJoin = timeBeforeJoin;
                 ChatMessages = chatMessages;
                 ProbChat = probChat;
+                ReaveAndRejoin = leaveAndRejoin;
             }
 
             void IBot.SendObjectMessage (CineGameSDK.PlayerObjectMessage obj) {
@@ -247,6 +257,8 @@ namespace CineGame.SDK {
                     yield return new WaitForSecondsRealtime (TimeBeforeJoin);
                 }
 
+                if(ReaveAndRejoin)
+
                 Log ($"CineGameBots: {pl.Name} attempting to join game");
                 CineGameSDK.OnPlayerJoined?.Invoke (pl);
 
@@ -255,14 +267,19 @@ namespace CineGame.SDK {
                 CineGameSDK.SetPlayerAvatar (BackendID, AvatarID);
 
                 for (; ; ) {
-                    if (Random.value < .01f) {
-                        var timeToRejoin = Random.Range (.3f, 30f);
-                        Log ($"CineGameBots: {Name} leaving the game, will rejoin in {timeToRejoin:#.00} seconds");
-                        CineGameSDK.OnPlayerLeft?.Invoke (BackendID);
-                        yield return new WaitForSecondsRealtime (timeToRejoin);
 
-                        Log ($"CineGameBots: {Name} rejoining the game");
-                        CineGameSDK.OnPlayerLeft?.Invoke (BackendID);
+                    if (ReaveAndRejoin)
+                    {
+                        if (Random.value < .01f)
+                        {
+                            var timeToRejoin = Random.Range(.3f, 30f);
+                            Log($"CineGameBots: {Name} leaving the game, will rejoin in {timeToRejoin:#.00} seconds");
+                            CineGameSDK.OnPlayerLeft?.Invoke(BackendID);
+                            yield return new WaitForSecondsRealtime(timeToRejoin);
+
+                            Log($"CineGameBots: {Name} rejoining the game");
+                            CineGameSDK.OnPlayerLeft?.Invoke(BackendID);
+                        }
                     }
 
                     yield return new WaitForSecondsRealtime (Random.Range (.3f, 3f));
