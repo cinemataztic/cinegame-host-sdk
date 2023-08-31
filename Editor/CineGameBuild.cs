@@ -16,7 +16,6 @@ using System.Reflection;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json.Linq;
-using static CineGame.SDK.CineGameMarket;
 
 namespace CineGame.SDK.Editor {
 
@@ -91,23 +90,23 @@ namespace CineGame.SDK.Editor {
         Vector2 buildReportScrollPosition = Vector2.zero;
 
         static bool HasWinBuildSupport, HasMacOSBuildSupport, HasLinux64BuildSupport, HasLinuxIl2cppSupport;
-        static bool BuildOnlyForLinux;
+        static bool BuildOnlyForLinux = true;
         static bool BuildOnUcb;
 
         public static Dictionary<string, string> CloudAPIs = new Dictionary<string, string>
         {
-            { Markets.BioSpil_DRF_DK, "https://drf.dk.api.player.drf-1.cinemataztic.com/" },
-            { Markets.CineGame_Cinemataztic_AE, "https://cinemataztic.ae.api.player.au-1.cinemataztic.com/" },
-            { Markets.CineGame_Cinemataztic_EN, "https://cinemataztic.en.api.player.eu-1.cinemataztic.com/" },
-            { Markets.CineGame_ITV_IN, "https://itv.in.api.player.asia-1.cinemataztic.com/" },
-            { Markets.CineGame_ValMorgan_AU, "https://valmorgan.au.api.player.au-1.cinemataztic.com/" },
-            { Markets.CineGame_ValMorgan_NZ, "https://valmorgan.nz.api.player.au-1.cinemataztic.com/" },
-            { Markets.CineGame_WideEyeMedia_IE, "https://wideeyemedia.ie.api.player.eu-2.cinemataztic.com/" },
-            { Markets.CinesaFun_Cinesa_ES, "https://cinesafun.es.api.player.eu-2.cinemataztic.com/" },
-            { Markets.ForumFun_Cinemataztic_EE, "https://forumfun.ee.api.player.eu-1.cinemataztic.com/" },
-            { Markets.KinoSpill_DRF_NO, "https://mdn.no.api.player.drf-1.cinemataztic.com/" },
-            { Markets.Leffapeli_Finnkino_FI, "https://finnkino.fi.api.player.eu-1.cinemataztic.com/" },
-            { Markets.REDyPLAY_Weicher_DE, "https://weischer.de.api.player.eu-2.cinemataztic.com/" }
+            { CineGameMarket.Markets.BioSpil_DRF_DK, "https://drf.dk.api.player.drf-1.cinemataztic.com/" },
+            { CineGameMarket.Markets.CineGame_Cinemataztic_AE, "https://cinemataztic.ae.api.player.au-1.cinemataztic.com/" },
+            { CineGameMarket.Markets.CineGame_Cinemataztic_EN, "https://cinemataztic.en.api.player.eu-1.cinemataztic.com/" },
+            { CineGameMarket.Markets.CineGame_ITV_IN, "https://itv.in.api.player.asia-1.cinemataztic.com/" },
+            { CineGameMarket.Markets.CineGame_ValMorgan_AU, "https://valmorgan.au.api.player.au-1.cinemataztic.com/" },
+            { CineGameMarket.Markets.CineGame_ValMorgan_NZ, "https://valmorgan.nz.api.player.au-1.cinemataztic.com/" },
+            { CineGameMarket.Markets.CineGame_WideEyeMedia_IE, "https://wideeyemedia.ie.api.player.eu-2.cinemataztic.com/" },
+            { CineGameMarket.Markets.CinesaFun_Cinesa_ES, "https://cinesafun.es.api.player.eu-2.cinemataztic.com/" },
+            { CineGameMarket.Markets.ForumFun_Cinemataztic_EE, "https://forumfun.ee.api.player.eu-1.cinemataztic.com/" },
+            { CineGameMarket.Markets.KinoSpill_DRF_NO, "https://mdn.no.api.player.drf-1.cinemataztic.com/" },
+            { CineGameMarket.Markets.Leffapeli_Finnkino_FI, "https://finnkino.fi.api.player.eu-1.cinemataztic.com/" },
+            { CineGameMarket.Markets.REDyPLAY_Weicher_DE, "https://weischer.de.api.player.eu-2.cinemataztic.com/" }
         };
 
         static bool UcbAvailable {
@@ -926,7 +925,7 @@ namespace CineGame.SDK.Editor {
                     }
                 }
             }
-            UnityEditor.Sprites.Packer.RebuildAtlasCacheIfNeeded (EditorUserBuildSettings.activeBuildTarget);
+            //UnityEditor.Sprites.Packer.RebuildAtlasCacheIfNeeded (EditorUserBuildSettings.activeBuildTarget);
         }
 
         static Texture2D [] FindAllSpriteTextures () {

@@ -4,9 +4,20 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
-namespace CineGame.SDK.Editor { 
+namespace CineGame.SDK.Editor
+{
+    [InitializeOnLoad]
     internal class CineGameEnvironment
     {
+
+        static CineGameEnvironment()
+        {
+            if (!EditorPrefs.HasKey("CineGameEnvironment"))
+            {
+                EditorPrefs.SetString("CineGameEnvironment", "production");
+            }
+        }
+
         [MenuItem("CineGame SDK/Environment/Production", true)]
         public static bool GetProduction()
         {

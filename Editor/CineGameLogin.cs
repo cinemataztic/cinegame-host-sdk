@@ -8,9 +8,11 @@ using UnityEngine;
 using UnityEngine.Networking;
 
 using Newtonsoft.Json.Linq;
-using static CineGame.SDK.CineGameMarket;
 using System.Security.Policy;
 using System.Text.RegularExpressions;
+using System.Collections;
+using Unity.EditorCoroutines.Editor;
+using System.Threading.Tasks;
 
 namespace CineGame.SDK.Editor
 {
@@ -24,18 +26,18 @@ namespace CineGame.SDK.Editor
 
         public static Dictionary<string, string> AuthAPIs = new Dictionary<string, string>
         {
-            { Markets.BioSpil_DRF_DK, "https://drf.dk.auth.iam.drf-1.cinemataztic.com/" },
-            { Markets.CineGame_Cinemataztic_AE, "https://auth.iam.eu-2.cinemataztic.com/" },
-            { Markets.CineGame_Cinemataztic_EN, "https://cinemataztic.en.auth.iam.eu-1.cinemataztic.com/" },
-            { Markets.CineGame_ITV_IN, "https://itv.in.auth.iam.asia-1.cinemataztic.com/" },
-            { Markets.CineGame_ValMorgan_AU, "https://valmorgan.au.auth.iam.au-1.cinemataztic.com/" },
-            { Markets.CineGame_ValMorgan_NZ, "https://valmorgan.nz.auth.iam.au-1.cinemataztic.com/" },
-            { Markets.CineGame_WideEyeMedia_IE, "https://wideeyemedia.ie.auth.iam.eu-2.cinemataztic.com/" },
-            { Markets.CinesaFun_Cinesa_ES, "https://cinesa.es.auth.iam.eu-2.cinemataztic.com/" },
-            { Markets.ForumFun_Cinemataztic_EE, "https://finnkino.ee.auth.iam.eu-1.cinemataztic.com/" },
-            { Markets.KinoSpill_DRF_NO, "https://mdn.no.auth.iam.drf-1.cinemataztic.com/" },
-            { Markets.Leffapeli_Finnkino_FI, "https://finnkino.fi.auth.iam.eu-1.cinemataztic.com/" },
-            { Markets.REDyPLAY_Weicher_DE, "https://weischer.de.auth.iam.eu-2.cinemataztic.com/" }
+            { CineGameMarket.Markets.BioSpil_DRF_DK, "https://drf.dk.auth.iam.drf-1.cinemataztic.com/" },
+            { CineGameMarket.Markets.CineGame_Cinemataztic_AE, "https://auth.iam.eu-2.cinemataztic.com/" },
+            { CineGameMarket.Markets.CineGame_Cinemataztic_EN, "https://cinemataztic.en.auth.iam.eu-1.cinemataztic.com/" },
+            { CineGameMarket.Markets.CineGame_ITV_IN, "https://itv.in.auth.iam.asia-1.cinemataztic.com/" },
+            { CineGameMarket.Markets.CineGame_ValMorgan_AU, "https://valmorgan.au.auth.iam.au-1.cinemataztic.com/" },
+            { CineGameMarket.Markets.CineGame_ValMorgan_NZ, "https://valmorgan.nz.auth.iam.au-1.cinemataztic.com/" },
+            { CineGameMarket.Markets.CineGame_WideEyeMedia_IE, "https://wideeyemedia.ie.auth.iam.eu-2.cinemataztic.com/" },
+            { CineGameMarket.Markets.CinesaFun_Cinesa_ES, "https://cinesa.es.auth.iam.eu-2.cinemataztic.com/" },
+            { CineGameMarket.Markets.ForumFun_Cinemataztic_EE, "https://finnkino.ee.auth.iam.eu-1.cinemataztic.com/" },
+            { CineGameMarket.Markets.KinoSpill_DRF_NO, "https://mdn.no.auth.iam.drf-1.cinemataztic.com/" },
+            { CineGameMarket.Markets.Leffapeli_Finnkino_FI, "https://finnkino.fi.auth.iam.eu-1.cinemataztic.com/" },
+            { CineGameMarket.Markets.REDyPLAY_Weicher_DE, "https://weischer.de.auth.iam.eu-2.cinemataztic.com/" }
         };
 
         public static bool IsLoggedIn {
@@ -63,7 +65,7 @@ namespace CineGame.SDK.Editor
         }
 
         [InitializeOnLoadMethod]
-        private static void OnLoad () {
+        private async static Task OnLoad () {
             CineGameSDK.OnError -= OnGameCodeError;
             CineGameSDK.OnError += OnGameCodeError;
 
@@ -76,8 +78,14 @@ namespace CineGame.SDK.Editor
             if (RefreshAccessToken ()) {
                 CineGameBuild.GetGameIDFromSceneOrProject ();
             } else {
-                Logout ();
+                await PopupLogin();
             }
+        }
+
+        static async Task PopupLogin()
+        {
+            await Task.Delay(3000);
+            Init();
         }
 
         static void OnGameCodeError (int code) {
