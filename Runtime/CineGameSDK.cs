@@ -15,7 +15,6 @@ using Sfs2X.Entities.Data;
 
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using static CineGame.SDK.CineGameMarket;
 using UnityEditor;
 using UnityEngine.SceneManagement;
 using System.Security;
@@ -212,11 +211,11 @@ namespace CineGame.SDK {
         /// <summary>
 		/// When seats layout is loaded
 		/// </summary>
-        public static Action<Dictionary<string, Seat[]>> OnSeatsLoaded;
+        public static Action<Dictionary<string, CineGameSeatController.Seat[]>> OnSeatsLoaded;
         /// <summary>
         /// When a seat gets taken by user
         /// </summary>
-        public static Action<int, Seat> OnSeatTaken;
+        public static Action<int, CineGameSeatController.Seat> OnSeatTaken;
         /// <summary>
 		/// When profanity regex for the current market is ready to use
 		/// </summary>
