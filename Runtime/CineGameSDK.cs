@@ -18,8 +18,7 @@ using Newtonsoft.Json.Linq;
 using static CineGame.SDK.CineGameMarket;
 using UnityEditor;
 using UnityEngine.SceneManagement;
-using System.Security.Policy;
-using static CineGame.SDK.CineGameSeatController;
+using System.Security;
 
 namespace CineGame.SDK {
 
