@@ -887,7 +887,6 @@ namespace CineGame.SDK {
                 Debug.LogError (">>> ERROR! Server communication incomplete. Winners may not have received their prices. <<<");
             }
             SmartfoxClient.Disconnect ();
-            PlayerPrefs.DeleteAll ();
         }
 
     }
