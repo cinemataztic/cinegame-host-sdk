@@ -93,7 +93,7 @@ namespace CineGame.SDK.Editor {
         static bool BuildOnlyForLinux = true;
         static bool BuildOnUcb;
 
-        static Action OnWindowOpened;
+        public static Action OnWindowOpened;
 
         public static Dictionary<string, string> CloudAPIs = new Dictionary<string, string>
         {
