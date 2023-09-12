@@ -93,6 +93,8 @@ namespace CineGame.SDK.Editor {
         static bool BuildOnlyForLinux = true;
         static bool BuildOnUcb;
 
+        static Action OnWindowOpened;
+
         public static Dictionary<string, string> CloudAPIs = new Dictionary<string, string>
         {
             { CineGameMarket.Markets.BioSpil_DRF_DK, "https://drf.dk.api.player.drf-1.cinemataztic.com/" },
@@ -430,6 +432,8 @@ namespace CineGame.SDK.Editor {
             if (!CineGameLogin.IsLoggedIn) {
                 CineGameLogin.Init ();
             }
+
+            OnWindowOpened?.Invoke();
         }
 
         static void RepaintWindow () {
