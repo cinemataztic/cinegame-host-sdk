@@ -19,7 +19,7 @@ using Newtonsoft.Json.Linq;
 
 namespace CineGame.SDK.Editor {
 
-    internal class CineGameBuild : EditorWindow {
+    public class CineGameBuild : EditorWindow {
 
         static CineGameBuild instance;
 
