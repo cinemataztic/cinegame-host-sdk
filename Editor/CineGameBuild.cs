@@ -108,7 +108,7 @@ namespace CineGame.SDK.Editor {
             { CineGameMarket.Markets.ForumFun_Cinemataztic_EE, "https://forumfun.ee.api.player.eu-1.cinemataztic.com/" },
             { CineGameMarket.Markets.KinoSpill_DRF_NO, "https://mdn.no.api.player.drf-1.cinemataztic.com/" },
             { CineGameMarket.Markets.Leffapeli_Finnkino_FI, "https://finnkino.fi.api.player.eu-1.cinemataztic.com/" },
-            { CineGameMarket.Markets.REDyPLAY_Weicher_DE, "https://weischer.de.api.player.eu-2.cinemataztic.com/v2/" }
+            { CineGameMarket.Markets.REDyPLAY_Weicher_DE, "https://weischer.de.api.player.eu-2.cinemataztic.com/" }
         };
 
         static bool UcbAvailable {
@@ -621,16 +621,16 @@ namespace CineGame.SDK.Editor {
                 switch (EditorPrefs.GetString("CineGameMarket"))
                 {
                     case CineGameMarket.Markets.BioSpil_DRF_DK:
-                        marketSlug = "biospil-dk";
+                        marketSlug = "drf-dk";
                         break;
                     case CineGameMarket.Markets.CineGame_Cinemataztic_AE:
                         marketSlug = "cinemataztic-ae";
                         break;
                     case CineGameMarket.Markets.CineGame_ValMorgan_AU:
-                        marketSlug = "cinemataztic-au";
+                        marketSlug = "valmorgan-au";
                         break;
                     case CineGameMarket.Markets.CineGame_Cinemataztic_EN:
-                        marketSlug = "cinegame-en";
+                        marketSlug = "cinemataztic-en";
                         break;
                     case CineGameMarket.Markets.CineGame_WideEyeMedia_IE:
                         marketSlug = "wideeyemedia-ie";
@@ -648,13 +648,13 @@ namespace CineGame.SDK.Editor {
                         marketSlug = "forumfun-ee";
                         break;
                     case CineGameMarket.Markets.KinoSpill_DRF_NO:
-                        marketSlug = "kinospill-no";
+                        marketSlug = "mdn-no";
                         break;
                     case CineGameMarket.Markets.Leffapeli_Finnkino_FI:
-                        marketSlug = "leffapeli-fi";
+                        marketSlug = "finnkino-fi";
                         break;
                     case CineGameMarket.Markets.REDyPLAY_Weicher_DE:
-                        marketSlug = "redyplay-de";
+                        marketSlug = "weischer-de";
                         break;
                     default:
                         Debug.LogError("Missing Market Slug");
