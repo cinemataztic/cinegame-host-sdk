@@ -108,7 +108,7 @@ namespace CineGame.SDK.Editor {
             { CineGameMarket.Markets.ForumFun_Cinemataztic_EE, "https://forumfun.ee.api.player.eu-1.cinemataztic.com/" },
             { CineGameMarket.Markets.KinoSpill_DRF_NO, "https://mdn.no.api.player.drf-1.cinemataztic.com/" },
             { CineGameMarket.Markets.Leffapeli_Finnkino_FI, "https://finnkino.fi.api.player.eu-1.cinemataztic.com/" },
-            { CineGameMarket.Markets.REDyPLAY_Weicher_DE, "https://weischer.de.api.player.eu-2.cinemataztic.com/" }
+            { CineGameMarket.Markets.REDyPLAY_Weicher_DE, "https://weischer.de.api.player.eu-2.cinemataztic.com/v2/" }
         };
 
         static bool UcbAvailable {
