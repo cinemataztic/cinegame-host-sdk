@@ -108,7 +108,7 @@ namespace CineGame.SDK
         {
             { Markets.BioSpil_DRF_DK, "https://biospil.cinegamecore.drf-1.cinemataztic.com/api/" },
             { Markets.CineGame_Cinemataztic_AE, "https://cinegame-ae.cinegamecore.au-1.cinemataztic.com/api/" },
-            { Markets.CineGame_Cinemataztic_EN, "https://cinegame-en.cinegamecore.eu-1.cinemataztic.com/api/" },
+            { Markets.CineGame_Cinemataztic_EN, "https://cinemataztic-en.cinegamecore.eu-1.cinemataztic.com/api/" },
             { Markets.CineGame_ITV_IN, "https://cinegame-in.cinegamecore.asia-1.cinemataztic.com/api/" },
             { Markets.CineGame_ValMorgan_AU, "https://cinegame-au.cinegamecore.au-1.cinemataztic.com/api/" },
             { Markets.CineGame_ValMorgan_NZ, "https://cinegame-nz.cinegamecore.au-1.cinemataztic.com/api/" },
