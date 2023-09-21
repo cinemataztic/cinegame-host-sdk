@@ -651,7 +651,7 @@ namespace CineGame.SDK.Editor {
                         marketSlug = "mdn-no";
                         break;
                     case CineGameMarket.Markets.Leffapeli_Finnkino_FI:
-                        marketSlug = "finnkino-fi";
+                        marketSlug = "leffapeli-fi";
                         break;
                     case CineGameMarket.Markets.REDyPLAY_Weicher_DE:
                         marketSlug = "weischer-de";
