@@ -79,7 +79,7 @@ namespace CineGame.SDK
             { Markets.CinesaFun_Cinesa_ES, "cinesafun-es" },
             { Markets.ForumFun_Cinemataztic_EE, "forumfun-ee" },
             { Markets.KinoSpill_DRF_NO, "mdn-no" },
-            { Markets.Leffapeli_Finnkino_FI, "leffapeli-fi" },
+            { Markets.Leffapeli_Finnkino_FI, "finnkino-fi" },
             { Markets.REDyPLAY_Weicher_DE, "weischer-de" }
         };
 
