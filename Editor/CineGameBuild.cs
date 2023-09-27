@@ -616,51 +616,7 @@ namespace CineGame.SDK.Editor {
                 form.AddField ("gameType", GameID);
 
 
-                string marketSlug = string.Empty;
-
-                switch (EditorPrefs.GetString("CineGameMarket"))
-                {
-                    case CineGameMarket.Markets.BioSpil_DRF_DK:
-                        marketSlug = "drf-dk";
-                        break;
-                    case CineGameMarket.Markets.CineGame_Cinemataztic_AE:
-                        marketSlug = "cinemataztic-ae";
-                        break;
-                    case CineGameMarket.Markets.CineGame_ValMorgan_AU:
-                        marketSlug = "valmorgan-au";
-                        break;
-                    case CineGameMarket.Markets.CineGame_Cinemataztic_EN:
-                        marketSlug = "cinemataztic-en";
-                        break;
-                    case CineGameMarket.Markets.CineGame_WideEyeMedia_IE:
-                        marketSlug = "wideeyemedia-ie";
-                        break;
-                    case CineGameMarket.Markets.CineGame_ITV_IN:
-                        marketSlug = "ivt-in";
-                        break;
-                    case CineGameMarket.Markets.CineGame_ValMorgan_NZ:
-                        marketSlug = "valmorgan-nz";
-                        break;
-                    case CineGameMarket.Markets.CinesaFun_Cinesa_ES:
-                        marketSlug = "cinesafun-es";
-                        break;
-                    case CineGameMarket.Markets.ForumFun_Cinemataztic_EE:
-                        marketSlug = "forumfun-ee";
-                        break;
-                    case CineGameMarket.Markets.KinoSpill_DRF_NO:
-                        marketSlug = "mdn-no";
-                        break;
-                    case CineGameMarket.Markets.Leffapeli_Finnkino_FI:
-                        marketSlug = "leffapeli-fi";
-                        break;
-                    case CineGameMarket.Markets.REDyPLAY_Weicher_DE:
-                        marketSlug = "weischer-de";
-                        break;
-                    default:
-                        Debug.LogError("Missing Market Slug");
-                        break;
-                }
-
+                string marketSlug = CineGameMarket.Slugs[EditorPrefs.GetString("CineGameMarket")];
                 form.AddField("market", marketSlug);
 
                 GetLatestCommit();

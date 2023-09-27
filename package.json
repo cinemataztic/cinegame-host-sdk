@@ -1,24 +1,26 @@
 {
-    "name": "com.cinemataztic.cinegame.sdk",
-    "version": "0.2.0",
-    "displayName": "CineGame SDK",
-    "description": "This is the SDK for creating hosts for CineGame",
-    "unity": "2021.3",
-    "documentationUrl": "https://github.com/cinemataztic/cinegame-sdk-samples",
-    "changelogUrl": "https://github.com/cinemataztic/cinegame-sdk-samples",
-    "licensesUrl": "https://github.com/cinemataztic/cinegame-sdk-samples",
-    "dependencies": {
-        "com.unity.nuget.newtonsoft-json": "3.0.2",
-        "com.unity.editorcoroutines": "1.0.0"
-    },
-    "keywords": [
-        "Cinemataztic",
-        "CineGame",
-        "CineClash"
-    ],
-    "author": {
-        "name": "Cinemataztic",
-        "email": "game@cinemataztic.com",
-        "url": "https://cinega.me"
-    }
+  "name": "com.cinemataztic.cinegame.sdk",
+  "version": "0.2.0",
+  "displayName": "CineGame SDK",
+  "description": "This is the SDK for creating hosts for CineGame",
+  "unity": "2021.3",
+  "documentationUrl": "https://github.com/cinemataztic/cinegame-sdk-samples",
+  "changelogUrl": "https://github.com/cinemataztic/cinegame-sdk-samples",
+  "licensesUrl": "https://github.com/cinemataztic/cinegame-sdk-samples",
+  "dependencies": {
+    "com.unity.nuget.newtonsoft-json": "3.0.2",
+    "com.unity.editorcoroutines": "1.0.0",
+    "com.unity.toolchain.macos-x86_64-linux-x86_64": "2.0.4",
+    "com.unity.toolchain.macos-arm64-linux-x86_64": "2.0.0"
+  },
+  "keywords": [
+    "Cinemataztic",
+    "CineGame",
+    "CineClash"
+  ],
+  "author": {
+    "name": "Cinemataztic",
+    "email": "game@cinemataztic.com",
+    "url": "https://cinega.me"
+  }
 }

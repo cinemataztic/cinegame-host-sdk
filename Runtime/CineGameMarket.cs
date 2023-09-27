@@ -67,6 +67,22 @@ namespace CineGame.SDK
             return Names[CineGameSDK.Market];
         }
 
+        public static Dictionary<string, string> Slugs = new Dictionary<string, string>
+        {
+            { Markets.BioSpil_DRF_DK, "drf-dk" },
+            { Markets.CineGame_Cinemataztic_AE,  "cinemataztic-ae" },
+            { Markets.CineGame_Cinemataztic_EN, "cinemataztic-en" },
+            { Markets.CineGame_ITV_IN, "ivt-in" },
+            { Markets.CineGame_ValMorgan_AU, "valmorgan-au" },
+            { Markets.CineGame_ValMorgan_NZ, "valmorgan-nz" },
+            { Markets.CineGame_WideEyeMedia_IE, "wideeyemedia-ie" },
+            { Markets.CinesaFun_Cinesa_ES, "cinesafun-es" },
+            { Markets.ForumFun_Cinemataztic_EE, "forumfun-ee" },
+            { Markets.KinoSpill_DRF_NO, "mdn-no" },
+            { Markets.Leffapeli_Finnkino_FI, "leffapeli-fi" },
+            { Markets.REDyPLAY_Weicher_DE, "weischer-de" }
+        };
+
         public static Dictionary<string, string> Languages = new Dictionary<string, string>
         {
             { Markets.BioSpil_DRF_DK, "da" },
