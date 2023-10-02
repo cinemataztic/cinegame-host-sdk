@@ -512,8 +512,11 @@ namespace CineGame.SDK {
         internal static void SendObjectMessage (ISFSObject dataObj, int backendId) {
             var users = new List<User> ();
             try {
-                users.Add (userDict [backendId]);
-                sfs.Send (new ObjectMessageRequest (dataObj, GameRoom, users));
+                if(userDict.ContainsKey(backendId)) 
+                {
+                    users.Add (userDict [backendId]);
+                    sfs.Send (new ObjectMessageRequest (dataObj, GameRoom, users));
+                }
             } catch (Exception e) {
                 if (!(e is NullReferenceException) && e.Message != null) {
                     var username = (users.Count > 0 && users [0] != null) ? users [0].Name : "unknown";
@@ -525,8 +528,11 @@ namespace CineGame.SDK {
         internal static void SendPrivateMessage (string msg, int backendId) {
             User user = null;
             try {
-                user = userDict [backendId];
-                sfs.Send (new PrivateMessageRequest (msg, user.Id));
+                if(userDict.ContainsKey(backendId)) 
+                {
+                    user = userDict [backendId];
+                    sfs.Send (new PrivateMessageRequest (msg, user.Id));
+                }
             } catch (Exception e) {
                 Debug.LogErrorFormat ("SFS Error while sending private message to {0}: {1}", user != null ? user.Name : backendId, e.Message);
             }
@@ -539,8 +545,11 @@ namespace CineGame.SDK {
         internal static void KickUser (int backendId) {
             User user = null;
             try {
-                user = userDict [backendId];
-                sfs.Send (new KickUserRequest (user.Id, "getout"));
+                if(userDict.ContainsKey(backendId)) 
+                {
+                    user = userDict [backendId];
+                    sfs.Send (new KickUserRequest (user.Id, "getout"));
+                }
             } catch (Exception e) {
                 Debug.LogErrorFormat ("SFS Error while sending kick message to {0}: {1}", user != null ? user.Name : backendId, e.Message);
             }
