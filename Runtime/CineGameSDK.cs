@@ -473,7 +473,7 @@ namespace CineGame.Host {
             if (!IsWebGL && !Application.isEditor) {
 
     	          DeviceId = Configuration.CINEMATAZTIC_SCREEN_ID;
-		            Market = Configuration.CINEMATAZTIC_MARKET_ID;
+		            Market = Configuration.MARKET_ID;
 
                 if (string.IsNullOrWhiteSpace (DeviceId) || string.IsNullOrWhiteSpace (Market)) {
                     var hostConfigFilename = Path.Combine (Environment.GetFolderPath (Environment.SpecialFolder.Personal), "conf-db.json");
