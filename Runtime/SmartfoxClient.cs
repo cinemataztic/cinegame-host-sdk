@@ -58,6 +58,8 @@ namespace CineGame.SDK {
 
         static string LastErrorMsg = null;
 
+        static bool IsActive = false;
+
         /// <summary>
         /// We will only send a few warnings to admin, no spam! :)
         /// </summary>
@@ -72,7 +74,7 @@ namespace CineGame.SDK {
 
         // Update is called once per frame
         internal static void Update () {
-            if (sfs != null) {
+            if (sfs != null && IsActive) {
                 try {
                     //Keep connection alive by sending a dummy extension request every 60 seconds
                     if (sfs.IsConnected && sfs.MySelf != null && (LastKeepAliveTime + 60f) < Time.realtimeSinceStartup) {
@@ -89,6 +91,7 @@ namespace CineGame.SDK {
 
 
         internal static void ConnectAndCreateGame (string gameServer, string gameCode, string gameZone, string gameID, bool webGlSecure = false) {
+            IsActive = true;
             GameServer = gameServer;
             GameCode = gameCode;
             GameZone = gameZone;
@@ -459,6 +462,7 @@ namespace CineGame.SDK {
 
         static void _Disconnect () {
             if (sfs != null && sfs.MySelf != null && (sfs.MySelf.IsAdmin () || sfs.MySelf.IsModerator ())) {
+                IsActive = false;
                 //Kick all other users out of room
                 foreach (var user in GameRoom.UserList) {
                     if (user != sfs.MySelf) {
