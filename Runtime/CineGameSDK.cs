@@ -7,6 +7,7 @@ using System.Net;
 using System.Collections;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using System.Linq;
 
 using UnityEngine;
 using UnityEngine.Networking;
@@ -598,6 +599,15 @@ namespace CineGame.Host {
         }
 
 
+        /// <summary>
+		/// Returns true if there is a JRE running a smartfox server on the local computer
+		/// </summary>
+        internal static bool IsSmartfoxRunningLocally () {
+            var javaProcesses = System.Diagnostics.Process.GetProcessesByName ("java");
+            return javaProcesses.Any (p => p.StartInfo.Arguments.Contains ("smartfoxserver", StringComparison.InvariantCultureIgnoreCase));
+        }
+
+
         static void API (string uri, string json, BackendCallback callback = null) {
             if (Debug.isDebugBuild) {
                 Debug.LogFormat ("POST {0} {1}", uri, json);
@@ -642,6 +652,7 @@ namespace CineGame.Host {
 			public string gameType;
 			public string mac;
             public string localIp;
+            public bool   localGameServerRunning;
 			public string deviceId;
 			public string platform;
 			public string showId;
@@ -657,6 +668,7 @@ namespace CineGame.Host {
                 gameType = Settings.GameType,
                 mac = MacAddress,
                 localIp = LocalIP,
+                localGameServerRunning = IsSmartfoxRunningLocally (),
                 deviceId = DeviceId,
                 platform = Application.platform.ToString (),
                 showId = Configuration.CINEMATAZTIC_SHOW_ID,
