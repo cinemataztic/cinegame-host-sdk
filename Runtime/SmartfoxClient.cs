@@ -374,11 +374,28 @@ namespace CineGame.Host {
                             appVer = new Version (appVerString);
                         }
 
-                        CineGameChatController.RunProfanityFilter (userName, (filteredUserName) => {
+                        if (CineGameChatController.IsProfanityFilterLoaded) {
+                            CineGameChatController.RunProfanityFilter (userName, (filteredUserName) => {
+                                CineGameSDK.OnPlayerJoined?.Invoke (new CineGameSDK.Player {
+                                    BackendID = backendID,
+                                    AppVersion = appVer,
+                                    Name = filteredUserName,
+                                    Age = userAge,
+                                    Gender = userGender,
+                                    Score = 0
+                                });
+
+                                if (!string.IsNullOrWhiteSpace (avatarID)) {
+                                    CineGameSDK.SetPlayerAvatar (backendID, avatarID);
+                                }
+                            });
+                        } else {
+                            Debug.LogWarning ("SFS Player name is unfiltered (CineGameChatController instance not found)");
+
                             CineGameSDK.OnPlayerJoined?.Invoke (new CineGameSDK.Player {
                                 BackendID = backendID,
                                 AppVersion = appVer,
-                                Name = filteredUserName,
+                                Name = userName,
                                 Age = userAge,
                                 Gender = userGender,
                                 Score = 0
@@ -387,12 +404,18 @@ namespace CineGame.Host {
                             if (!string.IsNullOrWhiteSpace (avatarID)) {
                                 CineGameSDK.SetPlayerAvatar (backendID, avatarID);
                             }
-                        });
+                        }
                     } else if (user.IsSpectator) {
                         var supportingID = dataObj.GetInt ("supportingId");
-                        CineGameChatController.RunProfanityFilter (userName, (filteredUserName) => {
-                            CineGameSDK.OnSupporterJoined?.Invoke (backendID, supportingID, filteredUserName);
-                        });
+
+                        if (CineGameChatController.IsProfanityFilterLoaded) {
+                            CineGameChatController.RunProfanityFilter (userName, (filteredUserName) => {
+                                CineGameSDK.OnSupporterJoined?.Invoke (backendID, supportingID, filteredUserName);
+                            });
+                        } else {
+                            Debug.LogWarning ("SFS Supporter name is unfiltered (CineGameChatController instance not found)");
+                            CineGameSDK.OnSupporterJoined?.Invoke (backendID, supportingID, userName);
+                        }
                     }
                 } else if (dataObj.ContainsKey ("avatar") && user.Properties != null) {
                     var avatarID = dataObj.GetUtfString ("avatar");
