@@ -49,6 +49,7 @@ namespace CineGame.Host {
         private static string MacAddress = null;
         public static string DeviceId = null;
         private static string DeviceInfo = null;
+        private static string LocalIP;
         public static string UserEmail;
         public static string UserName;
         public static string UserId;
@@ -456,7 +457,7 @@ namespace CineGame.Host {
 
         void Setup () {
 
-            GetMacAddress ();
+            GetNetworkInfo ();
 
             if (!Application.isEditor) {
                 Cursor.visible = false;
@@ -566,21 +567,19 @@ namespace CineGame.Host {
         }
 
         /// <summary>
-		/// Determine MAC address of inet interface
+		/// Determine Local IP and MAC address of inet interface
 		/// </summary>
-        internal static void GetMacAddress () {
+        internal static void GetNetworkInfo () {
             if (IsWebGL) {
-                Debug.Log ("MAC address not available on WebGL builds.");
+                Debug.Log ("NetworkInfo not available on WebGL builds.");
                 return;
             }
 
             try {
                 var hostname = new Uri (ApiURL).Host;
-                string localAddr;
                 using (var u = new UdpClient (hostname, 1)) {
-                    localAddr = ((IPEndPoint)u.Client.LocalEndPoint).Address.ToString ();
+                    LocalIP = ((IPEndPoint)u.Client.LocalEndPoint).Address.ToString ();
                 }
-                Debug.LogFormat ("UDPClient address: {0} - determining network adapter ...", localAddr);
 
                 foreach (var net in NetworkInterface.GetAllNetworkInterfaces ()) {
                     var macAddr = net.GetPhysicalAddress ().ToString ();
@@ -588,17 +587,17 @@ namespace CineGame.Host {
                     if (net.NetworkInterfaceType != NetworkInterfaceType.Loopback) {
                         foreach (var addrInfo in net.GetIPProperties ().UnicastAddresses) {
                             var niAddr = addrInfo.Address.ToString ();
-                            if (localAddr == niAddr) {
-                                Debug.LogFormat ("Network adapter found: {0} mac={1} type={2}", net.Name, macAddr, net.NetworkInterfaceType.ToString ());
+                            if (LocalIP == niAddr) {
+                                Debug.Log ($"Network adapter found: {net.Name} localIp={LocalIP} mac={macAddr} type={net.NetworkInterfaceType}");
                                 MacAddress = macAddr;
                                 return;
                             }
                         }
                     }
                 }
-                Debug.LogError ("No MAC address found for this host");
+                Debug.LogError ($"No MAC address found for this host. LocalIP={LocalIP}");
             } catch (Exception e) {
-                Debug.LogErrorFormat ("Exception while trying to determine adapter MAC Address: {0}", e);
+                Debug.LogError ("Exception while trying to determine adapter MAC Address: " + e);
                 MacAddress = null;
             }
         }
@@ -647,6 +646,7 @@ namespace CineGame.Host {
 			public string hostName;
 			public string gameType;
 			public string mac;
+            public string localIp;
 			public string deviceId;
 			public string platform;
 			public string showId;
@@ -661,6 +661,7 @@ namespace CineGame.Host {
                 hostName = Hostname,
                 gameType = Settings.GameType,
                 mac = MacAddress,
+                localIp = LocalIP,
                 deviceId = DeviceId,
                 platform = Application.platform.ToString (),
                 showId = Configuration.CINEMATAZTIC_SHOW_ID,
