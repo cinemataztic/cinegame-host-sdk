@@ -772,7 +772,7 @@ namespace CineGame.Host.Editor {
                     if (sdks.Length != 0 || CineGameLogin.GameTypesAvailable.Length != 0) {
                         settings = CreateInstance<CineGameSettings> ();
                         settings.GameType = (sdks.Length != 0) ? sdks [0].GameType : CineGameLogin.GameTypesAvailable [0];
-                        settings.MarketId = (sdks.Length != 0) ? sdks [0].Market : CineGameSDK.MarketID.DEMO_CineGame;
+                        settings.MarketId = (sdks.Length != 0) ? sdks [0].Market : CineGameSDK.MarketID.CineGame;
                         AssetDatabase.CreateAsset (settings, "Assets/CineGameSettings.asset");
                         AssetDatabase.SaveAssets ();
                         AssetDatabase.Refresh ();

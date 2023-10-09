@@ -25,6 +25,15 @@ namespace CineGame.Host {
 		}
 
 		/// <summary>
+		/// Specifies which cluster the machine is set to work with, so we can determine which API group to contact (dev, staging or production)
+		/// </summary>
+		public static string CLUSTER_NAME
+		{
+			get { return System.Environment.GetEnvironmentVariable(PropertyNameFromAccessor(MethodBase.GetCurrentMethod())); }
+			set { System.Environment.SetEnvironmentVariable(PropertyNameFromAccessor(MethodBase.GetCurrentMethod()), value); }
+		}
+
+		/// <summary>
 		/// Access token for backend communication, set by either Player software or HostEditor
 		/// </summary>
 		public static string CINEMATAZTIC_ACCESS_TOKEN {

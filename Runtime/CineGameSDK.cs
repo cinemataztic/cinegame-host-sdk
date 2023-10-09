@@ -31,25 +31,25 @@ namespace CineGame.Host {
 
         private static string GameCode;
 
-        private static int GetGameCodeTries = 0;
+        private static int GetGameCodeTries;
         private float refreshRate;
         private float avgFPS;
         private float minFPS;
         private int numAvgFpsWarnings = 3;
 
-        public static bool GameEnded = false;
-        public static bool GameEndSentToServer = false;
+        public static bool GameEnded;
+        public static bool GameEndSentToServer;
         public static JObject CreateResponse;
         private static string GameEndSerializedJson;
 
         /// <summary>
         /// Device Information
         /// </summary>
-        private static string Hostname = null;
-        private static string MacAddress = null;
-        public static string DeviceId = null;
-        private static string DeviceInfo = null;
+        private static string Hostname;
+        private static string MacAddress;
         private static string LocalIP;
+        public static string DeviceId;
+        private static string DeviceInfo;
         public static string UserEmail;
         public static string UserName;
         public static string UserId;
@@ -226,7 +226,7 @@ namespace CineGame.Host {
 
         delegate void BackendCallback (HttpStatusCode statusCode, string response);
 
-        private static Dictionary<string, string> BackendHeaders = new Dictionary<string, string> (10) {
+        private static readonly Dictionary<string, string> BackendHeaders = new Dictionary<string, string> (10) {
             {"Content-Type", "application/json; charset=utf-8"},
         };
 
@@ -241,15 +241,28 @@ namespace CineGame.Host {
         }
 
         private static bool IsStagingEnv {
-            get { return Configuration.NODE_ENV != null && Configuration.NODE_ENV.Equals ("staging", StringComparison.InvariantCultureIgnoreCase); }
+            get {
+                var env = Configuration.NODE_ENV ?? Configuration.CLUSTER_NAME;
+                return env != null && env.Equals ("staging", StringComparison.InvariantCultureIgnoreCase);
+            }
+        }
+
+        private static bool IsDevEnv {
+            get {
+                var env = Configuration.NODE_ENV ?? Configuration.CLUSTER_NAME;
+                return env != null && env.Equals ("dev", StringComparison.InvariantCultureIgnoreCase);
+            }
         }
 
         private static string ApiURL {
             get {
                 var URL = ApiURLs [(int)Region];
                 if (IsStagingEnv || IsWebGL) {
-                    //Replace production with staging cluster subdomain
+                    //Replace production with staging cluster subdomain. WebGL always runs in staging
                     URL = Regex.Replace (URL, "(.+?)\\.[^.]+?\\.(cinemataztic\\.com.+)", "$1.staging.$2");
+                } else if (IsDevEnv) {
+                    //Replace production with dev cluster subdomain
+                    URL = Regex.Replace (URL, "(.+?)\\.[^.]+?\\.(cinemataztic\\.com.+)", "$1.dev.$2");
                 }
                 return URL;
             }
@@ -293,7 +306,7 @@ namespace CineGame.Host {
             public const string Cinemataztic_dev = "594be135e9678d3bb75fe7aa";
         }
 
-        static Dictionary<string, APIRegion> MarketToRegionMap = new Dictionary<string, APIRegion> {
+        static readonly Dictionary<string, APIRegion> MarketToRegionMap = new Dictionary<string, APIRegion> {
             { MarketID.BioSpil,     APIRegion.DK },
             { MarketID.KinoSpill,   APIRegion.NO },
             { MarketID.CineGame,    APIRegion.EN },
@@ -311,39 +324,21 @@ namespace CineGame.Host {
             { MarketID.Cinemataztic_dev, APIRegion.EN },
         };
 
-        public static Dictionary<string, string> MarketDisplayNamesMap = new Dictionary<string, string> {
-            { MarketID.BioSpil,         "BioSpil (DK)" },
-            { MarketID.KinoSpill,       "KinoSpill (NO)" },
-            { MarketID.CineGame,        "CineGame (EN)" },
-            { MarketID.Leffapeli,       "Leffapeli (FI)" },
-            { MarketID.CineGame_AUS,    "CineGame (AU)" },
-            { MarketID.CineGame_IE,     "CineGame (IE)" },
-            { MarketID.CineGame_IN,     "CineGame (IN)" },
-            { MarketID.CineGame_NZ,     "CineGame (NZ)" },
-            { MarketID.CineGame_UAE,    "CineGame (AE)" },
-            { MarketID.REDyPLAY,        "REDyPLAY (DE)" },
-            { MarketID.ForumFun,        "ForumFun (EE)" },
-            { MarketID.CinesaFun,       "CinesaFun (ES)" },
-            { MarketID.Baltoppen,       "Baltoppen (BioSpil)" },
-            { MarketID.DEMO_CineGame,   "DEMO CineGame" },
-            { MarketID.Cinemataztic_dev, "Cinemataztic-dev (CineGame)" },
-        };
-
         public static Dictionary<string, string> MarketSlugMap = new Dictionary<string, string> {
-            { MarketID.BioSpil,         "biospil-dk" },
-            { MarketID.KinoSpill,       "kinospill-no" },
-            { MarketID.CineGame,        "cinegame-en" },
-            { MarketID.Leffapeli,       "leffapeli-fi" },
-            { MarketID.CineGame_AUS,    "cinemataztic-au" },
+            { MarketID.BioSpil,         "drf-dk" },
+            { MarketID.KinoSpill,       "mdn-no" },
+            { MarketID.CineGame,        "cinemataztic-en" },
+            { MarketID.Leffapeli,       "finnkino-fi" },
+            { MarketID.CineGame_AUS,    "valmorgan-au" },
             { MarketID.CineGame_IE,     "wideeyemedia-ie" },
             { MarketID.CineGame_IN,     "itv-in" },
             { MarketID.CineGame_NZ,     "valmorgan-nz" },
             { MarketID.CineGame_UAE,    "cinemataztic-ae" },
-            { MarketID.REDyPLAY,        "redyplay-de" },
             { MarketID.ForumFun,        "forumfun-ee" },
             { MarketID.CinesaFun,       "cinesafun-es" },
+            { MarketID.REDyPLAY,        "weischer-de" },
             { MarketID.Baltoppen,       "baltoppen-dk" },
-            { MarketID.DEMO_CineGame,   "demo-cinegame-en" },
+            { MarketID.DEMO_CineGame,   "demo-cinegame" },
             { MarketID.Cinemataztic_dev, "cinemataztic-dev" },
         };
 
@@ -373,19 +368,19 @@ namespace CineGame.Host {
             return Region;
         }
 
-        private static string [] ApiURLs = {
-            "https://biospil.cinegamecore.drf-1.cinemataztic.com/api/",		//DK
-			"https://kinospill.cinegamecore.drf-1.cinemataztic.com/api/",	//NO
-			"https://cinegame.cinegamecore.eu-1.cinemataztic.com/api/",		//EN
-			"https://leffapeli.cinegamecore.eu-1.cinemataztic.com/api/",	//FI
-			"https://cinegame-au.cinegamecore.au-1.cinemataztic.com/api/",	//AU
-			"https://cinegame-ae.cinegamecore.au-1.cinemataztic.com/api/",	//AE
-			"https://redyplay.cinegamecore.eu-2.cinemataztic.com/api/",  	//DE
-			"https://forumfun.cinegamecore.eu-1.cinemataztic.com/api/",		//EE
-			"https://cinesafun.cinegamecore.eu-2.cinemataztic.com/api/",	//ES
-            "https://cinegame-ie.cinegamecore.eu-2.cinemataztic.com/api/",  //IE
-			"https://cinegame-in.cinegamecore.asia-1.cinemataztic.com/api/",//IN
-			"https://cinegame-nz.cinegamecore.au-1.cinemataztic.com/api/",  //NZ
+        private static readonly string [] ApiURLs = {
+            "https://drf-dk.cinegamecore.drf-1.cinemataztic.com/api/",		    //DK
+			"https://mdn-no.cinegamecore.drf-1.cinemataztic.com/api/",	        //NO
+			"https://cinemataztic-en.cinegamecore.eu-1.cinemataztic.com/api/",	//EN
+			"https://finnkino-fi.cinegamecore.eu-1.cinemataztic.com/api/",	    //FI
+			"https://valmorgan-au.cinegamecore.au-1.cinemataztic.com/api/",	    //AU
+			"https://cinemataztic-ae.cinegamecore.au-1.cinemataztic.com/api/",	//AE
+			"https://weischer-de.cinegamecore.eu-2.cinemataztic.com/api/",  	//DE
+			"https://forumkino-ee.cinegamecore.eu-1.cinemataztic.com/api/",		//EE
+			"https://cinesa-es.cinegamecore.eu-2.cinemataztic.com/api/",	    //ES
+            "https://wideeyemedia-ie.cinegamecore.eu-2.cinemataztic.com/api/",  //IE
+			"https://itv-in.cinegamecore.asia-1.cinemataztic.com/api/",         //IN
+			"https://valmorgan-nz.cinegamecore.au-1.cinemataztic.com/api/",     //NZ
 		};
 
         /// <summary>
@@ -473,8 +468,8 @@ namespace CineGame.Host {
 
             if (!IsWebGL && !Application.isEditor) {
 
-    	          DeviceId = Configuration.CINEMATAZTIC_SCREEN_ID;
-		            Market = Configuration.MARKET_ID;
+                DeviceId = Configuration.CINEMATAZTIC_SCREEN_ID;
+		        Market = Configuration.MARKET_ID;
 
                 if (string.IsNullOrWhiteSpace (DeviceId) || string.IsNullOrWhiteSpace (Market)) {
                     var hostConfigFilename = Path.Combine (Environment.GetFolderPath (Environment.SpecialFolder.Personal), "conf-db.json");
@@ -489,7 +484,7 @@ namespace CineGame.Host {
                                 Market = (string)confDb ["cloudtaztic"] ["config"] ["player"] ["market"];
                                 DeviceId = (string)confDb ["cloudtaztic"] ["config"] ["_id"];
                                 Debug.Log ($"DeviceId from ~/conf-db.json:cloudtaztic.config._id: {DeviceId}");
-                                Debug.Log ($"Market from ~/conf-db.json:cloudtaztic.config.player.market: {Market} ({MarketDisplayNamesMap [Market]})");
+                                Debug.Log ($"Market from ~/conf-db.json:cloudtaztic.config.player.market: {Market} ({MarketSlugMap [Market]})");
 #pragma warning restore
                             }
                         } else {
@@ -508,7 +503,7 @@ namespace CineGame.Host {
                 if (!string.IsNullOrEmpty (marketFromEnv)) {
 #pragma warning disable 0618
                     Market = marketFromEnv;
-                    Debug.Log ($"Market from environment: {Market} ({MarketDisplayNamesMap [Market]})");
+                    Debug.Log ($"Market from environment: {Market} ({MarketSlugMap [Market]})");
 #pragma warning restore
                 }
 
@@ -561,7 +556,7 @@ namespace CineGame.Host {
                 Debug.Log ($"DeviceId from deviceUniqueIdentifier: {did}");
             }
 
-            Invoke ("RequestGameCode", .1f);
+            Invoke (nameof (RequestGameCode), .1f);
 
             OnSetupCompleted?.Invoke ();
         }
@@ -655,7 +650,7 @@ namespace CineGame.Host {
 		}
 
 		internal void RequestGameCode () {
-            Debug.Log ("Environment: " + (IsStagingEnv ? "staging" : "production"));
+            Debug.Log ("Environment: " + (IsStagingEnv ? "staging" : (IsDevEnv ? "dev" : "production")));
 
             var req = new CreateGameRequest {
                 hostName = Hostname,
