@@ -603,8 +603,11 @@ namespace CineGame.Host {
 		/// Returns true if there is a JRE running a smartfox server on the local computer
 		/// </summary>
         internal static bool IsSmartfoxRunningLocally () {
-            var javaProcesses = System.Diagnostics.Process.GetProcessesByName ("java");
-            return javaProcesses.Any (p => p.StartInfo.Arguments.Contains ("smartfoxserver", StringComparison.InvariantCultureIgnoreCase));
+            var isSmartfoxRunning = false;
+            return ExternalProcess.Run ("pgrep", "-f smartfoxserver", null, (msg, pct) => {
+                isSmartfoxRunning = int.TryParse (msg, out int pid);
+                return false;
+            }) && isSmartfoxRunning;
         }
 
 
