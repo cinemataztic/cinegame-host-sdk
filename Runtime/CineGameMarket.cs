@@ -14,6 +14,7 @@ namespace CineGame.SDK
             public const string BioSpil_DRF_DK = "57ff5b54359bc3000f1e1303";
             public const string CineGame_Cinemataztic_EN = "57e79e61bb29b2000f22c705";
             public const string CineGame_Cinemataztic_AE = "5c12f1c58c2a1a5509cad589";
+            public const string CineGame_Cinemataztic_SE = "653676850c50fc8ecda86b43";
             public const string CineGame_ITV_IN = "627049112c827460088db3fd";
             public const string CineGame_ValMorgan_AU = "5ba2a95eb81b02b3d8198f89";
             public const string CineGame_ValMorgan_NZ = "62a741d8709ea7ac02336c29";
@@ -30,6 +31,7 @@ namespace CineGame.SDK
             Markets.BioSpil_DRF_DK,
             Markets.CineGame_Cinemataztic_AE,
             Markets.CineGame_Cinemataztic_EN,
+            Markets.CineGame_Cinemataztic_SE,
             Markets.CineGame_ITV_IN,
             Markets.CineGame_ValMorgan_AU,
             Markets.CineGame_ValMorgan_NZ,
@@ -51,6 +53,7 @@ namespace CineGame.SDK
             { Markets.BioSpil_DRF_DK, "BioSpil_DRF_DK" },
             { Markets.CineGame_Cinemataztic_AE, "CineGame_Cinemataztic_AE" },
             { Markets.CineGame_Cinemataztic_EN, "CineGame_Cinemataztic_EN" },
+            { Markets.CineGame_Cinemataztic_SE, "CineGame_Cinemataztic_SE" },
             { Markets.CineGame_ITV_IN, "CineGame_ITV_IN" },
             { Markets.CineGame_ValMorgan_AU, "CineGame_ValMorgan_AU" },
             { Markets.CineGame_ValMorgan_NZ, "CineGame_ValMorgan_NZ" },
@@ -67,11 +70,17 @@ namespace CineGame.SDK
             return Names[CineGameSDK.Market];
         }
 
+        public static string GetSimpleName()
+        {
+            return Names[CineGameSDK.Market].Split("_")[0];
+        }
+
         public static Dictionary<string, string> Slugs = new Dictionary<string, string>
         {
             { Markets.BioSpil_DRF_DK, "drf-dk" },
             { Markets.CineGame_Cinemataztic_AE,  "cinemataztic-ae" },
             { Markets.CineGame_Cinemataztic_EN, "cinemataztic-en" },
+            { Markets.CineGame_Cinemataztic_SE, "filmstaden-se" },
             { Markets.CineGame_ITV_IN, "ivt-in" },
             { Markets.CineGame_ValMorgan_AU, "valmorgan-au" },
             { Markets.CineGame_ValMorgan_NZ, "valmorgan-nz" },
@@ -88,6 +97,7 @@ namespace CineGame.SDK
             { Markets.BioSpil_DRF_DK, "da" },
             { Markets.CineGame_Cinemataztic_AE, "en" },
             { Markets.CineGame_Cinemataztic_EN, "en" },
+            { Markets.CineGame_Cinemataztic_SE, "se" },
             { Markets.CineGame_ITV_IN, "en" },
             { Markets.CineGame_ValMorgan_AU, "en-au" },
             { Markets.CineGame_ValMorgan_NZ, "en-nz" },
@@ -104,6 +114,7 @@ namespace CineGame.SDK
             { Markets.BioSpil_DRF_DK, 420 },
             { Markets.CineGame_Cinemataztic_AE, 420 },
             { Markets.CineGame_Cinemataztic_EN, 420 },
+            { Markets.CineGame_Cinemataztic_SE, 360 },
             { Markets.CineGame_ITV_IN, 220 },
             { Markets.CineGame_ValMorgan_AU, 180 },
             { Markets.CineGame_ValMorgan_NZ, 240 },
@@ -125,6 +136,7 @@ namespace CineGame.SDK
             { Markets.BioSpil_DRF_DK, "https://biospil.cinegamecore.drf-1.cinemataztic.com/api/" },
             { Markets.CineGame_Cinemataztic_AE, "https://cinegame-ae.cinegamecore.au-1.cinemataztic.com/api/" },
             { Markets.CineGame_Cinemataztic_EN, "https://cinemataztic-en.cinegamecore.eu-1.cinemataztic.com/api/" },
+            { Markets.CineGame_Cinemataztic_SE, "https://filmstaden-se.cinegamecore.eu-1.cinemataztic.com/api/" },
             { Markets.CineGame_ITV_IN, "https://cinegame-in.cinegamecore.asia-1.cinemataztic.com/api/" },
             { Markets.CineGame_ValMorgan_AU, "https://cinegame-au.cinegamecore.au-1.cinemataztic.com/api/" },
             { Markets.CineGame_ValMorgan_NZ, "https://cinegame-nz.cinegamecore.au-1.cinemataztic.com/api/" },

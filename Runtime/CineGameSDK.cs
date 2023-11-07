@@ -579,7 +579,7 @@ namespace CineGame.SDK {
             if (Uri.TryCreate (avatarID, UriKind.Absolute, out Uri uri)) {
                 //We only allow avatars hosted on cinemataztic.com or googleusercontent.com
                 if (!uri.Host.EndsWith (".cinemataztic.com") && !uri.Host.EndsWith (".googleusercontent.com")) {
-                    Debug.LogError ($"Avatar from non-whitelisted domain {uri.Host}");
+                    Debug.LogWarning($"Avatar from non-whitelisted domain {uri.Host}");
                     return;
                 }
             } else if (CreateResponse.TryGetValue ("avatarOptions", out JToken o)) {
@@ -591,7 +591,7 @@ namespace CineGame.SDK {
                     }
                 }
                 if (uri == null) {
-                    Debug.LogError ($"GameID {GameID} does not support avatarID={avatarID}");
+                    Debug.LogWarning ($"GameID {GameID} does not support avatarID={avatarID}");
                     return;
                 }
             }
@@ -627,7 +627,7 @@ namespace CineGame.SDK {
                         continue;
                     }
                     //Other errors, or giving up after n retries
-                    Debug.LogError ($"{request.error} while downloading profile picture, giving up: {request.downloadHandler?.text} {sUrl}");
+                    Debug.LogWarning($"{request.error} while downloading profile picture, giving up: {request.downloadHandler?.text} {sUrl}");
                     yield break;
                 }
             }

@@ -29,6 +29,7 @@ namespace CineGame.SDK.Editor
             { CineGameMarket.Markets.BioSpil_DRF_DK, "https://drf.dk.auth.iam.drf-1.cinemataztic.com/" },
             { CineGameMarket.Markets.CineGame_Cinemataztic_AE, "https://auth.iam.eu-2.cinemataztic.com/" },
             { CineGameMarket.Markets.CineGame_Cinemataztic_EN, "https://cinemataztic.en.auth.iam.eu-1.cinemataztic.com/" },
+            { CineGameMarket.Markets.CineGame_Cinemataztic_SE, "https://filmstaden.se.auth.iam.eu-1.cinemataztic.com/" },
             { CineGameMarket.Markets.CineGame_ITV_IN, "https://itv.in.auth.iam.asia-1.cinemataztic.com/" },
             { CineGameMarket.Markets.CineGame_ValMorgan_AU, "https://valmorgan.au.auth.iam.au-1.cinemataztic.com/" },
             { CineGameMarket.Markets.CineGame_ValMorgan_NZ, "https://valmorgan.nz.auth.iam.au-1.cinemataztic.com/" },
