@@ -100,6 +100,7 @@ namespace CineGame.SDK.Editor {
             { CineGameMarket.Markets.BioSpil_DRF_DK, "https://drf.dk.api.player.drf-1.cinemataztic.com/" },
             { CineGameMarket.Markets.CineGame_Cinemataztic_AE, "https://cinemataztic.ae.api.player.au-1.cinemataztic.com/" },
             { CineGameMarket.Markets.CineGame_Cinemataztic_EN, "https://cinemataztic.en.api.player.eu-1.cinemataztic.com/" },
+            { CineGameMarket.Markets.CineGame_Cinemataztic_SE, "https://filmstaden.se.api.player.eu-1.cinemataztic.com/" },
             { CineGameMarket.Markets.CineGame_ITV_IN, "https://itv.in.api.player.asia-1.cinemataztic.com/" },
             { CineGameMarket.Markets.CineGame_ValMorgan_AU, "https://valmorgan.au.api.player.au-1.cinemataztic.com/" },
             { CineGameMarket.Markets.CineGame_ValMorgan_NZ, "https://valmorgan.nz.api.player.au-1.cinemataztic.com/" },
@@ -844,6 +845,7 @@ namespace CineGame.SDK.Editor {
                     EditorUtility.DisplayDialog ("CineGameSDK", "You cannot have multiple game ids loaded at once.", "OK");
                 }
             }
+
             GameID = settings.GameID;
 
             if (!CineGameLogin.IsSuperAdmin && CineGameLogin.GameIDsAvailable != null) {

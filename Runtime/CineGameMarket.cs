@@ -12,8 +12,8 @@ namespace CineGame.SDK
         public static class Markets
         {
             public const string BioSpil_DRF_DK = "57ff5b54359bc3000f1e1303";
-            public const string CineGame_Cinemataztic_EN = "57e79e61bb29b2000f22c705";
             public const string CineGame_Cinemataztic_AE = "5c12f1c58c2a1a5509cad589";
+            public const string CineGame_Cinemataztic_EN = "57e79e61bb29b2000f22c705";
             public const string CineGame_Cinemataztic_SE = "653676850c50fc8ecda86b43";
             public const string CineGame_ITV_IN = "627049112c827460088db3fd";
             public const string CineGame_ValMorgan_AU = "5ba2a95eb81b02b3d8198f89";
