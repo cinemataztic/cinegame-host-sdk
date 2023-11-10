@@ -29,14 +29,14 @@ namespace CineGame.SDK.Editor
             { CineGameMarket.Markets.BioSpil_DRF_DK, "https://drf.dk.auth.iam.drf-1.cinemataztic.com/" },
             { CineGameMarket.Markets.CineGame_Cinemataztic_AE, "https://auth.iam.eu-2.cinemataztic.com/" },
             { CineGameMarket.Markets.CineGame_Cinemataztic_EN, "https://cinemataztic.en.auth.iam.eu-1.cinemataztic.com/" },
-            { CineGameMarket.Markets.CineGame_Cinemataztic_SE, "https://filmstaden.se.auth.iam.eu-1.cinemataztic.com/" },
+            { CineGameMarket.Markets.CineGame_Filmstaden_SE, "https://filmstaden.se.auth.iam.eu-1.cinemataztic.com/" },
             { CineGameMarket.Markets.CineGame_ITV_IN, "https://itv.in.auth.iam.asia-1.cinemataztic.com/" },
             { CineGameMarket.Markets.CineGame_ValMorgan_AU, "https://valmorgan.au.auth.iam.au-1.cinemataztic.com/" },
             { CineGameMarket.Markets.CineGame_ValMorgan_NZ, "https://valmorgan.nz.auth.iam.au-1.cinemataztic.com/" },
             { CineGameMarket.Markets.CineGame_WideEyeMedia_IE, "https://wideeyemedia.ie.auth.iam.eu-2.cinemataztic.com/" },
             { CineGameMarket.Markets.CinesaFun_Cinesa_ES, "https://cinesa.es.auth.iam.eu-2.cinemataztic.com/" },
             { CineGameMarket.Markets.ForumFun_Cinemataztic_EE, "https://finnkino.ee.auth.iam.eu-1.cinemataztic.com/" },
-            { CineGameMarket.Markets.KinoSpill_DRF_NO, "https://mdn.no.auth.iam.drf-1.cinemataztic.com/" },
+            { CineGameMarket.Markets.KinoSpill_MDN_NO, "https://mdn.no.auth.iam.drf-1.cinemataztic.com/" },
             { CineGameMarket.Markets.Leffapeli_Finnkino_FI, "https://finnkino.fi.auth.iam.eu-1.cinemataztic.com/" },
             { CineGameMarket.Markets.REDyPLAY_Weicher_DE, "https://weischer.de.auth.iam.eu-2.cinemataztic.com/" }
         };
