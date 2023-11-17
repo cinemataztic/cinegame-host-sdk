@@ -97,7 +97,7 @@ namespace CineGame.SDK
             { Markets.BioSpil_DRF_DK, "da" },
             { Markets.CineGame_Cinemataztic_AE, "en" },
             { Markets.CineGame_Cinemataztic_EN, "en" },
-            { Markets.CineGame_Filmstaden_SE, "se" },
+            { Markets.CineGame_Filmstaden_SE, "sv" },
             { Markets.CineGame_ITV_IN, "en" },
             { Markets.CineGame_ValMorgan_AU, "en-au" },
             { Markets.CineGame_ValMorgan_NZ, "en-nz" },
