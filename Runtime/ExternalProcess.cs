@@ -20,6 +20,9 @@ namespace CineGame.Host {
                 p.StartInfo.RedirectStandardError = true;
                 p.StartInfo.UseShellExecute = false;
                 p.StartInfo.CreateNoWindow = !createWindow;
+                p.StartInfo.StandardOutputEncoding =
+                    p.StartInfo.StandardErrorEncoding =
+                    p.StartInfo.StandardInputEncoding = Encoding.UTF8;
                 if (!string.IsNullOrEmpty (workingDirectory)) {
                     p.StartInfo.WorkingDirectory = workingDirectory;
                 }
