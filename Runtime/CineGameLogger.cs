@@ -46,13 +46,13 @@ namespace CineGame.Host {
                 Application.logMessageReceived += HandleLogMessage;
 
                 //Generate buildtime string from compiler-generated assembly version
-                var assemblyVersion = Assembly.GetExecutingAssembly ().GetName ().Version;
+                var assemblyVersion = typeof(CineGameLogger).Assembly.GetName ().Version;
                 var startDate = new DateTime (2000, 1, 1, 0, 0, 0);
                 var span = new TimeSpan (assemblyVersion.Build, 0, 0, assemblyVersion.Revision * 2);
                 var buildDate = startDate.Add (span);
                 var buildTimeString = buildDate.ToString ("u");
 
-                Debug.LogFormat ("Engine: {0} Build version: {1} Build time: {2} Hostname: {3}", Application.unityVersion, assemblyVersion.ToString (), buildTimeString, Environment.MachineName);
+                Debug.Log ($"Engine: {Application.unityVersion} Build time: {buildTimeString} Hostname: {Environment.MachineName}");
             } catch (Exception e) {
                 Debug.LogError (e.ToString ());
             }
