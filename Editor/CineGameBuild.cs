@@ -20,10 +20,7 @@ using UnityEditor.Build;
 
 namespace CineGame.Host.Editor {
 
-<<<<<<< Updated upstream
-    internal class CineGameBuild : EditorWindow {
-=======
-    public class CineGameBuild : EditorWindow, IPreprocessBuildWithReport {
+    internal class CineGameBuild : EditorWindow, IPreprocessBuildWithReport {
 
         public int callbackOrder { get { return 0; } }
         public void OnPreprocessBuild (BuildReport report) {
@@ -34,7 +31,6 @@ namespace CineGame.Host.Editor {
             File.WriteAllText (path, timestamp);
             AssetDatabase.Refresh (ImportAssetOptions.ForceUpdate);
         }
->>>>>>> Stashed changes
 
         static CineGameBuild instance;
 
