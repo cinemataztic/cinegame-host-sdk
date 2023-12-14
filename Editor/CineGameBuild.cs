@@ -16,10 +16,25 @@ using System.Reflection;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json.Linq;
+using UnityEditor.Build;
 
 namespace CineGame.Host.Editor {
 
+<<<<<<< Updated upstream
     internal class CineGameBuild : EditorWindow {
+=======
+    public class CineGameBuild : EditorWindow, IPreprocessBuildWithReport {
+
+        public int callbackOrder { get { return 0; } }
+        public void OnPreprocessBuild (BuildReport report) {
+            var path = "Assets/Resources/buildtime.txt";
+            var timestamp = DateTime.Now.ToString ("s");
+            Debug.Log ($"OnPreprocessBuild {timestamp} => {path}");
+            Directory.CreateDirectory (Path.GetDirectoryName (path));
+            File.WriteAllText (path, timestamp);
+            AssetDatabase.Refresh (ImportAssetOptions.ForceUpdate);
+        }
+>>>>>>> Stashed changes
 
         static CineGameBuild instance;
 

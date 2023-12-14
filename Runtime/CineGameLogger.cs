@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Text;
 using System.IO;
-using System.Reflection;
 using UnityEngine;
 
 namespace CineGame.Host {
@@ -45,14 +44,9 @@ namespace CineGame.Host {
                 Application.logMessageReceived -= HandleLogMessage;
                 Application.logMessageReceived += HandleLogMessage;
 
-                //Generate buildtime string from compiler-generated assembly version
-                var assemblyVersion = typeof(CineGameLogger).Assembly.GetName ().Version;
-                var startDate = new DateTime (2000, 1, 1, 0, 0, 0);
-                var span = new TimeSpan (assemblyVersion.Build, 0, 0, assemblyVersion.Revision * 2);
-                var buildDate = startDate.Add (span);
-                var buildTimeString = buildDate.ToString ("u");
+                var buildTimeString = (Resources.Load ("buildtime") as TextAsset).text;
 
-                Debug.Log ($"Engine: {Application.unityVersion} Build time: {buildTimeString} Hostname: {Environment.MachineName}");
+                Debug.Log ($"Engine: {Application.unityVersion} Application build time: {buildTimeString} Hostname: {Environment.MachineName}");
             } catch (Exception e) {
                 Debug.LogError (e.ToString ());
             }
