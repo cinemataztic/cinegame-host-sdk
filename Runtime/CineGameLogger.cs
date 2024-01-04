@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Text;
 using System.IO;
-using System.Reflection;
+
 using UnityEngine;
-using Newtonsoft.Json;
 
 namespace CineGame.SDK {
 
@@ -11,13 +10,10 @@ namespace CineGame.SDK {
     {
         static StreamWriter LogWriter;
         static string ENV_VAR_LOG_DIR = "LOG_DIR";
-        static string DeviceId = SystemInfo.deviceUniqueIdentifier;
 
         public static string GameID;
         public static string LogName;
         public static string LogPath;
-
-        static string BuildTime;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         static void OnBeforeSceneLoad()
@@ -49,15 +45,9 @@ namespace CineGame.SDK {
             Application.logMessageReceived -= HandleLogMessage;
             Application.logMessageReceived += HandleLogMessage;
 
-            //Generate buildtime string from compiler-generated assembly version
-            Version assemblyVersion = Assembly.GetExecutingAssembly().GetName().Version;
-            DateTime startDate = new DateTime(2000, 1, 1, 0, 0, 0);
-            TimeSpan span = new TimeSpan(assemblyVersion.Build, 0, 0, assemblyVersion.Revision * 2);
-            DateTime buildDate = startDate.Add(span);
-            BuildTime = buildDate.ToString("u");
+            var buildTimeString = (Resources.Load ("buildtime") as TextAsset).text;
 
-            Debug.LogFormat("Engine: {0} Build version: {1} Build time: {2} Hostname: {3}", Application.unityVersion, assemblyVersion.ToString(), BuildTime, Environment.MachineName);
-
+            Debug.Log ($"Engine: {Application.unityVersion} Application build time: {buildTimeString} Hostname: {Environment.MachineName}");
         }
 
         static void HandleLogMessage(string condition, string stackTrace, LogType logType)
