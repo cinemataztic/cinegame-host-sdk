@@ -20,7 +20,7 @@ using UnityEditor.Build;
 
 namespace CineGame.SDK.Editor {
 
-    internal class CineGameBuild : EditorWindow, IPreprocessBuildWithReport {
+    public class CineGameBuild : EditorWindow, IPreprocessBuildWithReport {
 
         public int callbackOrder { get { return 0; } }
         public void OnPreprocessBuild (BuildReport report) {
