@@ -630,7 +630,7 @@ namespace CineGame.SDK.Editor {
 
                 string marketSlug = CineGameMarket.Slugs[EditorPrefs.GetString("CineGameMarket")];
                 form.AddField("market", marketSlug);
-
+                /*
                 GetLatestCommit();
                 if (!string.IsNullOrEmpty (LatestBranch)) {
                     form.AddField ("commit-branch", LatestBranch);
@@ -647,6 +647,7 @@ namespace CineGame.SDK.Editor {
                 if (!string.IsNullOrEmpty (LatestDiff)) {
                     form.AddField ("commit-diff", LatestDiff);
                 }
+                */
                 //Get build time from auto-generated assembly version
                 var sdkVersion = Assembly.GetAssembly (typeof (CineGameSDK)).GetName ().Version;
                 var sdkBuildDate = new DateTime (2000, 1, 1, 0, 0, 0 /*, DateTimeKind.Utc*/).Add (new TimeSpan (sdkVersion.Build, 0, 0, sdkVersion.Revision * 2));
