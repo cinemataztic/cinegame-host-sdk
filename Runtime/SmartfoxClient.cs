@@ -84,7 +84,7 @@ namespace CineGame.SDK {
                     }
                     sfs.ProcessEvents ();
                 } catch (Exception e) {
-                    Debug.LogError (e.ToString ());
+                    Debug.LogWarning (e.ToString ());
                 }
             }
         }
