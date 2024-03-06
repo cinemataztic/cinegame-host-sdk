@@ -17,6 +17,14 @@ namespace CineGame.Host {
 		}
 
 		/// <summary>
+		/// Specifies the local system time (in Ticks, ie 1e-7 seconds) where the CineGame block should ideally have started
+		/// </summary>
+		public static long BLOCK_START_TICKS {
+			get { return long.Parse (System.Environment.GetEnvironmentVariable (PropertyNameFromAccessor (MethodBase.GetCurrentMethod ()))); }
+			set { System.Environment.SetEnvironmentVariable (PropertyNameFromAccessor (MethodBase.GetCurrentMethod ()), value.ToString ()); }
+		}
+
+		/// <summary>
 		/// Specifies whether SDK should contact production or staging env
 		/// </summary>
 		public static string NODE_ENV {

@@ -31,6 +31,7 @@ namespace CineGame.Host {
         public string Market;
 
         private static string GameCode;
+        private static float BlockStartTime;
 
         private static int GetGameCodeTries;
         private float refreshRate;
@@ -434,6 +435,14 @@ namespace CineGame.Host {
 		/// Collect Device/System Info, used for updating backend db of players
 		/// </summary>
         void SetDeviceInfo () {
+            try {
+                var blockStartTicks = Configuration.BLOCK_START_TICKS;
+                BlockStartTime = (DateTime.Now.Ticks - blockStartTicks) / 10000000f;
+                Debug.Log ($"BLOCK_START_TICKS={blockStartTicks} --- BlockStartTime={BlockStartTime:0.##}s");
+            } catch (Exception) {
+                Debug.Log ("BLOCK_START_TICKS not defined, using time t0 as starting point");
+            }
+
             Hostname = Environment.MachineName;
 
             DeviceInfo = string.Format ("{0}, {1}, {2} cores. {3} MB RAM. Graphics: {4} {5} ({6} {7}) Resolution: {8} OS: {9}",
@@ -1000,6 +1009,13 @@ namespace CineGame.Host {
 		/// </summary>
         public static void KickSupporter (int backendId) {
             SmartfoxClient.KickUser (backendId);
+        }
+
+        /// <summary>
+		/// Get total amount of time since parent process started game executable (or since Unity Player initialized, if not applicable)
+		/// </summary>
+        public static float GetTimeSinceBlockStart () {
+            return Time.realtimeSinceStartup + BlockStartTime;
         }
 
         internal static string GetRegionProfanityUrl () {
