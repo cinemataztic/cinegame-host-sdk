@@ -394,7 +394,21 @@ namespace CineGame.Host {
                 return;
             }
             instance = this;
+
             SetDeviceInfo ();
+
+            try {
+                // Read BLOCK_START_TICKS from parent process. This will be in JavaScript ticks, ie miliseconds since Jan 1 1970.
+                // .NET ticks are in 1e-7 seconds since Jan 1 0001, so we need to convert it by scaling and offsetting.
+                var blockStartTicksJS = Configuration.BLOCK_START_TICKS;
+                var offsetFromJSEpochToDotNetEpoch = 62135596800000L;
+                var blockStartTicksDotNet = (blockStartTicksJS + offsetFromJSEpochToDotNetEpoch) * 10000;
+                var nowTicks = DateTime.Now.Ticks;
+                BlockStartTime = (nowTicks - blockStartTicksDotNet) * 1e-7f;
+                Debug.Log ($"BLOCK_START_TICKS={blockStartTicksJS} --- BlockStartTime={BlockStartTime:0.##}s");
+            } catch (Exception) {
+                Debug.Log ("BLOCK_START_TICKS not defined, using time t0 as starting point");
+            }
         }
 
         /// <summary>
@@ -435,14 +449,6 @@ namespace CineGame.Host {
 		/// Collect Device/System Info, used for updating backend db of players
 		/// </summary>
         void SetDeviceInfo () {
-            try {
-                var blockStartTicks = Configuration.BLOCK_START_TICKS;
-                BlockStartTime = (DateTime.Now.Ticks - blockStartTicks) / 10000000f;
-                Debug.Log ($"BLOCK_START_TICKS={blockStartTicks} --- BlockStartTime={BlockStartTime:0.##}s");
-            } catch (Exception) {
-                Debug.Log ("BLOCK_START_TICKS not defined, using time t0 as starting point");
-            }
-
             Hostname = Environment.MachineName;
 
             DeviceInfo = string.Format ("{0}, {1}, {2} cores. {3} MB RAM. Graphics: {4} {5} ({6} {7}) Resolution: {8} OS: {9}",
