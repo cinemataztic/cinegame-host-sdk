@@ -17,7 +17,7 @@ namespace CineGame.Host {
 		}
 
 		/// <summary>
-		/// Specifies the local system time (in Ticks, ie 1e-7 seconds) where the CineGame block should ideally have started
+		/// Specifies the local system time (in JavaScript Ticks, ie milliseconds since Jan 1 1970) where the CineGame block should ideally have started
 		/// </summary>
 		public static long BLOCK_START_TICKS {
 			get { return long.Parse (System.Environment.GetEnvironmentVariable (PropertyNameFromAccessor (MethodBase.GetCurrentMethod ()))); }
