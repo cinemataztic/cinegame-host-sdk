@@ -322,7 +322,9 @@ namespace CineGame.Host.Editor {
             }
 
             if (!string.IsNullOrWhiteSpace (LatestDiff)) {
-                if (!EditorUtility.DisplayDialog (ProgressBarTitle, "There are local changes to the project. Build anyway?", "OK", "Cancel"))
+                if (!EditorUtility.DisplayDialog (ProgressBarTitle, UcbAvailable && BuildOnUcb ?
+                    "There are local changes to the project. These will NOT be included in the build! OK?"
+                    : "There are local changes to the project. Build anyway?", "OK", "Cancel"))
                     return;
             }
 
