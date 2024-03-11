@@ -31,6 +31,7 @@ namespace CineGame.Host {
         public string Market;
 
         private static string GameCode;
+        private static float BlockStartTime;
 
         private static int GetGameCodeTries;
         private float refreshRate;
@@ -393,7 +394,21 @@ namespace CineGame.Host {
                 return;
             }
             instance = this;
+
             SetDeviceInfo ();
+
+            try {
+                // Read BLOCK_START_TICKS from parent process. This will be in JavaScript ticks, ie miliseconds since Jan 1 1970.
+                // .NET ticks are in 1e-7 seconds since Jan 1 0001, so we need to convert it by scaling and offsetting.
+                var blockStartTicksJS = Configuration.BLOCK_START_TICKS;
+                var offsetFromJSEpochToDotNetEpoch = 62135596800000L;
+                var blockStartTicksDotNet = (blockStartTicksJS + offsetFromJSEpochToDotNetEpoch) * 10000;
+                var nowTicks = DateTime.Now.Ticks;
+                BlockStartTime = (nowTicks - blockStartTicksDotNet) * 1e-7f;
+                Debug.Log ($"BLOCK_START_TICKS={blockStartTicksJS} --- BlockStartTime={BlockStartTime:0.##}s");
+            } catch (Exception) {
+                Debug.Log ("BLOCK_START_TICKS not defined, using time t0 as starting point");
+            }
         }
 
         /// <summary>
@@ -1000,6 +1015,13 @@ namespace CineGame.Host {
 		/// </summary>
         public static void KickSupporter (int backendId) {
             SmartfoxClient.KickUser (backendId);
+        }
+
+        /// <summary>
+		/// Get total amount of time since parent process started game executable (or since Unity Player initialized, if not applicable)
+		/// </summary>
+        public static float GetTimeSinceBlockStart () {
+            return Time.realtimeSinceStartup + BlockStartTime;
         }
 
         internal static string GetRegionProfanityUrl () {
