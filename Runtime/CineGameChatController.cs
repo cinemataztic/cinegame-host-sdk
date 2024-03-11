@@ -49,6 +49,10 @@ namespace CineGame.SDK {
         public static Action<int, string, Dictionary<string, Rect>> OnChatMessage;
         public static Action<int, string, int, int> OnGIFMessage;
 
+        public static bool IsProfanityFilterLoaded {
+            get { return instance != null && regexp != null; }
+        }
+
         void Awake () {
             if (instance != null)
                 return;
@@ -155,6 +159,10 @@ namespace CineGame.SDK {
 		/// Runs the profanity filter on another thread. Result is returned in the callback argument.
 		/// </summary>
         public static void RunProfanityFilter (string input, WordFilterCallback callback) {
+            if (!IsProfanityFilterLoaded) {
+                Debug.LogError ("Profanity filter not loaded!");
+                return;
+            }
             System.Threading.ThreadPool.QueueUserWorkItem (delegate (object state) {
                 var filtered = regexp.Replace ((string)state, ReplacementString);
 

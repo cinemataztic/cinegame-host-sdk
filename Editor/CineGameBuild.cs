@@ -329,7 +329,9 @@ namespace CineGame.SDK.Editor {
             }
 
             if (!string.IsNullOrWhiteSpace (LatestDiff)) {
-                if (!EditorUtility.DisplayDialog (ProgressBarTitle, "There are local changes to the project. Build anyway?", "OK", "Cancel"))
+                if (!EditorUtility.DisplayDialog (ProgressBarTitle, UcbAvailable && BuildOnUcb ?
+                    "There are local changes to the project. These will NOT be included in the build! OK?"
+                    : "There are local changes to the project. Build anyway?", "OK", "Cancel"))
                     return;
             }
 
@@ -811,7 +813,7 @@ namespace CineGame.SDK.Editor {
             if (sdks.Length == 0 || sdks.All (sdk => sdk.Settings == null)) {
                 var assetGuids = AssetDatabase.FindAssets ("t:CineGameSettings");
                 if (assetGuids.Length == 0) {
-                    if (sdks.Length != 0)
+                    if (sdks.Length != 0 || CineGameLogin.GameIDsAvailable.Length != 0)
                     {
                         settings = CreateInstance<CineGameSettings>();
                         settings.GameID = CineGameLogin.GameIDsAvailable [0];

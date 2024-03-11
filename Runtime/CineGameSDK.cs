@@ -1,7 +1,6 @@
 using System;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.IO;
 using System.Collections.Generic;
 using System.Net;
 using System.Collections;
@@ -16,8 +15,6 @@ using Sfs2X.Entities.Data;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using UnityEditor;
-using UnityEngine.SceneManagement;
-using System.Security;
 
 namespace CineGame.SDK {
 
@@ -47,6 +44,7 @@ namespace CineGame.SDK {
         private static string MacAddress = null;
         public static string DeviceId = null;
         private static string DeviceInfo = null;
+        private static string LocalIP;
         public static string UserEmail;
         public static string UserName;
         public static string UserId;
@@ -60,6 +58,8 @@ namespace CineGame.SDK {
             public string hostName;
             public string gameType;
             public string mac;
+            public string localIp;
+            public bool localGameServerRunning;
             public string deviceId;
             public string platform;
             public string showId;
@@ -335,7 +335,7 @@ namespace CineGame.SDK {
             }
 
             SetDeviceInfo();
-            GetMacAddress();
+            GetNetworkInfo();
 
             if (!Application.isEditor) {
                 Cursor.visible = false;
@@ -418,21 +418,19 @@ namespace CineGame.SDK {
         }
 
         /// <summary>
-		/// Determine MAC address of inet interface
+		/// Determine Local IP and MAC address of inet interface
 		/// </summary>
-        internal static void GetMacAddress () {
+        internal static void GetNetworkInfo () {
             if (IsWebGL) {
-                Debug.Log ("MAC address not available on WebGL builds.");
+                Debug.Log ("NetworkInfo not available on WebGL builds.");
                 return;
             }
 
             try {
                 var hostname = new Uri (CineGameMarket.GetAPI()).Host;
-                string localAddr;
                 using (var u = new UdpClient (hostname, 1)) {
-                    localAddr = ((IPEndPoint)u.Client.LocalEndPoint).Address.ToString ();
+                    LocalIP = ((IPEndPoint)u.Client.LocalEndPoint).Address.ToString ();
                 }
-                Debug.LogFormat ("UDPClient address: {0} - determining network adapter ...", localAddr);
 
                 foreach (var net in NetworkInterface.GetAllNetworkInterfaces ()) {
                     var macAddr = net.GetPhysicalAddress ().ToString ();
@@ -440,17 +438,17 @@ namespace CineGame.SDK {
                     if (net.NetworkInterfaceType != NetworkInterfaceType.Loopback) {
                         foreach (var addrInfo in net.GetIPProperties ().UnicastAddresses) {
                             var niAddr = addrInfo.Address.ToString ();
-                            if (localAddr == niAddr) {
-                                Debug.LogFormat ("Network adapter found: {0} mac={1} type={2}", net.Name, macAddr, net.NetworkInterfaceType.ToString ());
+                            if (LocalIP == niAddr) {
+                                Debug.Log ($"Network adapter found: {net.Name} localIp={LocalIP} mac={macAddr} type={net.NetworkInterfaceType}");
                                 MacAddress = macAddr;
                                 return;
                             }
                         }
                     }
                 }
-                Debug.LogError ("No MAC address found for this host");
+                Debug.LogError ($"No MAC address found for this host. LocalIP={LocalIP}");
             } catch (Exception e) {
-                Debug.LogErrorFormat ("Exception while trying to determine adapter MAC Address: {0}", e);
+                Debug.LogError ("Exception while trying to determine adapter MAC Address: " + e);
                 MacAddress = null;
             }
         }
@@ -517,6 +515,7 @@ namespace CineGame.SDK {
                 hostName = Hostname,
                 gameType = GameID,
                 mac = MacAddress,
+                localGameServerRunning = IsSmartfoxRunningLocally (),
                 deviceId = DeviceId,
                 platform = Application.platform.ToString (),
                 showId = Configuration.CINEMATAZTIC_SHOW_ID,
@@ -784,6 +783,17 @@ namespace CineGame.SDK {
                     Invoke (nameof (SendGameEndToServer), 1f);
                 }
             });
+        }
+
+        /// <summary>
+		/// Returns true if there is a smartfox server running on the local computer
+		/// </summary>
+        internal static bool IsSmartfoxRunningLocally () {
+            var isSmartfoxRunning = false;
+            return ExternalProcess.Run ("pgrep", "-f smartfoxserver", null, (msg, pct) => {
+                isSmartfoxRunning = int.TryParse (msg, out int pid);
+                return false;
+            }) && isSmartfoxRunning;
         }
 
         static void API(string uri, string json, BackendCallback callback = null)

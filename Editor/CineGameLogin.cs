@@ -47,8 +47,6 @@ namespace CineGame.SDK.Editor
             }
         }
 
-
-
         bool KeyDown(KeyCode keyCode)
         {
             return Event.current.type == EventType.KeyDown && Event.current.keyCode == keyCode;
@@ -58,9 +56,6 @@ namespace CineGame.SDK.Editor
         static int MarketSlugIndex;
         static string CurrentMarketSlug {
             get {
-                if (MarketSlugs == null) {
-                    MarketSlugs = CineGameMarket.Names.Values.ToArray ();
-                }
                 return MarketSlugs [MarketSlugIndex];
             }
         }
@@ -70,7 +65,13 @@ namespace CineGame.SDK.Editor
             CineGameSDK.OnError -= OnGameCodeError;
             CineGameSDK.OnError += OnGameCodeError;
 
-            MarketSlugs = CineGameMarket.Names.Values.ToArray ();
+            var _marketSlugs = CineGameMarket.Names.Values.ToList ();
+            _marketSlugs.Add ("DEV_cinemataztic-en");
+            _marketSlugs.Add ("DEV_finnkino-fi");
+            _marketSlugs.Add ("STAGING_cinemataztic-en");
+            _marketSlugs.Add ("STAGING_finnkino-fi");
+            MarketSlugs = _marketSlugs.ToArray ();
+
             MarketSlugIndex = Mathf.Clamp (Array.IndexOf (MarketSlugs, EditorPrefs.GetString ("CineGameMarket", MarketSlugs [0])), 0, MarketSlugs.Length - 1);
             if (Application.internetReachability == NetworkReachability.NotReachable) {
                 Debug.LogError ("Internet not reachable. Unable to refresh token.");
@@ -191,6 +192,46 @@ namespace CineGame.SDK.Editor
 
         static DateTime AccessTokenExpiry = DateTime.MinValue;
 
+        internal static Uri CinematazticApiBaseUri {
+            get {
+                return CurrentMarketSlug switch {
+                    "drk-dk" => new Uri ("https://drf.dk.api.player.drf-1.cinemataztic.com/v2/"),
+                    "mdn-no" => new Uri("https://mdn.no.api.player.drf-1.cinemataztic.com/v2/"),
+                    "cinemataztic-en" => new Uri ("https://cinemataztic.en.api.player.eu-1.cinemataztic.com/v2/"),
+                    "finnkino-fi" => new Uri ("https://finnkino.fi.api.player.eu-1.cinemataztic.com/v2/"),
+                    "weischer-de" => new Uri ("https://weischer.de.api.player.eu-2.cinemataztic.com/v2/"),
+                    "wideeyemedia-ie" => new Uri ("https://wideeyemedia.ie.api.player.eu-2.cinemataztic.com/v2/"),
+                    "valmorgan-au" => new Uri("https://valmorgan.au.api.player.au-1.cinemataztic.com/v2/"),
+                    "valmorgan-nz" => new Uri("https://valmorgan.nz.api.player.au-1.cinemataztic.com/v2/"),
+                    "DEV_cinemataztic-en" => new Uri ("https://cinemataztic.en.api.player.dev.cinemataztic.com/v2/"),
+                    "DEV_finnkino-fi" => new Uri ("https://finnkino.fi.api.player.dev.cinemataztic.com/v2/"),
+                    "STAGING_cinemataztic-en" => new Uri ("https://cinemataztic.en.api.player.staging.cinemataztic.com/v2/"),
+                    "STAGING_finnkino-fi" => new Uri ("https://finnkino.fi.api.player.staging.cinemataztic.com/v2/"),
+                    _ => null,
+                };
+            }
+        }
+
+        static Uri CinematazticAuthUri {
+            get {
+                return CurrentMarketSlug switch {
+                    "drf-dk" => new Uri ("https://drf.dk.auth.iam.drf-1.cinemataztic.com"),
+                    "mdn-no" => new Uri("https://mdn.no.auth.iam.drf-1.cinemataztic.com"),
+                    "cinemataztic-en" => new Uri ("https://cinemataztic.en.auth.iam.eu-1.cinemataztic.com"),
+                    "finnkino-fi" => new Uri ("https://finnkino.fi.auth.iam.eu-1.cinemataztic.com"),
+                    "weischer-de" => new Uri ("https://weischer.de.auth.iam.eu-2.cinemataztic.com"),
+                    "wideeyemedia-ie" => new Uri ("https://wideeyemedia.ie.auth.iam.eu-2.cinemataztic.com"),
+                    "valmorgan-au" => new Uri("https://valmorgan.au.auth.iam.au-1.cinemataztic.com"),
+                    "valmorgan-nz" => new Uri("https://valmorgan.nz.auth.iam.au-1.cinemataztic.com"),
+                    "DEV_cinemataztic-en" => new Uri ("https://cinemataztic.en.auth.iam.dev.cinemataztic.com"),
+                    "DEV_finnkino-fi" => new Uri ("https://finnkino.fi.auth.iam.dev.cinemataztic.com"),
+                    "STAGING_cinemataztic-en" => new Uri ("https://cinemataztic.en.auth.iam.staging.cinemataztic.com"),
+                    "STAGING_finnkino-fi" => new Uri ("https://finnkino.fi.auth.iam.staging.cinemataztic.com"),
+                    _ => null,
+                };
+            }
+        }
+
         public static bool IsSuperAdmin;
         public static string [] MarketIdsAvailable;
         public static string [] MarketSlugsAvailable;
@@ -203,7 +244,9 @@ namespace CineGame.SDK.Editor
         }
 
         public static bool GetAccessToken (string userName, string userPassword) {
-            if (!string.IsNullOrEmpty (userName) && !string.IsNullOrEmpty (userPassword)) {
+
+            var uri = CinematazticAuthUri;
+            if (!string.IsNullOrEmpty (userName) && !string.IsNullOrEmpty (userPassword) && uri != null) {
                 var jsonReq = new JObject {
                     ["type"] = "user",
                     ["email"] = userName,
@@ -229,7 +272,7 @@ namespace CineGame.SDK.Editor
                 }
 
                 var request = new UnityWebRequest (
-                                  url,
+                                  uri,
                                   "POST",
                                   new DownloadHandlerBuffer (),
                                   new UploadHandlerRaw (System.Text.Encoding.UTF8.GetBytes (jsonReq.ToString ()))
@@ -268,11 +311,8 @@ namespace CineGame.SDK.Editor
 
                     var appNames = new List<string> (MarketIdsAvailable.Length);
                     foreach (var id in MarketIdsAvailable) {
-                        CineGameMarket.Names.TryGetValue(id, out string marketName);
-                        if (marketName != null)
-                        {
-                            appNames.Add(marketName);
-                        }
+                        if (CineGameMarket.Names.TryGetValue(id, out string marketName))
+                            appNames.Add (marketName);
                     }
                     AppNamesAvailable = appNames.ToArray ();
 

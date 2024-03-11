@@ -26,10 +26,10 @@ namespace CineGame.SDK {
 		}
 
 		/// <summary>
-		/// Specifies whether SDK should contact production or staging env
+		/// Specifies which cluster the machine is set to work with, so we can determine which API group to contact (dev, staging or production)
 		/// </summary>
 		public static string CLUSTER_NAME
-        {
+		{
 			get { return System.Environment.GetEnvironmentVariable (PropertyNameFromAccessor (MethodBase.GetCurrentMethod ())); }
 			set { System.Environment.SetEnvironmentVariable (PropertyNameFromAccessor (MethodBase.GetCurrentMethod ()), value); }
 		}

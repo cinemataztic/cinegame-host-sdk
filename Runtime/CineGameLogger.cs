@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Text;
 using System.IO;
-
 using UnityEngine;
 
 namespace CineGame.SDK {
@@ -15,39 +14,47 @@ namespace CineGame.SDK {
         public static string LogName;
         public static string LogPath;
 
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
-        static void OnBeforeSceneLoad()
-        {
-            if (Application.isEditor || LogWriter != null)
-            {
+        [RuntimeInitializeOnLoadMethod (RuntimeInitializeLoadType.BeforeSceneLoad)]
+        static void OnBeforeSceneLoad () {
+            if (Application.platform == RuntimePlatform.Android
+             || Application.platform == RuntimePlatform.IPhonePlayer
+             || Application.platform == RuntimePlatform.WebGLPlayer
+             || Application.isEditor) {
+                Debug.Log ("Custom logger disabled on this platform");
                 return;
             }
+            if (LogWriter != null)
+                return;
+            try {
+                LogName = "CineGame-" + DateTime.UtcNow.ToString ("yyyyMMdd-HHmmss") + ".log";
 
-            LogName = "CineGame-" + DateTime.UtcNow.ToString("yyyyMMdd-HHmmss") + ".log";
+                if (string.IsNullOrEmpty (Environment.GetEnvironmentVariable (ENV_VAR_LOG_DIR)))
+                {
+                    LogPath = Application.persistentDataPath;
+                }
+                else
+                {
+                    LogPath = Environment.GetEnvironmentVariable (ENV_VAR_LOG_DIR);
+                }
 
-            if (String.IsNullOrEmpty(Environment.GetEnvironmentVariable(ENV_VAR_LOG_DIR)))
-            {
-                LogPath = Application.persistentDataPath;
+                if (!Directory.Exists (LogPath))
+                {
+                    Directory.CreateDirectory (LogPath);
+                }
+
+                var stream = File.Open (LogPath + "/" + LogName, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read);
+				LogWriter = new StreamWriter (stream, Encoding.UTF8) {
+					AutoFlush = true
+				};
+				Application.logMessageReceived -= HandleLogMessage;
+                Application.logMessageReceived += HandleLogMessage;
+
+                var buildTimeString = (Resources.Load ("buildtime") as TextAsset).text;
+
+                Debug.Log ($"Engine: {Application.unityVersion} Application build time: {buildTimeString} Hostname: {Environment.MachineName}");
+            } catch (Exception e) {
+                Debug.LogError (e.ToString ());
             }
-            else
-            {
-                LogPath = Environment.GetEnvironmentVariable(ENV_VAR_LOG_DIR);
-            }
-
-            if (!Directory.Exists(LogPath))
-            {
-                Directory.CreateDirectory(LogPath);
-            }
-
-            FileStream stream = File.Open(LogPath + "/" + LogName, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read);
-            LogWriter = new StreamWriter(stream, Encoding.UTF8);
-            LogWriter.AutoFlush = true;
-            Application.logMessageReceived -= HandleLogMessage;
-            Application.logMessageReceived += HandleLogMessage;
-
-            var buildTimeString = (Resources.Load ("buildtime") as TextAsset).text;
-
-            Debug.Log ($"Engine: {Application.unityVersion} Application build time: {buildTimeString} Hostname: {Environment.MachineName}");
         }
 
         static void HandleLogMessage(string condition, string stackTrace, LogType logType)

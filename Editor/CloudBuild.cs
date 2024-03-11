@@ -172,7 +172,12 @@ namespace CineGame.SDK.Editor {
 			buttonStyle.padding = new RectOffset (2, 2, 2, 2);
 
 			if (string.IsNullOrWhiteSpace (CloudProjectSettings.organizationId) || string.IsNullOrWhiteSpace (CloudProjectSettings.projectId)) {
+#if UNITY_2021_1_OR_NEWER
+				EditorGUILayout.HelpBox ("Please set up Build Automation in Unity Services", MessageType.Error);
+				SettingsService.OpenProjectSettings ("Project/Services/Build Automation");
+#else
 				EditorGUILayout.HelpBox ("Please set up Cloud Build in Unity Gaming Services", MessageType.Error);
+#endif
 				return;
 			}
 
@@ -184,6 +189,10 @@ namespace CineGame.SDK.Editor {
 				} else {
 					return;
 				}
+			}
+
+			if (GUILayout.Button ("Open Source Control Settings")) {
+				Application.OpenURL ($"https://cloud.unity.com/home/organizations/{CloudProjectSettings.organizationId}/projects/{CloudProjectSettings.projectId}/cloud-build/settings/source-control");
 			}
 
 			//Get TexCoords for animated progress texture
@@ -465,10 +474,14 @@ namespace CineGame.SDK.Editor {
 				}
 				public bool autoBuild;
 				[JsonProperty (NullValueHandling = NullValueHandling.Ignore)]
-				public string unityVersion; //eg "2019_4_34f1"
+				public string unityVersion; //eg "2019_4_34f1" "latest2022_2"
 				public bool autoDetectUnityVersion;
 				public bool fallbackPatchVersion;
 				public bool ccdEnabled;
+				[JsonProperty (NullValueHandling = NullValueHandling.Ignore)]
+				public string ccdBucketId;
+				[JsonProperty (NullValueHandling = NullValueHandling.Ignore)]
+				public string ccdApiKey;
 				public bool ccdStripRemotePath;
 				public bool ccdPreserveBucket;
 				public bool ccdCreateRelease;
@@ -480,8 +493,14 @@ namespace CineGame.SDK.Editor {
 				[JsonProperty (NullValueHandling = NullValueHandling.Ignore)]
 				public BuildSchedule buildSchedule;
 				public bool autoBuildCancellation;
-				public bool gcpBetaOptIn;
-				public bool gcpOptOut;
+				public string operatingSystemSelected;
+				public string operatingSystemVersion;
+				[JsonProperty (NullValueHandling = NullValueHandling.Ignore)]
+				public string rubyVersion;
+				[JsonProperty (NullValueHandling = NullValueHandling.Ignore)]
+				public string remoteCacheStrategy;
+				[JsonProperty (NullValueHandling = NullValueHandling.Ignore)]
+				public string cacheCompressionLevel;
 				public Advanced advanced;
 			}
 			public class Credentials {
@@ -822,13 +841,15 @@ namespace CineGame.SDK.Editor {
 				yield return StartCoroutine (E_GetLatestBuildForTarget (targetid));
 				Repaint ();
 				s = LatestBuild [targetid].buildStatus;
-			} while (s == UcbBuildStatus.created || s == UcbBuildStatus.queued || s == UcbBuildStatus.sentToBuilder);
+			} while (s == UcbBuildStatus.created || s == UcbBuildStatus.queueing || s == UcbBuildStatus.queued || s == UcbBuildStatus.sentToBuilder);
 			do {
 				yield return new WaitForSecondsRealtime (60f);
 				yield return StartCoroutine (E_GetLatestBuildForTarget (targetid));
 				Repaint ();
 				s = LatestBuild [targetid].buildStatus;
 			} while (s == UcbBuildStatus.started || s == UcbBuildStatus.restarted);
+			Debug.Log ($"Stopped polling {targetid} buildStatus={s}");
+			PollCoroutines.Remove (targetid);
 		}
 
 		void CancelBuild (string targetid, bool confirm = true) {
@@ -892,6 +913,8 @@ namespace CineGame.SDK.Editor {
 				settings = new UcbBuildTarget.Settings {
 					autoDetectUnityVersion = true,
 					fallbackPatchVersion = true,
+					operatingSystemSelected = "mac",
+					operatingSystemVersion = "ventura",
 					//unityVersion = Application.unityVersion.Replace ('.', '_'),
 					platform = new UcbBuildTarget.Settings.Platform {
 						bundleId = PlayerSettings.applicationIdentifier,
@@ -934,7 +957,7 @@ namespace CineGame.SDK.Editor {
 				IsLoadingTargets = false;
 
 				if (request.result != UnityWebRequest.Result.Success) {
-					Debug.LogError ($"Failed to create target for {target.name}: {request.error}");
+					Debug.LogError ($"Failed to create target for {target.name}: {request.downloadHandler.text}");
 				} else {
 					target = JsonConvert.DeserializeObject<UcbBuildTarget> (request.downloadHandler.text);
 					Debug.Log ($"Target {target.buildtargetid} created succesfully");
