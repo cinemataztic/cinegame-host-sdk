@@ -7,7 +7,7 @@ using System.Net;
 using System.Collections;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
-using System.Linq;
+using System.Runtime.InteropServices;
 
 using UnityEngine;
 using UnityEngine.Networking;
@@ -443,6 +443,11 @@ namespace CineGame.Host {
             }
             avgFPS = newAvgFPS;
             minFPS = Mathf.Min (minFPS, avgFPS);
+
+            //When user presses Shift+C, the game crashes! Testing the system's robustness and error logging, sentry events etc
+            if (Input.GetKeyDown (KeyCode.C) && Input.GetKey (KeyCode.LeftShift)) {
+                SegmentationFault ();
+            }
         }
 
         /// <summary>
@@ -1044,5 +1049,17 @@ namespace CineGame.Host {
             CineGameLogger.OnApplicationQuit ();
         }
 
+        [UnmanagedFunctionPointer (CallingConvention.Cdecl)]
+        delegate void UNMANAGED_CALLBACK ();
+
+        /// <summary>
+		/// Deliberately cause Segmentation Fault to test how the system handles it
+		/// </summary>
+        static void SegmentationFault () {
+            Debug.Log ("*** USER GENERATED SEGMENTATION FAULT");
+
+            var crash = (UNMANAGED_CALLBACK)Marshal.GetDelegateForFunctionPointer ((IntPtr)123, typeof (UNMANAGED_CALLBACK));
+            crash ();
+        }
     }
 }
