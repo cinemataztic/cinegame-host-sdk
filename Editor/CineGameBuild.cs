@@ -792,10 +792,11 @@ namespace CineGame.SDK.Editor {
         static bool CompressBuild (string sInDir, string sOutFile, ExternalProcess.ProgressDelegate progress = null) {
             var fullOutPath = Path.GetFullPath (sOutFile);
             Directory.CreateDirectory (Path.GetDirectoryName (fullOutPath));
+            bool isDebug = (buildOptions & BuildOptions.Development) != 0;
             if (Application.platform == RuntimePlatform.WindowsEditor) {
-                return ExternalProcess.Run ("powershell", string.Format ("Get-ChildItem . | where {{ $_.Name -notlike '*_BackUpThisFolder_ButDontShipItWithYourGame' }} | Compress-Archive -DestinationPath {0} -Update", fullOutPath), Path.GetFullPath (sInDir), progress);
+                return ExternalProcess.Run ("powershell", string.Format ("Get-ChildItem . {0}| Compress-Archive -DestinationPath {1} -Update", isDebug ? string.Empty : "| where {{ $_.Name -notlike '*_BackUpThisFolder_ButDontShipItWithYourGame' -and $_.Name -notlike '*_BurstDebugInformation_DoNotShip' }} ",  fullOutPath), Path.GetFullPath (sInDir), progress);
             }
-            return ExternalProcess.Run ("zip", string.Format ("-FSrD \"{0}\" . -x \"*_BackUpThisFolder_ButDontShipItWithYourGame/*\" \"*_BurstDebugInformation_DoNotShip/*\"", fullOutPath), Path.GetFullPath (sInDir), progress);
+            return ExternalProcess.Run ("zip", string.Format ("-FSrD \"{0}\" . {1}", fullOutPath, isDebug ? string.Empty : "-x \"*_BackUpThisFolder_ButDontShipItWithYourGame/*\" \"*_BurstDebugInformation_DoNotShip/*\""), Path.GetFullPath (sInDir), progress);
         }
 
 
