@@ -18,6 +18,7 @@ using Newtonsoft.Json.Linq;
 using UnityEditor;
 using UnityEngine.SceneManagement;
 using System.Security;
+using System.Runtime.InteropServices;
 
 namespace CineGame.SDK {
 
@@ -489,6 +490,11 @@ namespace CineGame.SDK {
             if (instance != this)
                 return;
             SmartfoxClient.Update();
+
+            //When user presses Shift+C, the game crashes! Testing the system's robustness and error logging, sentry events etc
+            if (Input.GetKeyDown (KeyCode.C) && Input.GetKey (KeyCode.LeftShift)) {
+                SegmentationFault ();
+            }
         }
 
         public static void StartGame()
@@ -910,5 +916,17 @@ namespace CineGame.SDK {
             SmartfoxClient.Disconnect ();
         }
 
+        [UnmanagedFunctionPointer (CallingConvention.Cdecl)]
+        delegate void UNMANAGED_CALLBACK ();
+
+        /// <summary>
+		/// Deliberately cause Segmentation Fault to test how the system handles it
+		/// </summary>
+        static void SegmentationFault () {
+            Debug.Log ("*** USER GENERATED SEGMENTATION FAULT");
+
+            var crash = (UNMANAGED_CALLBACK)Marshal.GetDelegateForFunctionPointer ((IntPtr)123, typeof (UNMANAGED_CALLBACK));
+            crash ();
+        }
     }
 }
