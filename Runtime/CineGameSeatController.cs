@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Newtonsoft.Json;
 using UnityEngine;
 using UnityEngine.UI;
@@ -114,7 +115,7 @@ namespace CineGame.SDK
             string layoutString = JsonConvert.SerializeObject(Layout);
             byte[] layoutByteData = Encoding.ASCII.GetBytes(layoutString);
 
-            string seatsString = JsonConvert.SerializeObject(Seats);
+            string seatsString = JsonConvert.SerializeObject(Seats.Values.ToList());
             byte[] seatsByteData = Encoding.ASCII.GetBytes(seatsString);
 
             CineGameSDK.PlayerObjectMessage dataObj = new CineGameSDK.PlayerObjectMessage();
