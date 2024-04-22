@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Text;
 using System.IO;
+using System.Collections.Generic;
+
 using UnityEngine;
 
 namespace CineGame.SDK {
@@ -49,6 +51,8 @@ namespace CineGame.SDK {
 				Application.logMessageReceived -= HandleLogMessage;
                 Application.logMessageReceived += HandleLogMessage;
 
+                CineGameChatController.OnChatMessage += HandleChatMessage;
+
                 var buildTimeString = (Resources.Load ("buildtime") as TextAsset).text;
 
                 Debug.Log ($"Engine: {Application.unityVersion} Application build time: {buildTimeString} Hostname: {Environment.MachineName}");
@@ -67,6 +71,11 @@ namespace CineGame.SDK {
                 string timeSinceStartupString = "[ " + string.Format("{0:00}", (int)timeSinceStartup / 60 % 60) + ":" + string.Format("{0:00}", (int)timeSinceStartup % 60) + " ] ";
                 LogWriter.WriteLine(timeSinceStartupString + stackTrace);
             }
+        }
+
+        static void HandleChatMessage(int backendID, string message, Dictionary<string, Rect> emojiDictionary)
+        {
+            LogWriter.WriteLine("{0} {1} {2}: {3}", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss,fff"), "Chat message from", backendID, message);
         }
     }
 }

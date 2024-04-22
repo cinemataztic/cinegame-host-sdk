@@ -1,9 +1,9 @@
 using System;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Collections;
 using System.Collections.Generic;
 using System.Net;
-using System.Collections;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
@@ -15,7 +15,6 @@ using Sfs2X.Entities.Data;
 
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using UnityEditor;
 
 namespace CineGame.SDK {
 
@@ -322,7 +321,7 @@ namespace CineGame.SDK {
             }
             else
             {
-                Market = EditorPrefs.GetString("CineGameMarket");
+                Market = UnityEditor.EditorPrefs.GetString("CineGameMarket");
             }
 #else
             Market = Configuration.MARKET_ID;
@@ -485,6 +484,7 @@ namespace CineGame.SDK {
             if (instance != this)
                 return;
             SmartfoxClient.Update();
+
             /*var newAvgFPS = avgFPS * 0.99f + (1f / Time.unscaledDeltaTime) * 0.01f;
             if (refreshRate > 25f && newAvgFPS < 25f && avgFPS >= 25f && numAvgFpsWarnings-- > 0) {
                 Debug.LogError ($"Average framerate dropped to {minFPS}");
@@ -505,7 +505,7 @@ namespace CineGame.SDK {
 		void RequestGameCode () {
 
 #if UNITY_EDITOR
-            CineGameEnvironment = EditorPrefs.GetString("CineGameEnvironment");
+            CineGameEnvironment = UnityEditor.EditorPrefs.GetString("CineGameEnvironment");
 #else
             CineGameEnvironment = Configuration.CLUSTER_NAME;
 #endif

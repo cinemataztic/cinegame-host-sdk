@@ -456,7 +456,6 @@ namespace CineGame.SDK {
             if (user != null && user != sfs.MySelf) { 
 
                 Room room = (Room)evt.Params ["room"];
-                //GameController.PlayerDisconnected (user.Id);
                 try {
                     object uname = string.Empty;
                     user.Properties.TryGetValue ("name", out uname);
@@ -464,13 +463,14 @@ namespace CineGame.SDK {
 
                         var backendID = (int)user.Properties ["bkid"];
                         CineGameSDK.OnPlayerLeft?.Invoke (backendID);
-
                         Debug.LogFormat ("SFS Removing {0} ({1}) from room, probably due to idle timeout. This does not affect game.", user.Name, uname);
-                        GameRoom.RemoveUser (user);
 
+                        /*
+                        GameRoom.RemoveUser(user);
                         if (userDict.ContainsKey (backendID)) {
                             userDict.Remove (backendID);
                         }
+                        */
                     }
                 } catch (Exception e) {
                     //We don't care about exceptions here, just log it without error

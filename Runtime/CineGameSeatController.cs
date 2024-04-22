@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Newtonsoft.Json;
 using UnityEngine;
 using UnityEngine.UI;
@@ -12,9 +13,8 @@ namespace CineGame.SDK
         public static Dictionary<string, Seat[]> Layout = new Dictionary<string, Seat[]>();
         public static Dictionary<string, Seat> Seats = new Dictionary<string, Seat>();
 
-
-        private static bool isSetup;
-        private static bool isActive;
+        public static bool IsActive = false;
+        private static bool isSetup = false;
 
         public class RowData
         {
@@ -43,18 +43,18 @@ namespace CineGame.SDK
 
             if(state)
             {
-                if(!isActive)
+                if(!IsActive)
                 {
                     CineGameSDK.OnPlayerObjectMessage += OnHandleObjectMessage;
-                    isActive = true;
+                    IsActive = true;
                 }
             }
             else
             {
-                if(isActive)
+                if(IsActive)
                 {
                     CineGameSDK.OnPlayerObjectMessage -= OnHandleObjectMessage;
-                    isActive = false;
+                    IsActive = false;
                 }
             }
         }
@@ -110,17 +110,17 @@ namespace CineGame.SDK
             CineGameSDK.OnSeatsLoaded?.Invoke(Layout);
         }
 
-        private void RequestPlayerSeat(int backendID)
+        public static void RequestSeat(int backendID)
         {
             string layoutString = JsonConvert.SerializeObject(Layout);
-            byte[] layourByteData = Encoding.ASCII.GetBytes(layoutString);
+            byte[] layoutByteData = Encoding.ASCII.GetBytes(layoutString);
 
-            string seatsString = JsonConvert.SerializeObject(Seats);
+            string seatsString = JsonConvert.SerializeObject(Seats.Values.ToList());
             byte[] seatsByteData = Encoding.ASCII.GetBytes(seatsString);
 
             CineGameSDK.PlayerObjectMessage dataObj = new CineGameSDK.PlayerObjectMessage();
             dataObj.PutNull("SeatSelect");
-            dataObj.PutByteArray("SeatLayout", layourByteData);
+            dataObj.PutByteArray("SeatLayout", layoutByteData);
             dataObj.PutByteArray("SeatSeats", seatsByteData);
             CineGameSDK.SendObjectMessage(dataObj, backendID);
         }
