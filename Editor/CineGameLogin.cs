@@ -192,46 +192,6 @@ namespace CineGame.SDK.Editor
 
         static DateTime AccessTokenExpiry = DateTime.MinValue;
 
-        internal static Uri CinematazticApiBaseUri {
-            get {
-                return CurrentMarketSlug switch {
-                    "drk-dk" => new Uri ("https://drf.dk.api.player.drf-1.cinemataztic.com/v2/"),
-                    "mdn-no" => new Uri("https://mdn.no.api.player.drf-1.cinemataztic.com/v2/"),
-                    "cinemataztic-en" => new Uri ("https://cinemataztic.en.api.player.eu-1.cinemataztic.com/v2/"),
-                    "finnkino-fi" => new Uri ("https://finnkino.fi.api.player.eu-1.cinemataztic.com/v2/"),
-                    "weischer-de" => new Uri ("https://weischer.de.api.player.eu-2.cinemataztic.com/v2/"),
-                    "wideeyemedia-ie" => new Uri ("https://wideeyemedia.ie.api.player.eu-2.cinemataztic.com/v2/"),
-                    "valmorgan-au" => new Uri("https://valmorgan.au.api.player.au-1.cinemataztic.com/v2/"),
-                    "valmorgan-nz" => new Uri("https://valmorgan.nz.api.player.au-1.cinemataztic.com/v2/"),
-                    "DEV_cinemataztic-en" => new Uri ("https://cinemataztic.en.api.player.dev.cinemataztic.com/v2/"),
-                    "DEV_finnkino-fi" => new Uri ("https://finnkino.fi.api.player.dev.cinemataztic.com/v2/"),
-                    "STAGING_cinemataztic-en" => new Uri ("https://cinemataztic.en.api.player.staging.cinemataztic.com/v2/"),
-                    "STAGING_finnkino-fi" => new Uri ("https://finnkino.fi.api.player.staging.cinemataztic.com/v2/"),
-                    _ => null,
-                };
-            }
-        }
-
-        static Uri CinematazticAuthUri {
-            get {
-                return CurrentMarketSlug switch {
-                    "drf-dk" => new Uri ("https://drf.dk.auth.iam.drf-1.cinemataztic.com"),
-                    "mdn-no" => new Uri("https://mdn.no.auth.iam.drf-1.cinemataztic.com"),
-                    "cinemataztic-en" => new Uri ("https://cinemataztic.en.auth.iam.eu-1.cinemataztic.com"),
-                    "finnkino-fi" => new Uri ("https://finnkino.fi.auth.iam.eu-1.cinemataztic.com"),
-                    "weischer-de" => new Uri ("https://weischer.de.auth.iam.eu-2.cinemataztic.com"),
-                    "wideeyemedia-ie" => new Uri ("https://wideeyemedia.ie.auth.iam.eu-2.cinemataztic.com"),
-                    "valmorgan-au" => new Uri("https://valmorgan.au.auth.iam.au-1.cinemataztic.com"),
-                    "valmorgan-nz" => new Uri("https://valmorgan.nz.auth.iam.au-1.cinemataztic.com"),
-                    "DEV_cinemataztic-en" => new Uri ("https://cinemataztic.en.auth.iam.dev.cinemataztic.com"),
-                    "DEV_finnkino-fi" => new Uri ("https://finnkino.fi.auth.iam.dev.cinemataztic.com"),
-                    "STAGING_cinemataztic-en" => new Uri ("https://cinemataztic.en.auth.iam.staging.cinemataztic.com"),
-                    "STAGING_finnkino-fi" => new Uri ("https://finnkino.fi.auth.iam.staging.cinemataztic.com"),
-                    _ => null,
-                };
-            }
-        }
-
         public static bool IsSuperAdmin;
         public static string [] MarketIdsAvailable;
         public static string [] MarketSlugsAvailable;
@@ -244,101 +204,102 @@ namespace CineGame.SDK.Editor
         }
 
         public static bool GetAccessToken (string userName, string userPassword) {
+            if (string.IsNullOrEmpty (userName) || string.IsNullOrEmpty (userPassword)) {
+                Debug.LogError ("Username or password is empty!");
+                return false;
+            }
 
-            var uri = CinematazticAuthUri;
-            if (!string.IsNullOrEmpty (userName) && !string.IsNullOrEmpty (userPassword) && uri != null) {
-                var jsonReq = new JObject {
-                    ["type"] = "user",
-                    ["email"] = userName,
-                    ["password"] = userPassword,
-                };
+            var jsonReq = new JObject {
+                ["type"] = "user",
+                ["email"] = userName,
+                ["password"] = userPassword,
+            };
 
-                string url = AuthAPIs[EditorPrefs.GetString("CineGameMarket")];
+            string url = AuthAPIs[EditorPrefs.GetString("CineGameMarket")];
 
-                string clusterName = EditorPrefs.GetString("CineGameEnvironment");
-                if (!String.IsNullOrEmpty(clusterName))
+            string clusterName = EditorPrefs.GetString("CineGameEnvironment");
+            if (!String.IsNullOrEmpty(clusterName))
+            {
+                switch (clusterName)
                 {
-                    switch (clusterName)
-                    {
-                        case "dev":
-                            url = Regex.Replace(url, "(.+?)\\.[^.]+?\\.(cinemataztic\\.com.+)", "$1.dev.$2");
-                            break;
-                        case "staging":
-                            url = Regex.Replace(url, "(.+?)\\.[^.]+?\\.(cinemataztic\\.com.+)", "$1.staging.$2");
-                            break;
-                        default:
-                            break;
-                    }
-                }
-
-                var request = new UnityWebRequest (
-                                  uri,
-                                  "POST",
-                                  new DownloadHandlerBuffer (),
-                                  new UploadHandlerRaw (System.Text.Encoding.UTF8.GetBytes (jsonReq.ToString ()))
-                              );
-                //if (Debug.isDebugBuild) {
-                //    Debug.Log ($"{request.method} {request.url}");
-                //}
-                request.SetRequestHeader ("Content-Type", "application/json; charset=utf-8");
-                request.SendWebRequest ();
-                while (!request.isDone) {
-                    System.Threading.Thread.Sleep (100);
-                }
-                if (request.result == UnityWebRequest.Result.ConnectionError) {
-                    Debug.LogError ($"Network error: {request.error}");
-                    return false;
-                }
-                if (request.responseCode != 200) {
-                    Debug.LogError ($"Unable to get token: {request.responseCode} {request.downloadHandler?.text}");
-                    Configuration.CINEMATAZTIC_ACCESS_TOKEN = string.Empty;
-                    return false;
-                }
-                try {
-                    var d = JObject.Parse (request.downloadHandler.text);
-                    Configuration.CINEMATAZTIC_ACCESS_TOKEN = (string)d ["access_token"];
-                    AccessTokenExpiry = DateTime.Now.AddHours (0.8);
-                    /*
-                    var exp = (long)d ["exp"];
-                    AccessTokenExpiry = new DateTime (1970, 1, 1, 0, 0, 0).AddSeconds (exp);
-                    if (Debug.isDebugBuild) {
-                        Debug.Log ($"AccessToken expires {AccessTokenExpiry:s} {AccessToken}");
-                    }
-                    */
-
-                    MarketIdsAvailable = (d ["markets"] as JArray).Select (m => (string)m).ToArray ();
-                    MarketSlugsAvailable = MarketIdsAvailable.Select (id => CineGameMarket.Names.GetValueOrDefault (id, "???")).ToArray ();
-
-                    var appNames = new List<string> (MarketIdsAvailable.Length);
-                    foreach (var id in MarketIdsAvailable) {
-                        if (CineGameMarket.Names.TryGetValue(id, out string marketName))
-                            appNames.Add (marketName);
-                    }
-                    AppNamesAvailable = appNames.ToArray ();
-
-                    var roles = (d ["role"] as JArray).Select (s => (string)s);
-                    IsSuperAdmin = roles.Contains ("super-admin");
-
-                    //TODO there's a security issue here because login is across markets, but game-access list should be per market.
-                    GameIDsAvailable = d.ContainsKey ("game-access") ? (d ["game-access"] as JArray).Select (s => (string)s).ToArray () : new string [0];
-
-                    EditorPrefs.SetString ("CineGameUserName_" + CurrentMarketSlug, userName);
-
-                    var bytes = System.Text.Encoding.UTF8.GetBytes (Password);
-                    for (int i = 0; i < bytes.Length; i++) {
-                        bytes [i] ^= 0x5a;
-                    }
-                    var cgspB64 = Convert.ToBase64String (bytes);
-                    EditorPrefs.SetString ("CGSP", cgspB64);
-                    EditorPrefs.SetString ("CGSP_" + CurrentMarketSlug, cgspB64);
-
-                    CineGameBuild.GetGameIDFromSceneOrProject ();
-                    return true;
-                } catch (Exception e) {
-                    Debug.LogErrorFormat ("Exception while parsing JSON {0}: {1}", request.downloadHandler.text, e.ToString ());
+                    case "dev":
+                        url = Regex.Replace(url, "(.+?)\\.[^.]+?\\.(cinemataztic\\.com.+)", "$1.dev.$2");
+                        break;
+                    case "staging":
+                        url = Regex.Replace(url, "(.+?)\\.[^.]+?\\.(cinemataztic\\.com.+)", "$1.staging.$2");
+                        break;
+                    default:
+                        break;
                 }
             }
-            return false;
+
+            var request = new UnityWebRequest (
+                                url,
+                                "POST",
+                                new DownloadHandlerBuffer (),
+                                new UploadHandlerRaw (System.Text.Encoding.UTF8.GetBytes (jsonReq.ToString ()))
+                            );
+            //if (Debug.isDebugBuild) {
+            //    Debug.Log ($"{request.method} {request.url}");
+            //}
+            request.SetRequestHeader ("Content-Type", "application/json; charset=utf-8");
+            request.SendWebRequest ();
+            while (!request.isDone) {
+                System.Threading.Thread.Sleep (100);
+            }
+            if (request.result == UnityWebRequest.Result.ConnectionError) {
+                Debug.LogError ($"Network error: {request.error}");
+                return false;
+            }
+            if (request.responseCode != 200) {
+                Debug.LogError ($"Unable to get token: {request.responseCode} {request.downloadHandler?.text}");
+                Configuration.CINEMATAZTIC_ACCESS_TOKEN = string.Empty;
+                return false;
+            }
+            try {
+                var d = JObject.Parse (request.downloadHandler.text);
+                Configuration.CINEMATAZTIC_ACCESS_TOKEN = (string)d ["access_token"];
+                AccessTokenExpiry = DateTime.Now.AddHours (0.8);
+                /*
+                var exp = (long)d ["exp"];
+                AccessTokenExpiry = new DateTime (1970, 1, 1, 0, 0, 0).AddSeconds (exp);
+                if (Debug.isDebugBuild) {
+                    Debug.Log ($"AccessToken expires {AccessTokenExpiry:s} {AccessToken}");
+                }
+                */
+
+                MarketIdsAvailable = (d ["markets"] as JArray).Select (m => (string)m).ToArray ();
+                MarketSlugsAvailable = MarketIdsAvailable.Select (id => CineGameMarket.Names.GetValueOrDefault (id, "???")).ToArray ();
+
+                var appNames = new List<string> (MarketIdsAvailable.Length);
+                foreach (var id in MarketIdsAvailable) {
+                    if (CineGameMarket.Names.TryGetValue(id, out string marketName))
+                        appNames.Add (marketName);
+                }
+                AppNamesAvailable = appNames.ToArray ();
+
+                var roles = (d ["role"] as JArray).Select (s => (string)s);
+                IsSuperAdmin = roles.Contains ("super-admin");
+
+                //TODO there's a security issue here because login is across markets, but game-access list should be per market.
+                GameIDsAvailable = d.ContainsKey ("game-access") ? (d ["game-access"] as JArray).Select (s => (string)s).ToArray () : new string [0];
+
+                EditorPrefs.SetString ("CineGameUserName_" + CurrentMarketSlug, userName);
+
+                var bytes = System.Text.Encoding.UTF8.GetBytes (Password);
+                for (int i = 0; i < bytes.Length; i++) {
+                    bytes [i] ^= 0x5a;
+                }
+                var cgspB64 = Convert.ToBase64String (bytes);
+                EditorPrefs.SetString ("CGSP", cgspB64);
+                EditorPrefs.SetString ("CGSP_" + CurrentMarketSlug, cgspB64);
+
+                CineGameBuild.GetGameIDFromSceneOrProject ();
+                return true;
+            } catch (Exception e) {
+                Debug.LogErrorFormat ("Exception while parsing JSON {0}: {1}", request.downloadHandler.text, e.ToString ());
+                return false;
+            }
         }
 
         public static bool RefreshAccessToken () {

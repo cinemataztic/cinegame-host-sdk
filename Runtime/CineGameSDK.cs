@@ -6,6 +6,7 @@ using System.Net;
 using System.Collections;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 
 using UnityEngine;
 using UnityEngine.Networking;
@@ -287,8 +288,6 @@ namespace CineGame.SDK {
             }
             instance = this;
 
-            Setup();
-
             try {
                 // Read BLOCK_START_TICKS from parent process. This will be in JavaScript ticks, ie miliseconds since Jan 1 1970.
                 // .NET ticks are in 1e-7 seconds since Jan 1 0001, so we need to convert it by scaling and offsetting.
@@ -390,6 +389,9 @@ namespace CineGame.SDK {
                     did;
                 Debug.Log ($"DeviceId from deviceUniqueIdentifier: {did}");
             }
+
+            RequestGameCode ();
+
             OnSetupCompleted?.Invoke ();
         }
 
@@ -468,15 +470,11 @@ namespace CineGame.SDK {
                 if (_t - t > 1f)
                 {
                     t = _t;
-                    Debug.LogWarning("WARNING Internet not reachable-- waiting to set up game");
+                    Debug.LogWarning ("WARNING Internet not reachable-- waiting to set up game");
                 }
                 yield return null;
             }
-
-            if (Settings != null)
-            {
-                Invoke("RequestGameCode", .1f);
-            }
+            Setup ();
         }
 
         /// <summary>
@@ -487,18 +485,24 @@ namespace CineGame.SDK {
             if (instance != this)
                 return;
             SmartfoxClient.Update();
-        }
+            /*var newAvgFPS = avgFPS * 0.99f + (1f / Time.unscaledDeltaTime) * 0.01f;
+            if (refreshRate > 25f && newAvgFPS < 25f && avgFPS >= 25f && numAvgFpsWarnings-- > 0) {
+                Debug.LogError ($"Average framerate dropped to {minFPS}");
+            }
+            avgFPS = newAvgFPS;
+            minFPS = Mathf.Min (minFPS, avgFPS);*/
 
-        public static void StartGame()
-        {
-            RequestGameCodeStatic();
+            //When user presses Shift+C, the game crashes! Testing the system's robustness and error logging, sentry events etc
+            if (Input.GetKeyDown (KeyCode.C) && Input.GetKey (KeyCode.LeftShift)) {
+                SegmentationFault ();
+            }
         }
 
         internal static void RequestGameCodeStatic () {
             instance.RequestGameCode ();
         }
 
-		internal void RequestGameCode () {
+		void RequestGameCode () {
 
 #if UNITY_EDITOR
             CineGameEnvironment = EditorPrefs.GetString("CineGameEnvironment");
@@ -920,5 +924,17 @@ namespace CineGame.SDK {
             SmartfoxClient.Disconnect ();
         }
 
+        [UnmanagedFunctionPointer (CallingConvention.Cdecl)]
+        delegate void UNMANAGED_CALLBACK ();
+
+        /// <summary>
+		/// Deliberately cause Segmentation Fault to test how the system handles it
+		/// </summary>
+        static void SegmentationFault () {
+            Debug.Log ("*** USER GENERATED SEGMENTATION FAULT");
+
+            var crash = (UNMANAGED_CALLBACK)Marshal.GetDelegateForFunctionPointer ((IntPtr)123, typeof (UNMANAGED_CALLBACK));
+            crash ();
+        }
     }
 }
