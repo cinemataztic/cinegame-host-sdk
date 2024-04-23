@@ -165,6 +165,14 @@ namespace CineGame.SDK.Editor
             {
                 EditorGUILayout.BeginHorizontal();
                 EditorGUILayout.PrefixLabel(" ");
+                var requestToken = GUILayout.Button("Copy Token", GUILayout.MaxWidth(200f));
+                EditorGUILayout.EndHorizontal();
+                if (requestToken)
+                {
+                     GUIUtility.systemCopyBuffer = Configuration.CINEMATAZTIC_ACCESS_TOKEN;
+                }
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.PrefixLabel(" ");
                 var logOutPressed = GUILayout.Button("Log Out", GUILayout.MaxWidth(200f));
                 EditorGUILayout.EndHorizontal();
                 if (logOutPressed)
