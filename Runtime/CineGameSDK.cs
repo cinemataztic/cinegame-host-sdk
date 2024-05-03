@@ -795,16 +795,20 @@ namespace CineGame.SDK {
 		/// </summary>
         internal static bool IsSmartfoxRunningLocally () {
 
-            return false;
+            bool isSmartfoxRunning = false;
 
-            // This is spamming errors when build to DCH-P
-            /*
-            var isSmartfoxRunning = false;
-            return ExternalProcess.Run ("pgrep", "-f smartfoxserver", null, (msg, pct) => {
-                isSmartfoxRunning = int.TryParse (msg, out int pid);
-                return false;
-            }) && isSmartfoxRunning;
-            */
+            try
+            {
+                return ExternalProcess.Run("pgrep", "-f smartfoxserver", null, (msg, pct) => {
+                    isSmartfoxRunning = int.TryParse(msg, out int pid);
+                    return false;
+                }) && isSmartfoxRunning;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning(ex);
+                return isSmartfoxRunning;
+            }
         }
 
         static void API(string uri, string json, BackendCallback callback = null)
