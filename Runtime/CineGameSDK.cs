@@ -287,7 +287,21 @@ namespace CineGame.SDK {
             }
             instance = this;
 
-            try {
+#if UNITY_EDITOR
+            if (Settings != null)
+            {
+                Market = Settings.MarketId;
+            }
+            else
+            {
+                Market = UnityEditor.EditorPrefs.GetString("CineGameMarket");
+            }
+#else
+            Market = Configuration.MARKET_ID;
+#endif
+
+            try
+            {
                 // Read BLOCK_START_TICKS from parent process. This will be in JavaScript ticks, ie miliseconds since Jan 1 1970.
                 // .NET ticks are in 1e-7 seconds since Jan 1 0001, so we need to convert it by scaling and offsetting.
                 var blockStartTicksJS = Configuration.BLOCK_START_TICKS;
@@ -313,19 +327,6 @@ namespace CineGame.SDK {
             {
                 GameID = Settings.GameID;
             }
-
-#if UNITY_EDITOR
-            if (Settings != null)
-            {
-                Market = Settings.MarketId;
-            }
-            else
-            {
-                Market = UnityEditor.EditorPrefs.GetString("CineGameMarket");
-            }
-#else
-            Market = Configuration.MARKET_ID;
-#endif
 
             if (!IsWebGL && !Application.isEditor)
             {
@@ -793,11 +794,17 @@ namespace CineGame.SDK {
 		/// Returns true if there is a smartfox server running on the local computer
 		/// </summary>
         internal static bool IsSmartfoxRunningLocally () {
+
+            return false;
+
+            // This is spamming errors when build to DCH-P
+            /*
             var isSmartfoxRunning = false;
             return ExternalProcess.Run ("pgrep", "-f smartfoxserver", null, (msg, pct) => {
                 isSmartfoxRunning = int.TryParse (msg, out int pid);
                 return false;
             }) && isSmartfoxRunning;
+            */
         }
 
         static void API(string uri, string json, BackendCallback callback = null)
