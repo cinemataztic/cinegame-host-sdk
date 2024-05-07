@@ -210,6 +210,10 @@ namespace CineGame.SDK {
 		/// </summary>
         public static Action<string, string> OnWiFiAvailable;
         /// <summary>
+        /// When a WiFi network is available. Name,Password
+        /// </summary>
+        public static Action<float> OnBlockDurationUpdated;
+        /// <summary>
 		/// When seats layout is loaded
 		/// </summary>
         public static Action<Dictionary<string, CineGameSeatController.Seat[]>> OnSeatsLoaded;
