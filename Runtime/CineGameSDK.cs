@@ -309,6 +309,10 @@ namespace CineGame.SDK {
                 var blockStartTicksDotNet = (blockStartTicksJS + offsetFromJSEpochToDotNetEpoch) * 10000;
                 var nowTicks = DateTime.Now.Ticks;
                 BlockStartTime = (nowTicks - blockStartTicksDotNet) * 1e-7f;
+                if (BlockStartTime < 0) {
+                    Debug.LogError ($"ERROR: The computer's clock is set in the past ({DateTime.Now}). The lobby timing will be off by a few seconds (BlockStartTime forced to 0s)");
+                    BlockStartTime = 0f;
+                }
                 Debug.Log ($"BLOCK_START_TICKS={blockStartTicksJS} --- BlockStartTime={BlockStartTime:0.##}s");
             } catch (Exception) {
                 Debug.Log ("BLOCK_START_TICKS not defined, using time t0 as starting point");
