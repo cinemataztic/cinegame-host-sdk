@@ -7,14 +7,19 @@ using UnityEngine;
 
 namespace CineGame.SDK {
 
+    /// <summary>
+	/// Custom compact logger for CineGame. Includes timestamp in each line and file creation timestamp in the filename. Output path can be overriden via env var LOG_DIR
+	/// </summary>
     internal class CineGameLogger
     {
         static StreamWriter LogWriter;
-        static string ENV_VAR_LOG_DIR = "LOG_DIR";
+        static string LogName;
+        static string LogPath;
 
+        /// <summary>
+		/// The ID (Title) of the game in the CineGame system
+		/// </summary>
         public static string GameID;
-        public static string LogName;
-        public static string LogPath;
 
         [RuntimeInitializeOnLoadMethod (RuntimeInitializeLoadType.BeforeSceneLoad)]
         static void OnBeforeSceneLoad () {
@@ -30,13 +35,9 @@ namespace CineGame.SDK {
             try {
                 LogName = "CineGame-" + DateTime.UtcNow.ToString ("yyyyMMdd-HHmmss") + ".log";
 
-                if (string.IsNullOrEmpty (Environment.GetEnvironmentVariable (ENV_VAR_LOG_DIR)))
-                {
+                LogPath = Configuration.LOG_DIR;
+                if (string.IsNullOrWhiteSpace (LogPath)) {
                     LogPath = Application.persistentDataPath;
-                }
-                else
-                {
-                    LogPath = Environment.GetEnvironmentVariable (ENV_VAR_LOG_DIR);
                 }
 
                 if (!Directory.Exists (LogPath))

@@ -1,6 +1,9 @@
 ﻿using System.Reflection;
 
 namespace CineGame.SDK {
+	/// <summary>
+	/// Statically typed compile-time definitions of environment variables
+	/// </summary>
 	public static class Configuration {
 		/// <summary>
 		/// Gets the property name from an accessor method (trim the compiler-generated 'get_' or 'set_' prefix).
@@ -12,8 +15,7 @@ namespace CineGame.SDK {
 		/// <summary>
 		/// Target directory where Player software expects all logs to end up
 		/// </summary>
-		public static string LOG_DIR
-		{
+		public static string LOG_DIR {
 			get { return System.Environment.GetEnvironmentVariable (PropertyNameFromAccessor (MethodBase.GetCurrentMethod ())); }
 		}
 
