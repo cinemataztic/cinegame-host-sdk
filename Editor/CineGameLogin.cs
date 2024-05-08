@@ -8,10 +8,7 @@ using UnityEngine;
 using UnityEngine.Networking;
 
 using Newtonsoft.Json.Linq;
-using System.Security.Policy;
 using System.Text.RegularExpressions;
-using System.Collections;
-using Unity.EditorCoroutines.Editor;
 using System.Threading.Tasks;
 
 namespace CineGame.SDK.Editor
@@ -225,19 +222,17 @@ namespace CineGame.SDK.Editor
 
             string url = AuthAPIs[EditorPrefs.GetString("CineGameMarket")];
 
-            string clusterName = EditorPrefs.GetString("CineGameEnvironment");
-            if (!String.IsNullOrEmpty(clusterName))
-            {
-                switch (clusterName)
-                {
-                    case "dev":
-                        url = Regex.Replace(url, "(.+?)\\.[^.]+?\\.(cinemataztic\\.com.+)", "$1.dev.$2");
-                        break;
-                    case "staging":
-                        url = Regex.Replace(url, "(.+?)\\.[^.]+?\\.(cinemataztic\\.com.+)", "$1.staging.$2");
-                        break;
-                    default:
-                        break;
+            string environmentName = EditorPrefs.GetString("CineGameEnvironment");
+            if (!string.IsNullOrWhiteSpace (environmentName)) {
+                switch (environmentName) {
+                case "dev":
+                    url = Regex.Replace (url, "(.+?)\\.[^.]+?\\.(cinemataztic\\.com.+)", "$1.dev.$2");
+                    break;
+                case "staging":
+                    url = Regex.Replace (url, "(.+?)\\.[^.]+?\\.(cinemataztic\\.com.+)", "$1.staging.$2");
+                    break;
+                default:
+                    break;
                 }
             }
 
@@ -267,14 +262,14 @@ namespace CineGame.SDK.Editor
             try {
                 var d = JObject.Parse (request.downloadHandler.text);
                 Configuration.CINEMATAZTIC_ACCESS_TOKEN = (string)d ["access_token"];
+                Configuration.CLUSTER_NAME = Regex.Match (url, "\\.([^.]+?)\\.cinemataztic\\.com").Groups [1].Value;
                 AccessTokenExpiry = DateTime.Now.AddHours (0.8);
-                /*
-                var exp = (long)d ["exp"];
+
+                /*var exp = 0;// (long)d ["exp"];
                 AccessTokenExpiry = new DateTime (1970, 1, 1, 0, 0, 0).AddSeconds (exp);
                 if (Debug.isDebugBuild) {
-                    Debug.Log ($"AccessToken expires {AccessTokenExpiry:s} {AccessToken}");
-                }
-                */
+                    Debug.Log ($"Logged in to {CineGameMarket.Slugs [EditorPrefs.GetString ("CineGameMarket")]} in {Configuration.CLUSTER_NAME} until {AccessTokenExpiry:s}");
+                }*/
 
                 MarketIdsAvailable = (d ["markets"] as JArray).Select (m => (string)m).ToArray ();
                 MarketSlugsAvailable = MarketIdsAvailable.Select (id => CineGameMarket.Names.GetValueOrDefault (id, "???")).ToArray ();

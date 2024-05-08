@@ -287,6 +287,9 @@ namespace CineGame.SDK {
             }
             instance = this;
 
+            var clusterName = Configuration.CLUSTER_NAME;
+            CineGameEnvironment = (clusterName != "dev" && clusterName != "staging") ? "production" : clusterName;
+
 #if UNITY_EDITOR
             if (Settings != null)
             {
@@ -508,12 +511,6 @@ namespace CineGame.SDK {
         }
 
 		void RequestGameCode () {
-
-#if UNITY_EDITOR
-            CineGameEnvironment = UnityEditor.EditorPrefs.GetString("CineGameEnvironment");
-#else
-            CineGameEnvironment = Configuration.CLUSTER_NAME;
-#endif
 
             Debug.Log("Game: " + GameID);
             Debug.Log("Market: " + Market);
