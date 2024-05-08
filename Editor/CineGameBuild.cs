@@ -39,13 +39,11 @@ namespace CineGame.SDK.Editor {
 
         static BuildTarget buildTarget;
         static BuildOptions buildOptions = BuildOptions.None;
-        static BuildTarget [] targets = {
+        static readonly BuildTarget [] targets = {
             BuildTarget.StandaloneOSX,
             BuildTarget.StandaloneLinux64,
             BuildTarget.StandaloneWindows
         };
-
-        static string ProgressBarTitle = "CineGame Build";
 
         static string resultMessage = string.Empty;
         //contains result description from last scene build+upload
@@ -106,8 +104,7 @@ namespace CineGame.SDK.Editor {
 
         public static Action OnWindowOpened;
 
-        public static Dictionary<string, string> CloudAPIs = new Dictionary<string, string>
-        {
+        public static Dictionary<string, string> CloudAPIs = new () {
             { CineGameMarket.Markets.BioSpil_DRF_DK, "https://drf.dk.api.player.drf-1.cinemataztic.com/" },
             { CineGameMarket.Markets.CineGame_Cinemataztic_AE, "https://cinemataztic.ae.api.player.au-1.cinemataztic.com/" },
             { CineGameMarket.Markets.CineGame_Cinemataztic_EN, "https://cinemataztic.en.api.player.eu-1.cinemataztic.com/" },
@@ -314,7 +311,7 @@ namespace CineGame.SDK.Editor {
 
         void OnClickBuild () {
             if (!EditorBuildSettings.scenes.Any (sc => sc.path == SceneManager.GetActiveScene ().path)) {
-                if (!EditorUtility.DisplayDialog (ProgressBarTitle, "The active scene is not included in the build settings. Replace build settings with open scenes?", "OK", "Cancel"))
+                if (!EditorUtility.DisplayDialog (titleContent.text, "The active scene is not included in the build settings. Replace build settings with open scenes?", "OK", "Cancel"))
                     return;
                 var buildScenes = new List<EditorBuildSettingsScene> ();
                 for (int i = 0; i < SceneManager.sceneCount; i++) {
@@ -329,7 +326,7 @@ namespace CineGame.SDK.Editor {
             }
 
             if (!string.IsNullOrWhiteSpace (LatestDiff)) {
-                if (!EditorUtility.DisplayDialog (ProgressBarTitle, UcbAvailable && BuildOnUcb ?
+                if (!EditorUtility.DisplayDialog (titleContent.text, UcbAvailable && BuildOnUcb ?
                     "There are local changes to the project. These will NOT be included in the build! OK?"
                     : "There are local changes to the project. Build anyway?", "OK", "Cancel"))
                     return;
@@ -347,13 +344,13 @@ namespace CineGame.SDK.Editor {
 
             var crtFileExists = !string.IsNullOrWhiteSpace (CrtFilePath) && File.Exists (CrtFilePath);
             if (!BuildOnlyForLinux && HasWinBuildSupport && !crtFileExists) {
-                if (!EditorUtility.DisplayDialog (ProgressBarTitle, "WARNING: No Crt and Keyfile specified. Windows builds will not be signed. Continue?", "OK", "Cancel")) {
+                if (!EditorUtility.DisplayDialog (titleContent.text, "WARNING: No Crt and Keyfile specified. Windows builds will not be signed. Continue?", "OK", "Cancel")) {
                     Debug.Log ("User canceled build due to missing Crt and Keyfile");
                     return;
                 }
             }
             if (!BuildOnlyForLinux && HasMacOSBuildSupport && Application.platform != RuntimePlatform.OSXEditor) {
-                if (!EditorUtility.DisplayDialog (ProgressBarTitle, "WARNING: OS X builds can only be signed on an OS X device with XCode installed. You will have to do this manually. Continue?", "OK", "Cancel")) {
+                if (!EditorUtility.DisplayDialog (titleContent.text, "WARNING: OS X builds can only be signed on an OS X device with XCode installed. You will have to do this manually. Continue?", "OK", "Cancel")) {
                     Debug.Log ("User canceled build due to only being able to codesign on OS X");
                     return;
                 }
@@ -369,7 +366,7 @@ namespace CineGame.SDK.Editor {
             //}
 
             if (string.IsNullOrEmpty (GameID)) {
-                EditorUtility.DisplayDialog (ProgressBarTitle, "No GameID set! Did you add a SystemController component to the scene?", "OK");
+                EditorUtility.DisplayDialog (titleContent.text, "No GameID set! Did you add a SystemController component to the scene?", "OK");
                 Debug.LogError ("No GameID set. Game will not be built.");
                 return;
             }
@@ -381,11 +378,11 @@ namespace CineGame.SDK.Editor {
         void OnClickUpload () {
             if (!CineGameLogin.IsLoggedIn) {
                 CineGameLogin.Init ();
-                EditorUtility.DisplayDialog (ProgressBarTitle, "Please log in first!", "OK");
+                EditorUtility.DisplayDialog (titleContent.text, "Please log in first!", "OK");
                 return;
             }
 
-            if (!EditorUtility.DisplayDialog (ProgressBarTitle, "Are you sure you want to upload " + GameID + " to " + MarketName + "?", "OK", "Cancel")) {
+            if (!EditorUtility.DisplayDialog (titleContent.text, "Are you sure you want to upload " + GameID + " to " + MarketName + "?", "OK", "Cancel")) {
                 return;
             }
 
@@ -439,7 +436,7 @@ namespace CineGame.SDK.Editor {
         [MenuItem ("CineGame SDK/Build", false, 3)]
         internal static void Init () {
             if (instance == null) {
-                instance = GetWindow<CineGameBuild> (ProgressBarTitle, typeof (CloudBuild), typeof (CineGameTest), typeof(CineGameLogin));
+                instance = GetWindow<CineGameBuild> ("CineGame Build", typeof (CloudBuild), typeof (CineGameTest), typeof(CineGameLogin));
             }
             instance.Focus ();
 
@@ -532,7 +529,7 @@ namespace CineGame.SDK.Editor {
                         yield return null;
 
                         if (!Codesign (outPath, target, delegate (string sMessage, float percent) {
-                            if (EditorUtility.DisplayCancelableProgressBar (ProgressBarTitle, sMessage, 1f)) {
+                            if (EditorUtility.DisplayCancelableProgressBar (titleContent.text, sMessage, 1f)) {
                                 resultMessage = "Build canceled by user.";
                                 IsBuilding = false;
                             }
@@ -561,7 +558,7 @@ namespace CineGame.SDK.Editor {
                         if (!CompressBuild (tmpDir, GetOutputPath (GameID, buildTarget), delegate (string sMessage, float percent) {
                             percent = fakepct;
                             fakepct += (1f - fakepct) * .01f;
-                            if (EditorUtility.DisplayCancelableProgressBar (ProgressBarTitle, sMessage, percent)) {
+                            if (EditorUtility.DisplayCancelableProgressBar (titleContent.text, sMessage, percent)) {
                                 resultMessage = "Build canceled by user.";
                                 IsBuilding = false;
                             }
@@ -601,7 +598,7 @@ namespace CineGame.SDK.Editor {
             RepaintWindow ();
 
             if (!string.IsNullOrEmpty (resultMessage)) {
-                EditorUtility.DisplayDialog (ProgressBarTitle, resultMessage, "OK");
+                EditorUtility.DisplayDialog (titleContent.text, resultMessage, "OK");
             }
         }
 
@@ -664,7 +661,7 @@ namespace CineGame.SDK.Editor {
                 string url = CloudAPIs[EditorPrefs.GetString("CineGameMarket")];
 
                 string cineGameEnvironment = EditorPrefs.GetString("CineGameEnvironment");
-                if (!String.IsNullOrEmpty(cineGameEnvironment))
+                if (!string.IsNullOrEmpty(cineGameEnvironment))
                 {
                     switch (cineGameEnvironment)
                     {
@@ -694,7 +691,7 @@ namespace CineGame.SDK.Editor {
                 var totalMB = form.data.Length / 1048576;
                 while (!asyncOp.isDone && !cancelUpload) {
                     var p = request.uploadProgress;
-                    if (EditorUtility.DisplayCancelableProgressBar (ProgressBarTitle, string.Format ("Uploading {0} of {1} MB ... {2}s", (int)(p * totalMB), totalMB, watch.ElapsedMilliseconds / 1000), p)) {
+                    if (EditorUtility.DisplayCancelableProgressBar (titleContent.text, string.Format ("Uploading {0} of {1} MB ... {2}s", (int)(p * totalMB), totalMB, watch.ElapsedMilliseconds / 1000), p)) {
                         EditorUtility.ClearProgressBar ();
                         cancelUpload = true;
                         IsBuilding = false;
@@ -714,7 +711,7 @@ namespace CineGame.SDK.Editor {
                         resultMessage = string.Format ("Error while uploading builds after {0}s: {1}", watch.ElapsedMilliseconds / 1000, request.error);
                         Debug.LogError (resultMessage);
                         Debug.LogError (request.downloadHandler.text);
-                        if (!EditorUtility.DisplayDialog (ProgressBarTitle, string.Format ("{0}\n\nWant to try uploading again?", resultMessage), "Retry", "Cancel")) {
+                        if (!EditorUtility.DisplayDialog (titleContent.text, string.Format ("{0}\n\nWant to try uploading again?", resultMessage), "Retry", "Cancel")) {
                             break;
                         }
                     } else {

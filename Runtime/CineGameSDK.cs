@@ -258,7 +258,7 @@ namespace CineGame.SDK {
 
         delegate void BackendCallback (HttpStatusCode statusCode, string response);
 
-        private static Dictionary<string, string> BackendHeaders = new Dictionary<string, string> (10) {
+        private static readonly Dictionary<string, string> BackendHeaders = new (10) {
             {"Content-Type", "application/json; charset=utf-8"},
         };
 
@@ -576,7 +576,7 @@ namespace CineGame.SDK {
                     } else {
                         Debug.LogWarningFormat ("WARNING Backend responded with error while creating game - retrying in one second: {0} {1}", statusCode, response);
                     }
-                    Invoke ("RequestGameCode", 1f);
+                    Invoke (nameof (RequestGameCode), 1f);
                 } else {
                     Debug.LogError ($"Backend responded with error while creating game - retrying in one second: {statusCode} {response}");
                     OnError?.Invoke ((int)statusCode);
@@ -916,11 +916,9 @@ namespace CineGame.SDK {
         }
 
         internal static string GetRegionProfanityUrl () {
-#pragma warning disable 0618
-            var marketId = Market;
-#pragma warning restore
-            if (string.IsNullOrWhiteSpace (marketId)) {
-                marketId = instance.Settings?.MarketId;
+			var marketId = Market;
+            if (string.IsNullOrWhiteSpace (marketId) && instance.Settings != null) {
+                marketId = instance.Settings.MarketId;
             }
             return string.Format ("https://profanity.cinemataztic.com/{0}/txt-file", marketId);
         }

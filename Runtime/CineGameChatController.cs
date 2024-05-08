@@ -39,12 +39,12 @@ namespace CineGame.SDK {
         /// <summary>
 		/// Deserialized emoji UV map
 		/// </summary>
-        private readonly Dictionary<string, Rect> emojiRects = new Dictionary<string, Rect> ();
+        private readonly Dictionary<string, Rect> emojiRects = new ();
 
         private static Regex regexp;
 
         public delegate void WordFilterCallback (string filteredMessage);
-        static readonly Queue<Action> _executionQueue = new Queue<Action> ();
+        static readonly Queue<Action> _executionQueue = new ();
 
         public static Action<int, string, Dictionary<string, Rect>> OnChatMessage;
         public static Action<int, string, int, int> OnGIFMessage;
@@ -76,10 +76,6 @@ namespace CineGame.SDK {
             }
 
             CineGameSDK.OnPlayerChatMessage += Message;
-        }
-
-        internal static string GetProfanitiesCacheFileName (string url) {
-            return string.Format ("{0}/{1}", Application.temporaryCachePath, CineGameUtility.ComputeMD5Hash (url));
         }
 
         IEnumerator E_LoadProfanity () {
@@ -119,7 +115,7 @@ namespace CineGame.SDK {
                     Debug.LogError ("Profanities unavailable to download, and no cache exists. Chat will be unfiltered!");
                 }
             } else {
-                FileInfo file = new System.IO.FileInfo(filename);
+                var file = new FileInfo(filename);
                 file.Directory.Create(); 
                 File.WriteAllText(file.FullName, profanitiesRegexStr);
             }
@@ -214,7 +210,7 @@ namespace CineGame.SDK {
 
                 RunProfanityFilter (chatMessage, delegate (string filteredMessage) {
                     string emojiMessage = filteredMessage;
-                    Dictionary<string, Rect> emojiDictionary = new Dictionary<string, Rect> ();
+                    var emojiDictionary = new Dictionary<string, Rect> ();
 
                     int i = 0;
                     int numChars = emojiMessage.Length;
@@ -327,6 +323,10 @@ namespace CineGame.SDK {
             }
         }
 
+#pragma warning disable IDE1006
+        /// <summary>
+		/// Json response from Giphy API
+		/// </summary>
         class GiphyResult {
             public class GiphyImage {
                 public int frames { get; set; }
@@ -345,6 +345,9 @@ namespace CineGame.SDK {
             public GiphyResultData data { get; set; }
         }
 
+        /// <summary>
+		/// Json response from Tenor API
+		/// </summary>
         class TenorResult {
             public class TenorMediaObject {
                 public int size { get; set; }
@@ -361,5 +364,6 @@ namespace CineGame.SDK {
             }
             public TenorResultData [] results { get; set; }
         }
+#pragma warning restore
     }
 }

@@ -70,7 +70,7 @@ namespace CineGame.SDK {
         /// <summary>
 		/// We maintain this dictionary of {BackendID,Sfs2X.Entities.User} so we can map from the persistent BackendID to a temp smartfox User when sending messages
 		/// </summary>
-        static Dictionary<long, User> userDict = new Dictionary<long, User> ();
+        static readonly Dictionary<long, User> userDict = new ();
 
         // Update is called once per frame
         internal static void Update () {
@@ -119,10 +119,10 @@ namespace CineGame.SDK {
         static void Connect () {
 
             //If we're reconnecting and already have a smartfox object, reset it
-            reset ();
+            Reset ();
 
 			// Set connection parameters
-			ConfigData cfg = new ConfigData {
+			var cfg = new ConfigData {
 				Host = GameServer,
 				Zone = GameZone
 			};
@@ -161,7 +161,7 @@ namespace CineGame.SDK {
         }
 
 
-        static void reset () {
+        static void Reset () {
             if (sfs != null) {
                 // Remove SFS2X listeners
                 sfs.RemoveEventListener (SFSEvent.CONNECTION, OnConnection);
@@ -205,7 +205,7 @@ namespace CineGame.SDK {
                 sfs.Send (new LoginRequest ("Host" + GameCode));
             } else {
                 // Remove SFS2X listeners
-                reset ();
+                Reset ();
 
                 if (ConnectionRetryCount++ < 3) {
                     // Log warning and retry
@@ -233,7 +233,7 @@ namespace CineGame.SDK {
 
         static void OnConnectionLost (BaseEvent evt) {
             // Remove SFS2X listeners and re-enable interface
-            reset ();
+            Reset ();
 
             string reason = (string)evt.Params ["reason"];
 
@@ -262,12 +262,13 @@ namespace CineGame.SDK {
 
 
         static void CreateAndJoinRoom () {
-            //Create room and join it
-            var roomSettings = new RoomSettings (GameCode);
-            roomSettings.IsGame = true;
-            roomSettings.MaxUsers = (short)MaxPlayers;
-            roomSettings.MaxSpectators = (short)MaxSpectators;
-            roomSettings.Variables.Add (new SFSRoomVariable ("GameType", GameID));
+			//Create room and join it
+			var roomSettings = new RoomSettings (GameCode) {
+				IsGame = true,
+				MaxUsers = (short)MaxPlayers,
+				MaxSpectators = (short)MaxSpectators
+			};
+			roomSettings.Variables.Add (new SFSRoomVariable ("GameType", GameID));
             roomSettings.Variables.Add (new SFSRoomVariable ("HostId", sfs.MySelf.Id));
             if (Debug.isDebugBuild) {
                 roomSettings.Variables.Add (new SFSRoomVariable ("IsTest", true));
@@ -288,7 +289,7 @@ namespace CineGame.SDK {
             sfs.Disconnect ();
 
             // Remove SFS2X listeners and re-enable interface
-            reset ();
+            Reset ();
 
             LastErrorMsg = "SFS Login failed: " + (string)evt.Params ["errorMessage"];
             if (errorCode == 6) {
@@ -325,18 +326,17 @@ namespace CineGame.SDK {
             string message = (string)evt.Params ["message"];
             SFSUser sender = (SFSUser)evt.Params ["sender"];
             if (sender != null && sender != sfs.MySelf) {
-                object v;
-                if (sender.Properties.TryGetValue ("bkid", out v)) {
-                    var backendID = (int)v;
+				if (sender.Properties.TryGetValue ("bkid", out object v)) {
+					var backendID = (int)v;
 
-                    if (message.StartsWith ("/m ") || message.StartsWith ("/giphy ") || message.StartsWith ("/tenor ")) {
-                        CineGameSDK.OnPlayerChatMessage?.Invoke(backendID, message);
-                        return;
-                    } else {
-                        CineGameSDK.OnPlayerStringMessage?.Invoke(backendID, message);
-                    }
-                }
-            }
+					if (message.StartsWith ("/m ") || message.StartsWith ("/giphy ") || message.StartsWith ("/tenor ")) {
+						CineGameSDK.OnPlayerChatMessage?.Invoke (backendID, message);
+						return;
+					} else {
+						CineGameSDK.OnPlayerStringMessage?.Invoke (backendID, message);
+					}
+				}
+			}
         }
 
 
@@ -481,12 +481,12 @@ namespace CineGame.SDK {
 
         internal static void Disconnect () {
             if (sfs != null) {
-                _Disconnect ();
+                DoDisconnect ();
                 Debug.Log ("SFS Disconnected");
             }
         }
 
-        static void _Disconnect () {
+        static void DoDisconnect () {
             if (sfs != null && sfs.MySelf != null && (sfs.MySelf.IsAdmin () || sfs.MySelf.IsModerator ())) {
                 IsActive = false;
                 //Kick all other users out of room
@@ -497,7 +497,7 @@ namespace CineGame.SDK {
                 }
                 //Now the room should be destroyed when we disconnect so the gamecode will be free
             }
-            reset ();
+            Reset ();
         }
 
         internal static void StopGameRoomJoins () {

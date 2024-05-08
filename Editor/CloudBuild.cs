@@ -46,7 +46,7 @@ namespace CineGame.SDK.Editor {
 		/// <summary>
 		/// Map UcbPlatform to BuildTarget enum
 		/// </summary>
-		static readonly Dictionary<UcbPlatform, BuildTarget> BuildPlatformTargetMap = new Dictionary<UcbPlatform, BuildTarget> {
+		static readonly Dictionary<UcbPlatform, BuildTarget> BuildPlatformTargetMap = new () {
 			{ UcbPlatform.android,  BuildTarget.Android },
 			{ UcbPlatform.ios,      BuildTarget.iOS },
 			{ UcbPlatform.standalonelinux64, BuildTarget.StandaloneLinux64 },
@@ -101,7 +101,7 @@ namespace CineGame.SDK.Editor {
 			/// <summary>
 			/// Total width of table
 			/// </summary>
-			int totalWidth;
+			readonly int totalWidth;
 
 			public GridView (int rowHeight, params int [] columnWidths) {
 				this.columnWidths = columnWidths;
@@ -152,11 +152,11 @@ namespace CineGame.SDK.Editor {
 		}
 
 		static Vector2 BuildTargetsScrollPosition = Vector2.zero;
-		static GridView BuildTargetsGridView = new GridView (50, 200, 50, 100, 100);
+		static readonly GridView BuildTargetsGridView = new (50, 200, 50, 100, 100);
 
 		UcbBuildTarget [] BuildTargets;
 
-		readonly Dictionary<string, UcbBuild> LatestBuild = new Dictionary<string, UcbBuild> ();
+		readonly Dictionary<string, UcbBuild> LatestBuild = new ();
 		static bool IsLoadingTargets, NetworkError;
 		static string UcbApiKey;
 
@@ -823,7 +823,7 @@ namespace CineGame.SDK.Editor {
 		/// <summary>
 		/// Dictionary of currently polling target status
 		/// </summary>
-		readonly Dictionary<string, EditorCoroutine> PollCoroutines = new Dictionary<string, EditorCoroutine> ();
+		readonly Dictionary<string, EditorCoroutine> PollCoroutines = new ();
 
 		/// <summary>
 		/// Start build status polling coroutine if not already running

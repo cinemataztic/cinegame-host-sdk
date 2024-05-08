@@ -73,9 +73,9 @@ namespace CineGame.SDK {
             "/tenor 24411575",*/
         };
 
-        private readonly List<Coroutine> BotCoroutines = new List<Coroutine> ();
-        private readonly List<int> BotIds = new List<int> ();
-        private readonly List<IBot> BotScripts = new List<IBot> ();
+        private readonly List<Coroutine> BotCoroutines = new ();
+        private readonly List<int> BotIds = new ();
+        private readonly List<IBot> BotScripts = new ();
 
         private List<string> NamesShuffled;
         private List<string> AvatarsShuffled;
@@ -302,7 +302,7 @@ namespace CineGame.SDK {
     }
 
     internal static class Extensions {
-        private static System.Random rng = new System.Random ();
+        private static readonly System.Random rng = new ();
 
         public static void Shuffle<T> (this IList<T> list) {
             int n = list.Count;
