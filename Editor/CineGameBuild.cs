@@ -682,7 +682,7 @@ namespace CineGame.SDK.Editor {
                 var watch = new System.Diagnostics.Stopwatch ();
                 watch.Start ();
 
-                var request = UnityWebRequest.Post (url + "build-hook/upload", form);
+                using var request = UnityWebRequest.Post (url + "build-hook/upload", form);
                 var enHeaders = headers.GetEnumerator ();
                 while (enHeaders.MoveNext ()) {
                     request.SetRequestHeader (enHeaders.Current.Key, enHeaders.Current.Value);
@@ -698,8 +698,6 @@ namespace CineGame.SDK.Editor {
                         EditorUtility.ClearProgressBar ();
                         cancelUpload = true;
                         IsBuilding = false;
-                        request.Dispose ();
-                        request = null;
                     }
                     buildProgress = p;
                     RepaintWindow ();

@@ -241,7 +241,7 @@ namespace CineGame.SDK.Editor
                 }
             }
 
-            var request = new UnityWebRequest (
+            using var request = new UnityWebRequest (
                                 url,
                                 "POST",
                                 new DownloadHandlerBuffer (),

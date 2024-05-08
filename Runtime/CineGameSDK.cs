@@ -835,7 +835,9 @@ namespace CineGame.SDK {
             var timeBegin = Time.realtimeSinceStartup;
             yield return request.SendWebRequest();
             var statusCode = (HttpStatusCode)request.responseCode;
-            callback?.Invoke(statusCode, request.downloadHandler.text);
+            var responseString = request.downloadHandler.text;
+            request.Dispose ();
+            callback?.Invoke (statusCode, responseString);
         }
 
         static void PostFile(string uri, string filename, byte[] file, BackendCallback callback = null)

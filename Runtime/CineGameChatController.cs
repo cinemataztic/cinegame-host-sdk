@@ -87,7 +87,7 @@ namespace CineGame.SDK {
             var filename = string.Format ("{0}/{1}", Application.temporaryCachePath, CineGameUtility.ComputeMD5Hash (url));
             var cacheExists = File.Exists (filename);
 
-            var request = UnityWebRequest.Get (url);
+            using var request = UnityWebRequest.Get (url);
             request.timeout = 10;
             yield return request.SendWebRequest ();
 
