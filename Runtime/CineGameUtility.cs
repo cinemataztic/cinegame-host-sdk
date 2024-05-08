@@ -38,17 +38,14 @@ namespace CineGame.SDK
 		public static string ComputeMD5Hash(string s)
 		{
 			// Form hash
-			using (var md5h = MD5.Create())
-			{
-				var data = md5h.ComputeHash(System.Text.Encoding.Default.GetBytes(s));
-				// Create string representation
-				var sb = new System.Text.StringBuilder();
-				for (int i = 0; i < data.Length; ++i)
-				{
-					sb.Append(data[i].ToString("x2"));
-				}
-				return sb.ToString();
+			using var md5h = MD5.Create ();
+			var data = md5h.ComputeHash (System.Text.Encoding.Default.GetBytes (s));
+			// Create string representation
+			var sb = new System.Text.StringBuilder ();
+			for (int i = 0; i < data.Length; ++i) {
+				sb.Append (data [i].ToString ("x2"));
 			}
+			return sb.ToString ();
 		}
 
 		/// <summary>

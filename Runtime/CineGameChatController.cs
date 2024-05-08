@@ -128,28 +128,27 @@ namespace CineGame.SDK {
 		/// Set up dictionary of {emoji,UVs}
 		/// </summary>
         void SetupEmojiDictionary () {
-            using (StringReader reader = new StringReader (EmojiInfo.text)) {
-                string line = reader.ReadLine ();
-                while (line != null && line.Length > 1) {
-                    // We add each emoji to emojiRects
-                    string [] split = line.Split (' ');
-                    float x = float.Parse (split [1], System.Globalization.CultureInfo.InvariantCulture);
-                    float y = float.Parse (split [2], System.Globalization.CultureInfo.InvariantCulture);
-                    float width = float.Parse (split [3], System.Globalization.CultureInfo.InvariantCulture);
-                    float height = float.Parse (split [4], System.Globalization.CultureInfo.InvariantCulture);
+			using var reader = new StringReader (EmojiInfo.text);
+            string line = reader.ReadLine ();
+			while (line != null && line.Length > 1) {
+				// We add each emoji to emojiRects
+				string [] split = line.Split (' ');
+				float x = float.Parse (split [1], System.Globalization.CultureInfo.InvariantCulture);
+				float y = float.Parse (split [2], System.Globalization.CultureInfo.InvariantCulture);
+				float width = float.Parse (split [3], System.Globalization.CultureInfo.InvariantCulture);
+				float height = float.Parse (split [4], System.Globalization.CultureInfo.InvariantCulture);
 
 
-                    string [] converted = split [0].Split ('-');
-                    for (int j = 0; j < converted.Length; j++) {
-                        converted [j] = char.ConvertFromUtf32 (Convert.ToInt32 (converted [j], 16));
-                    }
+				string [] converted = split [0].Split ('-');
+				for (int j = 0; j < converted.Length; j++) {
+					converted [j] = char.ConvertFromUtf32 (Convert.ToInt32 (converted [j], 16));
+				}
 
-                    emojiRects.Add (string.Join (string.Empty, converted), new Rect (x, y, width, height));
+				emojiRects.Add (string.Join (string.Empty, converted), new Rect (x, y, width, height));
 
-                    line = reader.ReadLine ();
-                }
-            }
-        }
+				line = reader.ReadLine ();
+			}
+		}
 
         /// <summary>
 		/// Runs the profanity filter on another thread. Result is returned in the callback argument.
@@ -276,52 +275,49 @@ namespace CineGame.SDK {
         }
 
         IEnumerator E_SpeakGiphy (int backendID, string giphyId) {
-            using (var www = UnityWebRequest.Get ($"https://api.giphy.com/v1/gifs/{giphyId}?api_key={GiphyApiKey}")) {
-                yield return www.SendWebRequest ();
-                if (www.responseCode == 200) {
-                    var result = JsonConvert.DeserializeObject<GiphyResult> (www.downloadHandler.text);
-                    var img = result.data.images.original;
-                    if (!string.IsNullOrWhiteSpace (img.mp4)) {
-                        //TODO maybe cache common gifs:
-                        /*var pathToVideo = $"{Application.temporaryCachePath}/giphy/{giphyId}.mp4";
-                        if (!File.Exists (pathToVideo)) {
-                            using (var wwwFile = UnityWebRequest.Get (img.mp4)) {
-                                yield return wwwFile.SendWebRequest ();
-                                if (wwwFile.responseCode == 200) {
-                                    Directory.CreateDirectory (Path.GetDirectoryName (pathToVideo));
-                                    File.WriteAllBytes (pathToVideo, wwwFile.downloadHandler.data);
-                                }
-                            }
-                        }
-                        */
-                        OnGIFMessage?.Invoke (backendID, img.mp4, img.width, img.height);
-                        Debug.LogFormat ("Player {0} plays mp4 @ {1}", backendID, img.mp4);
-                    } else {
-                        Debug.LogError ("SpeakGiphy: Empty url for mp4 animation");
-                    }
-                }
-            }
-        }
+			using var www = UnityWebRequest.Get ($"https://api.giphy.com/v1/gifs/{giphyId}?api_key={GiphyApiKey}");
+            yield return www.SendWebRequest ();
+			if (www.responseCode == 200) {
+				var result = JsonConvert.DeserializeObject<GiphyResult> (www.downloadHandler.text);
+				var img = result.data.images.original;
+				if (!string.IsNullOrWhiteSpace (img.mp4)) {
+					//TODO maybe cache common gifs:
+					/*var pathToVideo = $"{Application.temporaryCachePath}/giphy/{giphyId}.mp4";
+					if (!File.Exists (pathToVideo)) {
+						using (var wwwFile = UnityWebRequest.Get (img.mp4)) {
+							yield return wwwFile.SendWebRequest ();
+							if (wwwFile.responseCode == 200) {
+								Directory.CreateDirectory (Path.GetDirectoryName (pathToVideo));
+								File.WriteAllBytes (pathToVideo, wwwFile.downloadHandler.data);
+							}
+						}
+					}
+					*/
+					OnGIFMessage?.Invoke (backendID, img.mp4, img.width, img.height);
+					Debug.LogFormat ("Player {0} plays mp4 @ {1}", backendID, img.mp4);
+				} else {
+					Debug.LogError ("SpeakGiphy: Empty url for mp4 animation");
+				}
+			}
+		}
 
         IEnumerator E_SpeakTenor (int backendID, string tenorId) {
-            using (var www = UnityWebRequest.Get ($"https://g.tenor.com/v1/gifs?ids={tenorId}&key={TenorApiKey}")) {
-                yield return www.SendWebRequest ();
-                if (www.responseCode == 200) {
-                    var result = JsonConvert.DeserializeObject<TenorResult> (www.downloadHandler.text);
-                    if (result.results.Length != 0 && result.results [0].media.Length != 0) {
-                        var img = result.results [0].media [0].mp4;
-                        if (!string.IsNullOrWhiteSpace (img?.url)) {
-                            OnGIFMessage?.Invoke (backendID, img.url, img.dims [0], img.dims [1]);
-                            Debug.LogFormat ("Player {0} plays mp4 @ {1}", backendID, img.url);
-                        } else {
-                            Debug.LogError ("SpeakTenor: Empty url for mp4 animation");
-                        }
-                    } else {
-                        Debug.LogError ("SpeakTenor: Empty result set");
-                    }
-                }
-            }
-        }
+			using var www = UnityWebRequest.Get ($"https://g.tenor.com/v1/gifs?ids={tenorId}&key={TenorApiKey}"); yield return www.SendWebRequest ();
+			if (www.responseCode == 200) {
+				var result = JsonConvert.DeserializeObject<TenorResult> (www.downloadHandler.text);
+				if (result.results.Length != 0 && result.results [0].media.Length != 0) {
+					var img = result.results [0].media [0].mp4;
+					if (!string.IsNullOrWhiteSpace (img?.url)) {
+						OnGIFMessage?.Invoke (backendID, img.url, img.dims [0], img.dims [1]);
+						Debug.LogFormat ("Player {0} plays mp4 @ {1}", backendID, img.url);
+					} else {
+						Debug.LogError ("SpeakTenor: Empty url for mp4 animation");
+					}
+				} else {
+					Debug.LogError ("SpeakTenor: Empty result set");
+				}
+			}
+		}
 
 #pragma warning disable IDE1006
         /// <summary>

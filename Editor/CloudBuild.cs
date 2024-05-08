@@ -632,20 +632,19 @@ namespace CineGame.SDK.Editor {
 			IsLoadingTargets = true;
 			BuildTargets = null;
 			LatestBuild.Clear ();
-			using (var request = UnityWebRequest.Get (new Uri (CloudBuildBaseUri, "buildtargets"))) {
-				request.SetRequestHeader ("Authorization", "Basic " + EditorPrefs.GetString ("UcbApiKey"));
-				yield return request.SendWebRequest ();
-				IsLoadingTargets = false;
-				if (request.result != UnityWebRequest.Result.Success) {
-					NetworkError = true;
-					Debug.LogError ("Error occurred while loading targets: " + request.error);
-					yield break;
-				}
-				var resp = request.downloadHandler.text;
-				BuildTargets = JsonConvert.DeserializeObject<UcbBuildTarget []> (resp).OrderBy (b => b.name).ToArray ();
-				Debug.Log ($"Loaded {BuildTargets.Length} targets.");
-				Repaint ();
+			using var request = UnityWebRequest.Get (new Uri (CloudBuildBaseUri, "buildtargets"));
+			request.SetRequestHeader ("Authorization", "Basic " + EditorPrefs.GetString ("UcbApiKey"));
+			yield return request.SendWebRequest ();
+			IsLoadingTargets = false;
+			if (request.result != UnityWebRequest.Result.Success) {
+				NetworkError = true;
+				Debug.LogError ("Error occurred while loading targets: " + request.error);
+				yield break;
 			}
+			var resp = request.downloadHandler.text;
+			BuildTargets = JsonConvert.DeserializeObject<UcbBuildTarget []> (resp).OrderBy (b => b.name).ToArray ();
+			Debug.Log ($"Loaded {BuildTargets.Length} targets.");
+			Repaint ();
 		}
 
 		void UpdateTargetInList (UcbBuildTarget target) {
@@ -665,16 +664,15 @@ namespace CineGame.SDK.Editor {
 		}
 
 		IEnumerator E_GetBuildTargetDetails (string targetid) {
-			using (var request = UnityWebRequest.Get (new Uri (CloudBuildBaseUri, "buildtargets/" + targetid))) {
-				request.SetRequestHeader ("Authorization", "Basic " + EditorPrefs.GetString ("UcbApiKey"));
-				yield return request.SendWebRequest ();
-				if (request.result != UnityWebRequest.Result.Success) {
-					Debug.LogError ("Error while getting build target details: " + request.error);
-				} else {
-					UpdateTargetInList (JsonConvert.DeserializeObject<UcbBuildTarget> (request.downloadHandler.text));
-				}
-				Repaint ();
+			using var request = UnityWebRequest.Get (new Uri (CloudBuildBaseUri, "buildtargets/" + targetid));
+			request.SetRequestHeader ("Authorization", "Basic " + EditorPrefs.GetString ("UcbApiKey"));
+			yield return request.SendWebRequest ();
+			if (request.result != UnityWebRequest.Result.Success) {
+				Debug.LogError ("Error while getting build target details: " + request.error);
+			} else {
+				UpdateTargetInList (JsonConvert.DeserializeObject<UcbBuildTarget> (request.downloadHandler.text));
 			}
+			Repaint ();
 		}
 
 		void UpdateBuildTarget (UcbBuildTarget target) {
@@ -684,23 +682,22 @@ namespace CineGame.SDK.Editor {
 		IEnumerator E_UpdateBuildTarget (UcbBuildTarget target) {
 			var jsonReq = JsonConvert.SerializeObject (target);
 			Debug.Log ("Updating target " + target.buildtargetid + ":\n" + jsonReq);
-			using (var request = new UnityWebRequest (
+			using var request = new UnityWebRequest (
 								new Uri (CloudBuildBaseUri, "buildtargets/" + target.buildtargetid),
 								"PUT",
 								new DownloadHandlerBuffer (),
 								new UploadHandlerRaw (Encoding.UTF8.GetBytes (jsonReq))
-							)) {
-				request.SetRequestHeader ("Authorization", "Basic " + EditorPrefs.GetString ("UcbApiKey"));
-				request.uploadHandler.contentType = "application/json; charset=utf-8";
-				yield return request.SendWebRequest ();
-				if (request.result != UnityWebRequest.Result.Success) {
-					Debug.LogError ($"Failed to update target {target.buildtargetid}: {request.error}");
-				} else {
-					Debug.Log ($"Target {target.buildtargetid} updated succesfully");
-					UpdateTargetInList (JsonConvert.DeserializeObject<UcbBuildTarget> (request.downloadHandler.text));
-				}
-				Repaint ();
+							);
+			request.SetRequestHeader ("Authorization", "Basic " + EditorPrefs.GetString ("UcbApiKey"));
+			request.uploadHandler.contentType = "application/json; charset=utf-8";
+			yield return request.SendWebRequest ();
+			if (request.result != UnityWebRequest.Result.Success) {
+				Debug.LogError ($"Failed to update target {target.buildtargetid}: {request.error}");
+			} else {
+				Debug.Log ($"Target {target.buildtargetid} updated succesfully");
+				UpdateTargetInList (JsonConvert.DeserializeObject<UcbBuildTarget> (request.downloadHandler.text));
 			}
+			Repaint ();
 		}
 
 		void CreateBuild (UcbBuildTarget target, bool confirm = true) {
@@ -717,32 +714,31 @@ namespace CineGame.SDK.Editor {
 			Repaint ();
 
 			for (; ; ) {
-				using (var request = new UnityWebRequest (
+				using var request = new UnityWebRequest (
 									new Uri (CloudBuildBaseUri, "buildtargets/" + target.buildtargetid + "/builds"),
 									"POST",
 									new DownloadHandlerBuffer (),
 									new UploadHandlerRaw (Encoding.UTF8.GetBytes ("{\"clean\":" + clean.ToString ().ToLower () + ",\"delay\":0,\"commit\":\"\",\"headless\":false}"))
-								)) {
-					request.SetRequestHeader ("Authorization", "Basic " + EditorPrefs.GetString ("UcbApiKey"));
-					request.uploadHandler.contentType = "application/json; charset=utf-8";
-					yield return request.SendWebRequest ();
-					if (request.result == UnityWebRequest.Result.Success) {
-						var responseStr = request.downloadHandler.text;
-						var builds = JsonConvert.DeserializeObject<UcbBuild []> (responseStr);
-						var latestBuild = (builds != null && builds.Length != 0) ? builds [0] : null;
-						if (latestBuild != null) {
-							LatestBuild [target.buildtargetid] = latestBuild;
-							Debug.Log ($"Created new build #{latestBuild.build} for {target.buildtargetid} succesfully: {responseStr}");
-							EnsurePolling (target.buildtargetid);
-							break;
-						}
+								);
+				request.SetRequestHeader ("Authorization", "Basic " + EditorPrefs.GetString ("UcbApiKey"));
+				request.uploadHandler.contentType = "application/json; charset=utf-8";
+				yield return request.SendWebRequest ();
+				if (request.result == UnityWebRequest.Result.Success) {
+					var responseStr = request.downloadHandler.text;
+					var builds = JsonConvert.DeserializeObject<UcbBuild []> (responseStr);
+					var latestBuild = (builds != null && builds.Length != 0) ? builds [0] : null;
+					if (latestBuild != null) {
+						LatestBuild [target.buildtargetid] = latestBuild;
+						Debug.Log ($"Created new build #{latestBuild.build} for {target.buildtargetid} succesfully: {responseStr}");
+						EnsurePolling (target.buildtargetid);
+						break;
 					}
-					var msg = $"Failed to create new build for {target.buildtargetid}: {request.error}";
-					Debug.LogError (msg);
-					if (!EditorUtility.DisplayDialog ("Cloud Build", msg + "\n\nTry again?", "OK", "Cancel")) {
-						LatestBuild.Remove (target.buildtargetid);
-						yield break;
-					}
+				}
+				var msg = $"Failed to create new build for {target.buildtargetid}: {request.error}";
+				Debug.LogError (msg);
+				if (!EditorUtility.DisplayDialog ("Cloud Build", msg + "\n\nTry again?", "OK", "Cancel")) {
+					LatestBuild.Remove (target.buildtargetid);
+					yield break;
 				}
 			}
 
@@ -864,16 +860,15 @@ namespace CineGame.SDK.Editor {
 			var buildno = latestBuild.build;
 			latestBuild.buildStatus = UcbBuildStatus.canceling;
 			Debug.Log ($"Canceling build #{buildno} for {targetid} ...");
-			using (var request = UnityWebRequest.Delete (new Uri (CloudBuildBaseUri, "buildtargets/" + targetid + "/builds/" + buildno))) {
-				request.SetRequestHeader ("Authorization", "Basic " + EditorPrefs.GetString ("UcbApiKey"));
-				yield return request.SendWebRequest ();
-				if (request.result != UnityWebRequest.Result.Success) {
-					Debug.LogError ($"Error while canceling build for {targetid}: {request.error}");
-				} else {
-					Debug.Log ($"Succesfully canceled build #{buildno} for {targetid}");
-					LatestBuild.Remove (targetid);
-					Repaint ();
-				}
+			using var request = UnityWebRequest.Delete (new Uri (CloudBuildBaseUri, "buildtargets/" + targetid + "/builds/" + buildno));
+			request.SetRequestHeader ("Authorization", "Basic " + EditorPrefs.GetString ("UcbApiKey"));
+			yield return request.SendWebRequest ();
+			if (request.result != UnityWebRequest.Result.Success) {
+				Debug.LogError ($"Error while canceling build for {targetid}: {request.error}");
+			} else {
+				Debug.Log ($"Succesfully canceled build #{buildno} for {targetid}");
+				LatestBuild.Remove (targetid);
+				Repaint ();
 			}
 		}
 
@@ -944,30 +939,29 @@ namespace CineGame.SDK.Editor {
 
 			var jsonReq = JsonConvert.SerializeObject (target);
 			Debug.Log ("Creating target " + target.name + ":\n" + jsonReq);
-			using (var request = new UnityWebRequest (
+			using var request = new UnityWebRequest (
 								new Uri (CloudBuildBaseUri, "buildtargets/"),
 								"POST",
 								new DownloadHandlerBuffer (),
 								new UploadHandlerRaw (Encoding.UTF8.GetBytes (jsonReq))
-							)) {
-				request.SetRequestHeader ("Authorization", "Basic " + EditorPrefs.GetString ("UcbApiKey"));
-				request.uploadHandler.contentType = "application/json; charset=utf-8";
-				yield return request.SendWebRequest ();
+							);
+			request.SetRequestHeader ("Authorization", "Basic " + EditorPrefs.GetString ("UcbApiKey"));
+			request.uploadHandler.contentType = "application/json; charset=utf-8";
+			yield return request.SendWebRequest ();
 
-				IsLoadingTargets = false;
+			IsLoadingTargets = false;
 
-				if (request.result != UnityWebRequest.Result.Success) {
-					Debug.LogError ($"Failed to create target for {target.name}: {request.downloadHandler.text}");
-				} else {
-					target = JsonConvert.DeserializeObject<UcbBuildTarget> (request.downloadHandler.text);
-					Debug.Log ($"Target {target.buildtargetid} created succesfully");
+			if (request.result != UnityWebRequest.Result.Success) {
+				Debug.LogError ($"Failed to create target for {target.name}: {request.downloadHandler.text}");
+			} else {
+				target = JsonConvert.DeserializeObject<UcbBuildTarget> (request.downloadHandler.text);
+				Debug.Log ($"Target {target.buildtargetid} created succesfully");
 
-					BuildTargets = new UcbBuildTarget [] { target };
+				BuildTargets = new UcbBuildTarget [] { target };
 
-					if (autoBuild) {
-						CreateBuild (target, confirm: false);
-						yield break;
-					}
+				if (autoBuild) {
+					CreateBuild (target, confirm: false);
+					yield break;
 				}
 			}
 		}
@@ -979,17 +973,16 @@ namespace CineGame.SDK.Editor {
 		IEnumerator E_DeleteBuildTarget (UcbBuildTarget target) {
 			IsLoadingTargets = true;
 
-			using (var request = UnityWebRequest.Delete (new Uri (CloudBuildBaseUri, "buildtargets/" + target.buildtargetid))) {
-				request.SetRequestHeader ("Authorization", "Basic " + EditorPrefs.GetString ("UcbApiKey"));
-				request.uploadHandler.contentType = "application/json; charset=utf-8";
-				yield return request.SendWebRequest ();
-				if (request.result != UnityWebRequest.Result.Success) {
-					Debug.LogError ($"Failed to delete target " + target.buildtargetid);
-				}
-
-				IsLoadingTargets = false;
-				GetCloudBuildTargets ();
+			using var request = UnityWebRequest.Delete (new Uri (CloudBuildBaseUri, "buildtargets/" + target.buildtargetid));
+			request.SetRequestHeader ("Authorization", "Basic " + EditorPrefs.GetString ("UcbApiKey"));
+			request.uploadHandler.contentType = "application/json; charset=utf-8";
+			yield return request.SendWebRequest ();
+			if (request.result != UnityWebRequest.Result.Success) {
+				Debug.LogError ($"Failed to delete target " + target.buildtargetid);
 			}
+
+			IsLoadingTargets = false;
+			GetCloudBuildTargets ();
 		}
 
 		string GetPathToDownloadedBuild (UcbBuild build) {
@@ -1009,31 +1002,29 @@ namespace CineGame.SDK.Editor {
 		IEnumerator E_Download (UcbBuild build) {
 			var gameID = GetGameIDForBuild (build);
 			var path = CineGameBuild.GetOutputPath (gameID, BuildPlatformTargetMap [build.platform]);
-			using (var request = UnityWebRequest.Get (build.links.download_primary.href)) {
-				//No auth header needed
-				request.downloadHandler = new DownloadHandlerFile (path);
-				request.SendWebRequest ();
-				while (!request.isDone) {
-					var cancel = EditorUtility.DisplayCancelableProgressBar ("Cloud Build", $"Downloading {build.buildtargetid} build {build.build} ... ", request.downloadProgress);
-					if (cancel) {
-						request.Abort ();
-						EditorUtility.ClearProgressBar ();
-						yield break;
-					}
-					yield return null;
+			using var request = UnityWebRequest.Get (build.links.download_primary.href);                //No auth header needed
+			request.downloadHandler = new DownloadHandlerFile (path);
+			request.SendWebRequest ();
+			while (!request.isDone) {
+				var cancel = EditorUtility.DisplayCancelableProgressBar ("Cloud Build", $"Downloading {build.buildtargetid} build {build.build} ... ", request.downloadProgress);
+				if (cancel) {
+					request.Abort ();
+					EditorUtility.ClearProgressBar ();
+					yield break;
 				}
-				EditorUtility.ClearProgressBar ();
-				if (request.result != UnityWebRequest.Result.Success) {
-					try {
-						File.Delete (path);
-					} catch (Exception) { }
-					Debug.LogError ($"Error while downloading {build.buildtargetid} build {build.build}: {request.error}");
-					EditorUtility.DisplayDialog ("Cloud Build", $"Error while downloading {Path.GetFileNameWithoutExtension (path)}: {request.error}", "OK");
-					GetCloudBuildTargets ();
-				} else {
-					CineGameBuild.Init ();
-					CineGameBuild.GameID = gameID;
-				}
+				yield return null;
+			}
+			EditorUtility.ClearProgressBar ();
+			if (request.result != UnityWebRequest.Result.Success) {
+				try {
+					File.Delete (path);
+				} catch (Exception) { }
+				Debug.LogError ($"Error while downloading {build.buildtargetid} build {build.build}: {request.error}");
+				EditorUtility.DisplayDialog ("Cloud Build", $"Error while downloading {Path.GetFileNameWithoutExtension (path)}: {request.error}", "OK");
+				GetCloudBuildTargets ();
+			} else {
+				CineGameBuild.Init ();
+				CineGameBuild.GameID = gameID;
 			}
 		}
 
@@ -1060,88 +1051,35 @@ namespace CineGame.SDK.Editor {
 
 		IEnumerator E_DownloadLogForBuild (UcbBuild build) {
 			var path = GetPathToDownloadedLog (build);
-			using (var request = UnityWebRequest.Get (new Uri (CloudBuildBaseUri, "buildtargets/" + build.buildtargetid + "/builds/" + build.build + "/log"))) {
-				request.downloadHandler = new DownloadHandlerFile (path);
-				request.SetRequestHeader ("Authorization", "Basic " + EditorPrefs.GetString ("UcbApiKey"));
-				request.SendWebRequest ();
-				while (!request.isDone) {
-					var cancel = EditorUtility.DisplayCancelableProgressBar ("Cloud Build", $"Downloading log for {build.buildtargetid} build {build.build} ... ", request.downloadProgress);
-					if (cancel) {
-						request.Abort ();
-						EditorUtility.ClearProgressBar ();
-						yield break;
-					}
-					yield return null;
+			using var request = UnityWebRequest.Get (new Uri (CloudBuildBaseUri, "buildtargets/" + build.buildtargetid + "/builds/" + build.build + "/log"));
+			request.downloadHandler = new DownloadHandlerFile (path);
+			request.SetRequestHeader ("Authorization", "Basic " + EditorPrefs.GetString ("UcbApiKey"));
+			request.SendWebRequest ();
+			while (!request.isDone) {
+				var cancel = EditorUtility.DisplayCancelableProgressBar ("Cloud Build", $"Downloading log for {build.buildtargetid} build {build.build} ... ", request.downloadProgress);
+				if (cancel) {
+					request.Abort ();
+					EditorUtility.ClearProgressBar ();
+					yield break;
 				}
-				EditorUtility.ClearProgressBar ();
-				if (request.result != UnityWebRequest.Result.Success) {
-					try {
-						File.Delete (path);
-					} catch (Exception) { }
-					var msg = $"Error while downloading {Path.GetFileNameWithoutExtension (path)}: {request.error}";
-					Debug.LogError (msg);
-					EditorUtility.DisplayDialog ("Cloud Build", msg, "OK");
-					GetCloudBuildTargets ();
-				} else {
-					EditorUtility.RevealInFinder (path);
-				}
+				yield return null;
+			}
+			EditorUtility.ClearProgressBar ();
+			if (request.result != UnityWebRequest.Result.Success) {
+				try {
+					File.Delete (path);
+				} catch (Exception) { }
+				var msg = $"Error while downloading {Path.GetFileNameWithoutExtension (path)}: {request.error}";
+				Debug.LogError (msg);
+				EditorUtility.DisplayDialog ("Cloud Build", msg, "OK");
+				GetCloudBuildTargets ();
+			} else {
+				EditorUtility.RevealInFinder (path);
 			}
 		}
 
 		static string GetGameIDForBuild (UcbBuild build) {
 			return build.buildTargetName.Split (' ') [0];
-		}
-
-		/// <summary>
-		/// Progress delegate for E_Run. Called for each output line from the running process.
-		/// </summary>
-		delegate bool ProgressDelegate (string sMessage, float percent);
-
-		/// <summary>
-		/// Exit delegate for E_Run. Called when process is terminated.
-		/// </summary>
-		delegate void ExitDelegate (int exitCode, string output);
-
-		IEnumerator E_Run (string cmd, string args, ProgressDelegate progressCallback = null, ExitDelegate exitCallback = null, bool logWarnings = false) {
-			using (var p = new System.Diagnostics.Process ()) {
-				p.StartInfo.FileName = cmd;
-				p.StartInfo.Arguments = args;
-				p.StartInfo.RedirectStandardOutput = true;
-				p.StartInfo.RedirectStandardError = true;
-				p.StartInfo.UseShellExecute = false;
-				p.StartInfo.CreateNoWindow = true;
-				p.Start ();
-				//Debug.Log ($"CloudBuild: {cmd} {args}");
-				var sb = new StringBuilder ();
-				var reader = p.StandardOutput;
-				while (!p.HasExited || !reader.EndOfStream) {
-					if (!reader.EndOfStream) {
-						var outputLine = reader.ReadLine ().Trim ();
-						sb.AppendLine (outputLine);
-						if (progressCallback != null && progressCallback (outputLine, 0f)) {
-							p.Kill ();
-							break;
-						}
-					}
-					yield return null;
-				}
-				if (sb.Length > 0) {
-					//Debug.LogFormat ("CloudBuild: {0} >> {1}", cmd, sb);
-				}
-				reader = p.StandardError;
-				if (!reader.EndOfStream) {
-					var err = string.Format ("CloudBuild: {0} >> {1}", cmd, reader.ReadToEnd ());
-					if (p.ExitCode != 0) {
-						Debug.LogError (err);
-					} else if (logWarnings) {
-						Debug.LogWarning (err);
-					}
-				}
-				if (p.ExitCode != 0) {
-					Debug.LogErrorFormat ("CloudBuild ERROR: {0} exitcode={1}", cmd, p.ExitCode);
-				}
-				exitCallback?.Invoke (p.ExitCode, sb.ToString ());
-			}
 		}
 	}
 }

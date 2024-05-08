@@ -625,31 +625,30 @@ namespace CineGame.SDK {
             var nRetryTimes = 3;
             for (; ; )
             {
-                using (var request = UnityWebRequestTexture.GetTexture (sUrl)) {
-                    request.SetRequestHeader ("User-Agent", "Mozilla");
-                    var timeBegin = Time.realtimeSinceStartup;
-                    yield return request.SendWebRequest ();
-                    if (request.result == UnityWebRequest.Result.Success) {
-                        texture = DownloadHandlerTexture.GetContent (request);
-                        if (texture != null) {
-                            var texMipMap = new Texture2D (texture.width, texture.height, texture.format, true);
-                            texMipMap.SetPixels (texture.GetPixels ());
-                            texMipMap.Apply (true);
-                            texture = texMipMap;
-                            break;
-                        }
-                    }
-                    if (request.result == UnityWebRequest.Result.ConnectionError && --nRetryTimes != 0) {
-                        Debug.LogWarning ($"{request.error} while downloading profile picture, retrying: {request.downloadHandler?.text} {sUrl}");
-                        //Wait a little, then retry
-                        yield return new WaitForSeconds (.5f);
-                        continue;
-                    }
-                    //Other errors, or giving up after n retries
-                    Debug.LogWarning($"{request.error} while downloading profile picture, giving up: {request.downloadHandler?.text} {sUrl}");
-                    yield break;
-                }
-            }
+				using var request = UnityWebRequestTexture.GetTexture (sUrl);
+                request.SetRequestHeader ("User-Agent", "Mozilla");
+				var timeBegin = Time.realtimeSinceStartup;
+				yield return request.SendWebRequest ();
+				if (request.result == UnityWebRequest.Result.Success) {
+					texture = DownloadHandlerTexture.GetContent (request);
+					if (texture != null) {
+						var texMipMap = new Texture2D (texture.width, texture.height, texture.format, true);
+						texMipMap.SetPixels32 (texture.GetPixels32 ());
+						texMipMap.Apply (true);
+						texture = texMipMap;
+						break;
+					}
+				}
+				if (request.result == UnityWebRequest.Result.ConnectionError && --nRetryTimes != 0) {
+					Debug.LogWarning ($"{request.error} while downloading profile picture, retrying: {request.downloadHandler?.text} {sUrl}");
+					//Wait a little, then retry
+					yield return new WaitForSeconds (.5f);
+					continue;
+				}
+				//Other errors, or giving up after n retries
+				Debug.LogWarning ($"{request.error} while downloading profile picture, giving up: {request.downloadHandler?.text} {sUrl}");
+				yield break;
+			}
 
             var timeElapsed = Time.realtimeSinceStartup - startTime;
             Debug.Log ($"BackendID={backendID} avatar texture ({texture.width}, {texture.height}) downloaded in {timeElapsed:##.00}s: {sUrl}");
@@ -807,47 +806,41 @@ namespace CineGame.SDK {
             }
         }
 
-        static void API(string uri, string json, BackendCallback callback = null)
-        {
-            if (Debug.isDebugBuild)
-            {
-                Debug.LogFormat("POST {0} {1}", uri, json);
+        static void API (string uri, string json, BackendCallback callback = null) {
+            if (Debug.isDebugBuild) {
+                Debug.LogFormat ("POST {0} {1}", uri, json);
             }
-            var request = new UnityWebRequest(
-                CineGameMarket.GetAPI() + uri,
+            var request = new UnityWebRequest (
+                CineGameMarket.GetAPI () + uri,
                 "POST",
-                new DownloadHandlerBuffer(),
-                new UploadHandlerRaw(Encoding.UTF8.GetBytes(json))
+                new DownloadHandlerBuffer (),
+                new UploadHandlerRaw (Encoding.UTF8.GetBytes (json))
             );
-            var enHeaders = BackendHeaders.GetEnumerator();
-            while (enHeaders.MoveNext())
-            {
-                request.SetRequestHeader(enHeaders.Current.Key, enHeaders.Current.Value);
+            var enHeaders = BackendHeaders.GetEnumerator ();
+            while (enHeaders.MoveNext ()) {
+                request.SetRequestHeader (enHeaders.Current.Key, enHeaders.Current.Value);
             }
-            instance.StartCoroutine(instance.E_Backend(request, callback));
+            instance.StartCoroutine (instance.E_Backend (request, callback));
         }
 
-        private IEnumerator E_Backend(UnityWebRequest request, BackendCallback callback)
-        {
+        private IEnumerator E_Backend (UnityWebRequest request, BackendCallback callback) {
             var timeBegin = Time.realtimeSinceStartup;
-            yield return request.SendWebRequest();
+            yield return request.SendWebRequest ();
             var statusCode = (HttpStatusCode)request.responseCode;
             var responseString = request.downloadHandler.text;
             request.Dispose ();
             callback?.Invoke (statusCode, responseString);
         }
 
-        static void PostFile(string uri, string filename, byte[] file, BackendCallback callback = null)
-        {
-            var wwwForm = new WWWForm();
-            wwwForm.AddBinaryData("file", file, filename);
-            var request = UnityWebRequest.Post(CineGameMarket.GetAPI() + uri, wwwForm);
-            var enHeaders = BackendHeaders.GetEnumerator();
-            while (enHeaders.MoveNext())
-            {
-                request.SetRequestHeader(enHeaders.Current.Key, enHeaders.Current.Value);
+        static void PostFile (string uri, string filename, byte [] file, BackendCallback callback = null) {
+            var wwwForm = new WWWForm ();
+            wwwForm.AddBinaryData ("file", file, filename);
+            var request = UnityWebRequest.Post (CineGameMarket.GetAPI () + uri, wwwForm);
+            var enHeaders = BackendHeaders.GetEnumerator ();
+            while (enHeaders.MoveNext ()) {
+                request.SetRequestHeader (enHeaders.Current.Key, enHeaders.Current.Value);
             }
-            instance.StartCoroutine(instance.E_Backend(request, callback));
+            instance.StartCoroutine (instance.E_Backend (request, callback));
         }
 
         /// <summary>
