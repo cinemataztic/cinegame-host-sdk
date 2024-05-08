@@ -1,204 +1,164 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using CineGame.SDK;
+
 using Newtonsoft.Json;
+
 using UnityEngine;
 
-namespace CineGame.SDK
-{
-    public class CineGameDCHP : MonoBehaviour
-    {
-        // DCH-P
-        private SocketClient DCHPClient;
-        private static Queue<string> DCHPMessages = new Queue<string>();
-        private static Queue<string> DCHPErrors = new Queue<string>();
-        private static IEnumerator ListenToDCHPCoroutine;
-        private static float blockDuration;
+namespace CineGame.SDK {
 
-        public const string APP_DURATION_ENV_VAR = "CINEMATAZTIC_BLOCK_DURATION_SEC";
+    /// <summary>
+	/// Class for dynamically adjusting the CineGame/CineClash block. The default block duration can be overridden at start via env, or it can be adjusted dynamically via TCP.
+	/// </summary>
+    internal static class CineGameDCHP {
 
-        public void Start()
-        {
-            blockDuration = CineGameMarket.Durations[CineGameSDK.Market];
+        static SocketClient DCHPClient;
+        static readonly Queue<string> DCHPMessages = new ();
+        static readonly Queue<string> DCHPErrors = new ();
 
-            // Env Duration
-            string blockDurationString = Environment.GetEnvironmentVariable(APP_DURATION_ENV_VAR);
-            if (!String.IsNullOrEmpty(blockDurationString))
-            {
-                int newBlockDuration = Int32.Parse(blockDurationString);
-                blockDuration = newBlockDuration;
-            }
+        static float BlockDuration;
 
-            CineGameSDK.OnBlockDurationUpdated?.Invoke(blockDuration);
+        static int IntervalSecs = 10;
+        static float NextTimePoll;
 
-            if (!Application.isEditor)
-            {
-                SetupDCHPListener();
-            }
-        }
+        /// <summary>
+		/// Set initial block duration and start polling for updates via TCP.
+		/// </summary>
+        public static void Start () {
+            BlockDuration = Configuration.APP_DURATION_ENV_VAR ?? CineGameMarket.Durations [CineGameSDK.Market];
+            Debug.Log ("Initial block duration: " + BlockDuration);
 
-        void Update()
-        {
-            if (DCHPMessages.Count > 0)
-            {
-                Debug.Log(DCHPMessages.Dequeue());
-            }
+            CineGameSDK.OnBlockDurationUpdated?.Invoke (BlockDuration);
 
-            if (DCHPErrors.Count > 0)
-            {
-                Debug.Log(DCHPErrors.Dequeue());
+            if (!Application.isEditor) {
+                _ = SetupDCHPListener ();
+            } else {
+                Debug.Log ("DCH-p listener not started in editor");
             }
         }
 
-        private async Task SetupDCHPListener()
-        {
-            try
-            {
-                var port = 4455;
-                var portString = Environment.GetEnvironmentVariable("INTERNAL_TCP_SERVER_PORT");
-                if (!string.IsNullOrWhiteSpace(portString))
-                {
-                    port = int.Parse(portString);
-                }
-                DCHPMessages.Enqueue("Attempting to connect to 127.0.0.1:" + port);
-                DCHPClient = new SocketClient();
-                await DCHPClient.Open("127.0.0.1", port, OnDCHPMessage, OnDCHPError);
+        /// <summary>
+		/// Log async messages and poll periodically for block duration updates via TCP.
+		/// </summary>
+        public static void Update () {
+            while (DCHPMessages.Count != 0) {
+                Debug.Log (DCHPMessages.Dequeue ());
+            }
+
+            while (DCHPErrors.Count != 0) {
+                Debug.LogError (DCHPErrors.Dequeue ());
+            }
+
+            if (DCHPClient.Connected && Time.realtimeSinceStartup >= NextTimePoll) {
+                NextTimePoll = Time.realtimeSinceStartup + IntervalSecs;
+                DCHPClient.Send ("{\"action\":\"getAdjustedBlocks\"}\n");
+            }
+        }
+
+        /// <summary>
+		/// Attempts to connect to DCH-p via TCP
+		/// </summary>
+        private static async Task SetupDCHPListener () {
+            try {
+                var port = Configuration.INTERNAL_TCP_SERVER_PORT ?? 4455;
+                DCHPMessages.Enqueue ("Attempting to connect to 127.0.0.1:" + port);
+                DCHPClient = new SocketClient ();
+                await DCHPClient.Open ("127.0.0.1", port, OnDCHPMessage, OnDCHPError);
                 if (!DCHPClient.Connected)
-                    throw new Exception("DCH-P Socket not connected");
-                DCHPMessages.Enqueue("DCH-P listener connected via TCP to " + DCHPClient.RemoteEndPoint);
-                ListenToDCHPCoroutine = ListenToDCHP();
-                StartCoroutine(ListenToDCHPCoroutine);
-            }
-            catch (Exception ex)
-            {
-                Debug.LogError("Exception while starting DCH-P listener: " + ex.Message);
-            }
-        }
+                    throw new Exception ("DCH-P Socket not connected");
+                DCHPMessages.Enqueue ("DCH-P listener connected via TCP to " + DCHPClient.RemoteEndPoint);
 
-        private void StopDCHPListener()
-        {
-            try
-            {
-                if (ListenToDCHPCoroutine != null)
-                {
-                    StopCoroutine(ListenToDCHPCoroutine);
-                    ListenToDCHPCoroutine = null;
-                }
-                DCHPClient?.Close();
-                DCHPMessages.Enqueue("DCH-P listener has been closed");
-            }
-            catch (Exception ex)
-            {
-                DCHPMessages.Enqueue("Exception while disposing DCH-P TCP listener: " + ex.Message);
+                IntervalSecs = Configuration.BLOCK_DURATIONS_POLL_INTERVAL_SECS ?? 10;
+                NextTimePoll = Time.realtimeSinceStartup + IntervalSecs;
+
+                DCHPMessages.Enqueue ($"Polling DCH-P for adjusted blocks every {IntervalSecs} seconds ...");
+
+                DCHPClient.SendTimeout = IntervalSecs;
+            } catch (Exception ex) {
+                DCHPErrors.Enqueue ("Exception while starting DCH-P listener: " + ex.Message);
             }
         }
 
-        private IEnumerator ListenToDCHP()
-        {
-            var intervalSecs = 10;
-            var intervalString = Environment.GetEnvironmentVariable("BLOCK_DURATIONS_POLL_INTERVAL_SECS");
-            if (!string.IsNullOrWhiteSpace(intervalString))
-            {
-                intervalSecs = int.Parse(intervalString);
+        /// <summary>
+		/// Stop polling for block updates via TCP.
+		/// </summary>
+        public static void Stop () {
+            try {
+                DCHPClient?.Close ();
+                DCHPMessages.Enqueue ("DCH-P listener has been closed");
+            } catch (Exception ex) {
+                DCHPErrors.Enqueue ("Exception while disposing DCH-P TCP listener: " + ex.Message);
             }
-
-            DCHPMessages.Enqueue($"Polling DCH-P for adjusted blocks every {intervalSecs} seconds ...");
-
-            DCHPClient.SendTimeout = intervalSecs;
-
-            while (DCHPClient.Connected)
-            {
-                DCHPClient.Send("{\"action\":\"getAdjustedBlocks\"}\n");
-                yield return new WaitForSecondsRealtime(intervalSecs);
-            }
-            DCHPErrors.Enqueue("DCH-P TCP disconnected, will not receive any more adjusted blocks");
         }
 
-        private void OnDCHPError(int errorCode, string message)
-        {
-            DCHPErrors.Enqueue($"DCH-P Socket error: {errorCode} {message}");
+        /// <summary>
+		/// Handle TCP errors
+		/// </summary>
+        private static void OnDCHPError (int errorCode, string message) {
+            DCHPErrors.Enqueue ($"DCH-P Socket error: {errorCode} {message}");
         }
 
-        private void OnDCHPMessage(string message)
-        {
-            if (string.IsNullOrWhiteSpace(message))
-            {
-                DCHPMessages.Enqueue("DCH-P data available, but response is empty or whitespace");
+        /// <summary>
+		/// Handle TCP messages
+		/// </summary>
+        private static void OnDCHPMessage (string message) {
+            if (string.IsNullOrWhiteSpace (message)) {
+                DCHPMessages.Enqueue ("DCH-P data available, but response is empty or whitespace");
                 return;
             }
-            try
-            {
+            try {
                 //DCH-p messages are doubly serialized as string @@
-                message = JsonConvert.DeserializeObject<string>(message);
-                DCHPMessages.Enqueue("DCH-P response: " + message);
+                message = JsonConvert.DeserializeObject<string> (message);
+                DCHPMessages.Enqueue ("DCH-P response: " + message);
 
-                float newBlockDuration = blockDuration;
+                float newBlockDuration = BlockDuration;
                 IEnumerable<BlockDurationUpdate> blockDurationUpdates = null;
-                if (message.Contains("adjusted"))
-                {
-                    var adjustedBlocksResponse = JsonConvert.DeserializeObject<AdjustedBlocksResponse>(message);
-                    if (adjustedBlocksResponse != null && adjustedBlocksResponse.adjusted)
-                    {
+                if (message.Contains ("adjusted")) {
+                    var adjustedBlocksResponse = JsonConvert.DeserializeObject<AdjustedBlocksResponse> (message);
+                    if (adjustedBlocksResponse != null && adjustedBlocksResponse.adjusted) {
                         blockDurationUpdates = adjustedBlocksResponse.data;
                     }
+                } else {
+                    blockDurationUpdates = JsonConvert.DeserializeObject<List<BlockDurationUpdate>> (message);
                 }
-                else
-                {
-                    blockDurationUpdates = JsonConvert.DeserializeObject<List<BlockDurationUpdate>>(message);
-                }
-                var cineGameUpdate = blockDurationUpdates?.FirstOrDefault(bu => bu.type == "CineGame");
-                if (cineGameUpdate != default)
-                {
-                    newBlockDuration = Mathf.Clamp(cineGameUpdate.duration, 0, 1200);
-                    if (newBlockDuration != blockDuration)
-                    {
-                        blockDuration = newBlockDuration;
-                        CineGameSDK.OnBlockDurationUpdated?.Invoke(blockDuration);
-                        DCHPMessages.Enqueue("New CineGame block duration from DCH-P: " + newBlockDuration);
+                var cineGameUpdate = blockDurationUpdates?.FirstOrDefault (bu => bu.type == "CineGame");
+                if (cineGameUpdate != default) {
+                    newBlockDuration = Mathf.Clamp (cineGameUpdate.duration, 0, 1200);
+                    if (newBlockDuration != BlockDuration) {
+                        BlockDuration = newBlockDuration;
+                        CineGameSDK.OnBlockDurationUpdated?.Invoke (BlockDuration);
+                        DCHPMessages.Enqueue ("New CineGame block duration from DCH-P: " + newBlockDuration);
+                    } else {
+                        DCHPMessages.Enqueue ("CineGame block duration not changed");
                     }
-                    else
-                    {
-                        DCHPMessages.Enqueue("CineGame block duration not changed");
-                    }
+                } else {
+                    DCHPMessages.Enqueue ("No CineGame block type found in block duration updates");
                 }
-                else
-                {
-                    DCHPMessages.Enqueue("No CineGame block type found in block duration updates");
-                }
-            }
-            catch (Exception ex)
-            {
-                DCHPErrors.Enqueue("Exception while deserializing DCH-P message: " + ex.Message);
+            } catch (Exception ex) {
+                DCHPErrors.Enqueue ("Exception while deserializing DCH-P message: " + ex.Message);
             }
         }
 
-        private void OnApplicationQuit()
-        {
-            StopDCHPListener();
-        }
 
 
         /// <summary>
         /// Message broadcast by DCH-P to TCP listeners when block duration changes
         /// </summary>
-        private class AdjustedBlocksResponse
-        {
+        private class AdjustedBlocksResponse {
             public bool adjusted;
-            public BlockDurationUpdate[] data;
+            public BlockDurationUpdate [] data;
         }
 
 
         /// <summary>
         /// Duration update for each type of block. We only care about CineGame type for now
         /// </summary>
-        private class BlockDurationUpdate
-        {
+        private class BlockDurationUpdate {
             /// <summary>
             /// duration in seconds.
             /// </summary>
@@ -210,14 +170,16 @@ namespace CineGame.SDK
             //public string @event;
         }
 
-        public class SocketClient
-        {
+        /// <summary>
+		/// Custom TCP socket using low-level socket interface and tcp protocol. High-level stuff has a tendency to crash the Unity Player.
+		/// </summary>
+        public class SocketClient {
 
-            public delegate void SocketCallback(string data);
-            public delegate void SocketErrorHandler(int errorCode, string message);
+            public delegate void SocketCallback (string data);
+            public delegate void SocketErrorHandler (int errorCode, string message);
 
             private Socket _socket;
-            private readonly byte[] _receiveBuffer = new byte[8192];
+            private readonly byte [] _receiveBuffer = new byte [8192];
 
             /// <summary>
             /// The callback which receives string data from the socket
@@ -234,16 +196,14 @@ namespace CineGame.SDK
             /// </summary>
             const int MSG_NOSIGNAL = 0x4000;
 
-            private SocketFlags _receiveFlags = SocketFlags.None;
+            const SocketFlags _receiveFlags = SocketFlags.None;
 
             /// <summary>
             /// Socket.Connected seems unreliable, so we bypass that and get the lowlevel socket error code to determine connected state.
             /// </summary>
-            public bool Connected
-            {
-                get
-                {
-                    var errorCode = (SocketError)(int)_socket.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.Error);
+            public bool Connected {
+                get {
+                    var errorCode = (SocketError)(int)_socket.GetSocketOption (SocketOptionLevel.Socket, SocketOptionName.Error);
                     return errorCode == SocketError.IsConnected
                         || errorCode == SocketError.Success
                         || errorCode == SocketError.IOPending
@@ -252,54 +212,46 @@ namespace CineGame.SDK
                 }
             }
 
-            public int SendTimeout
-            {
-                set
-                {
+            public int SendTimeout {
+                set {
                     _socket.SendTimeout = value;
                 }
-                get
-                {
+                get {
                     return _socket.SendTimeout;
                 }
             }
 
-            public int ReceiveTimeout
-            {
-                set
-                {
+            public int ReceiveTimeout {
+                set {
                     _socket.ReceiveTimeout = value;
                 }
-                get
-                {
+                get {
                     return _socket.ReceiveTimeout;
                 }
             }
 
-            public System.Net.EndPoint RemoteEndPoint
-            {
-                get
-                {
+            public System.Net.EndPoint RemoteEndPoint {
+                get {
                     return _socket.RemoteEndPoint;
                 }
             }
 
-            public async Task<bool> Open(string address, int port, SocketCallback callback, SocketErrorHandler errorHandler)
-            {
+            /// <summary>
+			/// Open a TCP socket and start listening.
+			/// </summary>
+            public async Task<bool> Open (string address, int port, SocketCallback callback, SocketErrorHandler errorHandler) {
                 if (_socket == null)
-                    _socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                    _socket = new Socket (AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
-                using (var sp = new SemaphoreSlim(0, 1))
-                {
-                    _socket.BeginConnect(address, port, new AsyncCallback(_openCallback), sp);
-                    await sp.WaitAsync();
+                using (var sp = new SemaphoreSlim (0, 1)) {
+                    _socket.BeginConnect (address, port, new AsyncCallback (OpenCallback), sp);
+                    await sp.WaitAsync ();
                 }
 
-                if (Connected)
-                {
-                    _socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
+                if (Connected) {
+                    _socket.SetSocketOption (SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
 
-                    _socket.BeginReceive(_receiveBuffer, 0, _receiveBuffer.Length, _receiveFlags, new AsyncCallback(_receiveCallback), null);
+                    _socket.BeginReceive (_receiveBuffer, 0, _receiveBuffer.Length, _receiveFlags, new AsyncCallback (ReceiveCallback), null);
                     _callback = callback;
                     _errorHandler = errorHandler;
                     return true;
@@ -307,52 +259,51 @@ namespace CineGame.SDK
                 return false;
             }
 
-            public void Close()
-            {
-                _socket.Dispose();
+            /// <summary>
+			/// Close the tcp connection and dispose of the socket.
+			/// </summary>
+            public void Close () {
+                _socket.Dispose ();
                 _socket = null;
             }
 
-            void _openCallback(IAsyncResult AR)
-            {
-                try
-                {
-                    _socket.EndConnect(AR);
+            /// <summary>
+			/// The tcp connection has been established.
+			/// </summary>
+            void OpenCallback (IAsyncResult AR) {
+                try {
+                    _socket.EndConnect (AR);
+                } catch (SocketException ex) {
+                    _errorHandler (ex.ErrorCode, ex.Message);
                 }
-                catch (SocketException ex)
-                {
-                    _errorHandler(ex.ErrorCode, ex.Message);
-                }
-                ((SemaphoreSlim)AR.AsyncState).Release();
+                ((SemaphoreSlim)AR.AsyncState).Release ();
             }
 
-            void _receiveCallback(IAsyncResult AR)
-            {
-                int received = _socket.EndReceive(AR);
+            /// <summary>
+			/// Data has been received on the TCP connection.
+			/// </summary>
+            void ReceiveCallback (IAsyncResult AR) {
+                int received = _socket.EndReceive (AR);
                 if (received <= 0)
                     return;
 
-                try
-                {
-                    _callback?.Invoke(Encoding.UTF8.GetString(_receiveBuffer, 0, received));
-                }
-                finally
-                {
+                try {
+                    _callback?.Invoke (Encoding.UTF8.GetString (_receiveBuffer, 0, received));
+                } finally {
                     // Start receiving again
-                    _socket.BeginReceive(_receiveBuffer, 0, _receiveBuffer.Length, _receiveFlags, new AsyncCallback(_receiveCallback), null);
+                    _socket.BeginReceive (_receiveBuffer, 0, _receiveBuffer.Length, _receiveFlags, new AsyncCallback (ReceiveCallback), null);
                 }
             }
 
             /// <summary>
             /// Send string data async (return immediately)
             /// </summary>
-            public void Send(string data)
-            {
-                var bytes = Encoding.UTF8.GetBytes(data);
-                var socketAsyncData = new SocketAsyncEventArgs();
-                socketAsyncData.SetBuffer(bytes, 0, bytes.Length);
+            public void Send (string data) {
+                var bytes = Encoding.UTF8.GetBytes (data);
+                var socketAsyncData = new SocketAsyncEventArgs ();
+                socketAsyncData.SetBuffer (bytes, 0, bytes.Length);
                 socketAsyncData.SocketFlags = (SocketFlags)MSG_NOSIGNAL;
-                _socket.SendAsync(socketAsyncData);
+                _socket.SendAsync (socketAsyncData);
             }
 
         }
