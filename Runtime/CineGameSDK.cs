@@ -794,20 +794,15 @@ namespace CineGame.SDK {
 		/// Returns true if there is a smartfox server running on the local computer
 		/// </summary>
         internal static bool IsSmartfoxRunningLocally () {
-
-            bool isSmartfoxRunning = false;
-
-            try
-            {
-                return ExternalProcess.Run("pgrep", "-f smartfoxserver", null, (msg, pct) => {
-                    isSmartfoxRunning = int.TryParse(msg, out int pid);
+            var isSmartfoxRunning = false;
+            try {
+                return ExternalProcess.Run ("/usr/bin/pgrep", "-f smartfoxserver", null, (msg, pct) => {
+                    isSmartfoxRunning = int.TryParse (msg, out int pid);
                     return false;
                 }) && isSmartfoxRunning;
-            }
-            catch (Exception ex)
-            {
-                Debug.LogWarning(ex);
-                return isSmartfoxRunning;
+            } catch (System.ComponentModel.Win32Exception ex) {
+                Debug.LogWarning ("IsSmartfoxRunningLocally: Exception while checking for local smartfoxserver, returning false: " + ex.Message);
+                return false;
             }
         }
 
