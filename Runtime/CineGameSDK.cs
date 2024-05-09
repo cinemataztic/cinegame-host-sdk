@@ -210,6 +210,10 @@ namespace CineGame.SDK {
 		/// </summary>
         public static Action<string, string> OnWiFiAvailable;
         /// <summary>
+        /// When the block duration is updated dynamically (always invoked at start with initial duration)
+        /// </summary>
+        public static Action<float> OnBlockDurationUpdated;
+        /// <summary>
 		/// When seats layout is loaded
 		/// </summary>
         public static Action<Dictionary<string, CineGameSeatController.Seat[]>> OnSeatsLoaded;
@@ -482,6 +486,7 @@ namespace CineGame.SDK {
                 yield return null;
             }
             Setup ();
+            CineGameDCHP.Start ();
         }
 
         /// <summary>
@@ -492,6 +497,7 @@ namespace CineGame.SDK {
             if (instance != this)
                 return;
             SmartfoxClient.Update();
+            CineGameDCHP.Update();
 
             /*var newAvgFPS = avgFPS * 0.99f + (1f / Time.unscaledDeltaTime) * 0.01f;
             if (refreshRate > 25f && newAvgFPS < 25f && avgFPS >= 25f && numAvgFpsWarnings-- > 0) {
@@ -922,6 +928,7 @@ namespace CineGame.SDK {
                 Debug.LogError (">>> ERROR! Server communication incomplete. Winners may not have received their prices. <<<");
             }
             SmartfoxClient.Disconnect ();
+            CineGameDCHP.Stop ();
         }
 
         [UnmanagedFunctionPointer (CallingConvention.Cdecl)]

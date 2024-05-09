@@ -28,6 +28,19 @@ namespace CineGame.SDK {
 		}
 
 		/// <summary>
+		/// Overrides the default block duration at startup
+		/// </summary>
+		public static int? APP_DURATION_ENV_VAR {
+			get {
+				var env = System.Environment.GetEnvironmentVariable (PropertyNameFromAccessor (MethodBase.GetCurrentMethod ()));
+				if (!string.IsNullOrWhiteSpace (env))
+					return int.Parse (env);
+				else return null;
+			}
+			set { System.Environment.SetEnvironmentVariable (PropertyNameFromAccessor (MethodBase.GetCurrentMethod ()), value.ToString ()); }
+		}
+
+		/// <summary>
 		/// Specifies which cluster the machine is set to work with, so we can determine which API group to contact (dev, staging or production)
 		/// </summary>
 		public static string CLUSTER_NAME
@@ -89,6 +102,32 @@ namespace CineGame.SDK {
 		public static string IS_WEBGL {
 			get { return System.Environment.GetEnvironmentVariable (PropertyNameFromAccessor (MethodBase.GetCurrentMethod ())); }
 			set { System.Environment.SetEnvironmentVariable (PropertyNameFromAccessor (MethodBase.GetCurrentMethod ()), value); }
+		}
+
+		/// <summary>
+		/// Specifies the local system time (in JavaScript Ticks, ie milliseconds since Jan 1 1970) where the CineGame block should ideally have started
+		/// </summary>
+		public static int? INTERNAL_TCP_SERVER_PORT {
+			get {
+				var env = System.Environment.GetEnvironmentVariable (PropertyNameFromAccessor (MethodBase.GetCurrentMethod ()));
+				if (!string.IsNullOrWhiteSpace (env))
+					return int.Parse (env);
+				else return null;
+			}
+			set { System.Environment.SetEnvironmentVariable (PropertyNameFromAccessor (MethodBase.GetCurrentMethod ()), value.ToString ()); }
+		}
+
+		/// <summary>
+		/// Specifies the local system time (in JavaScript Ticks, ie milliseconds since Jan 1 1970) where the CineGame block should ideally have started
+		/// </summary>
+		public static int? BLOCK_DURATIONS_POLL_INTERVAL_SECS {
+			get {
+				var env = System.Environment.GetEnvironmentVariable (PropertyNameFromAccessor (MethodBase.GetCurrentMethod ()));
+				if (!string.IsNullOrWhiteSpace (env))
+					return int.Parse (env);
+				else return null;
+			}
+			set { System.Environment.SetEnvironmentVariable (PropertyNameFromAccessor (MethodBase.GetCurrentMethod ()), value.ToString ()); }
 		}
 	}
 }
