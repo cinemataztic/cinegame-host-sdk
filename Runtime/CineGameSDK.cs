@@ -497,7 +497,11 @@ namespace CineGame.SDK {
             if (instance != this)
                 return;
             SmartfoxClient.Update();
-            CineGameDCHP.Update();
+
+            if(!Application.isEditor)
+            {
+                CineGameDCHP.Update();
+            }
 
             /*var newAvgFPS = avgFPS * 0.99f + (1f / Time.unscaledDeltaTime) * 0.01f;
             if (refreshRate > 25f && newAvgFPS < 25f && avgFPS >= 25f && numAvgFpsWarnings-- > 0) {
