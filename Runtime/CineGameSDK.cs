@@ -804,7 +804,9 @@ namespace CineGame.SDK {
 		/// Returns true if there is a smartfox server running on the local computer
 		/// </summary>
         internal static bool IsSmartfoxRunningLocally () {
-            var isSmartfoxRunning = false;
+            Debug.Log ("IsSmartfoxRunningLocally disabled for now, returning false");
+            return false;
+            /*var isSmartfoxRunning = false;
             try {
                 return ExternalProcess.Run ("/usr/bin/pgrep", "-f smartfoxserver", null, (msg, pct) => {
                     isSmartfoxRunning = int.TryParse (msg, out int pid);
@@ -813,7 +815,7 @@ namespace CineGame.SDK {
             } catch (System.ComponentModel.Win32Exception ex) {
                 Debug.LogWarning ("IsSmartfoxRunningLocally: Exception while checking for local smartfoxserver, returning false: " + ex.Message);
                 return false;
-            }
+            }*/
         }
 
         static void API (string uri, string json, BackendCallback callback = null) {
