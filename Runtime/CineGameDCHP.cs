@@ -30,7 +30,7 @@ namespace CineGame.SDK {
 		/// Set initial block duration and start polling for updates via TCP.
 		/// </summary>
         public static void Start () {
-            BlockDuration = Configuration.APP_DURATION_ENV_VAR ?? CineGameMarket.Durations [CineGameSDK.Market];
+            BlockDuration = Configuration.CINEMATAZTIC_BLOCK_DURATION_SEC ?? CineGameMarket.Durations [CineGameSDK.Market];
             Debug.Log ("Initial block duration: " + BlockDuration);
 
             CineGameSDK.OnBlockDurationUpdated?.Invoke (BlockDuration);

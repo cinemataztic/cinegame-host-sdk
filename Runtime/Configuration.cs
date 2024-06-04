@@ -30,7 +30,7 @@ namespace CineGame.SDK {
 		/// <summary>
 		/// Overrides the default block duration at startup
 		/// </summary>
-		public static int? APP_DURATION_ENV_VAR {
+		public static int? CINEMATAZTIC_BLOCK_DURATION_SEC {
 			get {
 				var env = System.Environment.GetEnvironmentVariable (PropertyNameFromAccessor (MethodBase.GetCurrentMethod ()));
 				if (!string.IsNullOrWhiteSpace (env))
