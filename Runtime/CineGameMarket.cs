@@ -87,7 +87,7 @@ namespace CineGame.SDK {
 
         public static Dictionary<string, string> Languages = new () {
             { Markets.BioSpil_DRF_DK, "da" },
-            { Markets.CineGame_Adline_PT, "en" },
+            { Markets.CineGame_Adline_PT, "pt" },
             { Markets.CineGame_Cinemataztic_AE, "en" },
             { Markets.CineGame_Cinemataztic_EN, "en" },
             { Markets.CineGame_Filmstaden_SE, "sv" },
