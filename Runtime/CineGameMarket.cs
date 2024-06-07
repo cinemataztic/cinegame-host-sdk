@@ -4,8 +4,10 @@ using System.Text.RegularExpressions;
 
 namespace CineGame.SDK {
     public class CineGameMarket {
+
         public static class Markets {
             public const string BioSpil_DRF_DK = "57ff5b54359bc3000f1e1303";
+            public const string CineGame_Adline_PT = "6642106e9f745c39d99a95e7";
             public const string CineGame_Cinemataztic_AE = "5c12f1c58c2a1a5509cad589";
             public const string CineGame_Cinemataztic_EN = "57e79e61bb29b2000f22c705";
             public const string CineGame_Filmstaden_SE = "653676850c50fc8ecda86b43";
@@ -22,6 +24,7 @@ namespace CineGame.SDK {
 
         public static List<string> MarketIDs = new () {
             Markets.BioSpil_DRF_DK,
+            Markets.CineGame_Adline_PT,
             Markets.CineGame_Cinemataztic_AE,
             Markets.CineGame_Cinemataztic_EN,
             Markets.CineGame_Filmstaden_SE,
@@ -42,6 +45,7 @@ namespace CineGame.SDK {
 
         public static Dictionary<string, string> Names = new () {
             { Markets.BioSpil_DRF_DK, "BioSpil_DRF_DK" },
+            { Markets.CineGame_Adline_PT, "CineGame_Adline_PT" },
             { Markets.CineGame_Cinemataztic_AE, "CineGame_Cinemataztic_AE" },
             { Markets.CineGame_Cinemataztic_EN, "CineGame_Cinemataztic_EN" },
             { Markets.CineGame_Filmstaden_SE, "CineGame_Filmstaden_SE" },
@@ -64,8 +68,9 @@ namespace CineGame.SDK {
             return Names [CineGameSDK.Market].Split ("_") [0];
         }
 
-        public static Dictionary<string, string> Slugs = new () {
+        public static Dictionary<string, string> Slugs = new () {   
             { Markets.BioSpil_DRF_DK, "drf-dk" },
+            { Markets.CineGame_Adline_PT, "adline-pt" },
             { Markets.CineGame_Cinemataztic_AE, "cinemataztic-ae" },
             { Markets.CineGame_Cinemataztic_EN, "cinemataztic-en" },
             { Markets.CineGame_Filmstaden_SE, "filmstaden-se" },
@@ -82,6 +87,7 @@ namespace CineGame.SDK {
 
         public static Dictionary<string, string> Languages = new () {
             { Markets.BioSpil_DRF_DK, "da" },
+            { Markets.CineGame_Adline_PT, "en" },
             { Markets.CineGame_Cinemataztic_AE, "en" },
             { Markets.CineGame_Cinemataztic_EN, "en" },
             { Markets.CineGame_Filmstaden_SE, "sv" },
@@ -98,6 +104,7 @@ namespace CineGame.SDK {
 
         public static Dictionary<string, int> Durations = new () {
             { Markets.BioSpil_DRF_DK, 420 },
+            { Markets.CineGame_Adline_PT, 420 },
             { Markets.CineGame_Cinemataztic_AE, 420 },
             { Markets.CineGame_Cinemataztic_EN, 420 },
             { Markets.CineGame_Filmstaden_SE, 360 },

@@ -24,6 +24,7 @@ namespace CineGame.SDK.Editor
         public static Dictionary<string, string> AuthAPIs = new Dictionary<string, string>
         {
             { CineGameMarket.Markets.BioSpil_DRF_DK, "https://drf.dk.auth.iam.drf-1.cinemataztic.com/" },
+            { CineGameMarket.Markets.CineGame_Adline_PT, "https://adline.pt.auth.iam.eu-2.cinemataztic.com/" },
             { CineGameMarket.Markets.CineGame_Cinemataztic_AE, "https://auth.iam.eu-2.cinemataztic.com/" },
             { CineGameMarket.Markets.CineGame_Cinemataztic_EN, "https://cinemataztic.en.auth.iam.eu-1.cinemataztic.com/" },
             { CineGameMarket.Markets.CineGame_Filmstaden_SE, "https://filmstaden.se.auth.iam.eu-1.cinemataztic.com/" },
