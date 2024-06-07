@@ -106,6 +106,7 @@ namespace CineGame.SDK.Editor {
 
         public static Dictionary<string, string> CloudAPIs = new () {
             { CineGameMarket.Markets.BioSpil_DRF_DK, "https://drf.dk.api.player.drf-1.cinemataztic.com/" },
+            { CineGameMarket.Markets.CineGame_Adline_PT, "https://adline.pt.api.player.eu-2.cinemataztic.com/" },
             { CineGameMarket.Markets.CineGame_Cinemataztic_AE, "https://cinemataztic.ae.api.player.au-1.cinemataztic.com/" },
             { CineGameMarket.Markets.CineGame_Cinemataztic_EN, "https://cinemataztic.en.api.player.eu-1.cinemataztic.com/" },
             { CineGameMarket.Markets.CineGame_Filmstaden_SE, "https://filmstaden.se.api.player.eu-1.cinemataztic.com/" },
