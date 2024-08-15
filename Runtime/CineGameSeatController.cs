@@ -78,6 +78,7 @@ namespace CineGame.SDK
             }
 
             List<RowData> seatRowList = JsonConvert.DeserializeObject<List<RowData>>(seatLayout);
+            int emptyRowIndex = 1;
 
             foreach (RowData row in seatRowList)
             {
@@ -104,7 +105,17 @@ namespace CineGame.SDK
                     newRow[i] = newSeat;
                 }
 
-                Layout.Add(row.Row, newRow);
+                if(string.IsNullOrEmpty(row.Row))
+                {
+                    Layout.Add("Empty_" + emptyRowIndex.ToString(), newRow);
+                    emptyRowIndex++;
+                }
+                else
+                {
+                    Layout.Add(row.Row, newRow);
+                }
+                
+               
             }
 
             CineGameSDK.OnSeatsLoaded?.Invoke(Layout);
