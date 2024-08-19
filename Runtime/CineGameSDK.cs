@@ -889,6 +889,66 @@ namespace CineGame.SDK {
         }
 
         /// <summary>
+        /// Helper to send a simple response. Should be used sparsely as it will result in a complete network package for each call
+        /// </summary>
+        public static void Send (int backendID, string key, bool value) {
+            if (backendID >= 0) {
+                var dataObj = new PlayerObjectMessage ();
+                dataObj.PutBool (key, value);
+                SmartfoxClient.SendObjectMessage (dataObj.GetSmartFoxObject (), backendID);
+            }
+        }
+
+        /// <summary>
+        /// Helper to send a simple response. Should be used sparsely as it will result in a complete network package for each call
+        /// </summary>
+        public static void Send (int backendID, string key, string value) {
+            if (backendID >= 0) {
+                var dataObj = new PlayerObjectMessage ();
+                dataObj.PutString (key, value);
+                SmartfoxClient.SendObjectMessage (dataObj.GetSmartFoxObject (), backendID);
+            }
+        }
+
+        /// <summary>
+        /// Helper to send a simple response. Should be used sparsely as it will result in a complete network package for each call
+        /// </summary>
+        public static void Send (int backendID, string key, int value) {
+            if (backendID >= 0) {
+                var dataObj = new PlayerObjectMessage ();
+                dataObj.PutInt (key, value);
+                SmartfoxClient.SendObjectMessage (dataObj.GetSmartFoxObject (), backendID);
+            }
+        }
+
+        /// <summary>
+        /// Helper to broadcast a simple response. Should be used sparsely as it will result in a complete network package to each receiver for each call
+        /// </summary>
+        public static void Broadcast (string key, bool value, bool toPlayers = true, bool toSpectators = false) {
+            var dataObj = new PlayerObjectMessage ();
+            dataObj.PutBool (key, value);
+            SmartfoxClient.BroadcastObjectMessage (dataObj.GetSmartFoxObject (), toPlayers, toSpectators);
+        }
+
+        /// <summary>
+        /// Helper to send a simple response. Should be used sparsely as it will result in a complete network package to each receiver for each call
+        /// </summary>
+        public static void Broadcast (string key, string value, bool toPlayers = true, bool toSpectators = false) {
+            var dataObj = new PlayerObjectMessage ();
+            dataObj.PutString (key, value);
+            SmartfoxClient.BroadcastObjectMessage (dataObj.GetSmartFoxObject (), toPlayers, toSpectators);
+        }
+
+        /// <summary>
+        /// Helper to send a simple response. Should be used sparsely as it will result in a complete network package to each receiver for each call
+        /// </summary>
+        public static void Send (string key, int value, bool toPlayers = true, bool toSpectators = false) {
+            var dataObj = new PlayerObjectMessage ();
+            dataObj.PutInt (key, value);
+            SmartfoxClient.BroadcastObjectMessage (dataObj.GetSmartFoxObject (), toPlayers, toSpectators);
+        }
+
+        /// <summary>
 		/// Send private string message to specific CineGame user
 		/// </summary>
         public static void SendPrivateMessage (string msg, int backendId) {
