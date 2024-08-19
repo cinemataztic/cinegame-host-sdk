@@ -89,19 +89,20 @@ namespace CineGame.SDK.Editor
         }
 
         static void OnGameCodeError (int code) {
+            var title = "CineGame SDK";
             if (code == 0 || Application.internetReachability == NetworkReachability.NotReachable) {
-                EditorUtility.DisplayDialog (instance.titleContent.text, "No internet connection.", "OK");
+                EditorUtility.DisplayDialog (title, "No internet connection.", "OK");
             } else if (code == (int)HttpStatusCode.Unauthorized) {
                 //If backend returns Unauthorized, the token probably has expired. Try to refresh it automatically if possible.
                 if (RefreshAccessToken ()) {
-                    EditorUtility.DisplayDialog (instance.titleContent.text, "Access token refreshed. Please re-enter play mode", "OK");
+                    EditorUtility.DisplayDialog (title, "Access token refreshed. Please re-enter play mode", "OK");
                     return;
                 }
                 //User needs to manually log in.
-                EditorUtility.DisplayDialog (instance.titleContent.text, "You are not logged in. Please log in with your credentials!", "OK");
+                EditorUtility.DisplayDialog (title, "You are not logged in. Please log in with your credentials!", "OK");
                 Init();
             } else if (code == 9933) {
-                EditorUtility.DisplayDialog (instance.titleContent.text, "No connection to Smartfox server.", "OK");
+                EditorUtility.DisplayDialog (title, "No connection to Smartfox server.", "OK");
             }
         }
 
