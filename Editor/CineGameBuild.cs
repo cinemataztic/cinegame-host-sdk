@@ -476,9 +476,19 @@ namespace CineGame.SDK.Editor {
                 } else if (!HasWinBuildSupport && target == BuildTarget.StandaloneWindows) {
                     Debug.LogWarning ("Windows build support not installed, skipping ...");
                 } else {
-                    if (target == BuildTarget.StandaloneLinux64 && HasLinuxIl2cppSupport && PlayerSettings.GetScriptingBackend (BuildTargetGroup.Standalone) != ScriptingImplementation.IL2CPP) {
+                    var scriptingBackend =
+#if UNITY_2023_1_OR_NEWER
+                        PlayerSettings.GetScriptingBackend (NamedBuildTarget.Standalone);
+#else
+                        PlayerSettings.GetScriptingBackend (BuildTargetGroup.Standalone);
+#endif
+                    if (target == BuildTarget.StandaloneLinux64 && HasLinuxIl2cppSupport && scriptingBackend != ScriptingImplementation.IL2CPP) {
                         Debug.Log ("IL2CPP build support installed for Linux, switching scripting backend ...");
+#if UNITY_2023_1_OR_NEWER
+                        PlayerSettings.SetScriptingBackend (NamedBuildTarget.Standalone, ScriptingImplementation.IL2CPP);
+#else
                         PlayerSettings.SetScriptingBackend (BuildTargetGroup.Standalone, ScriptingImplementation.IL2CPP);
+#endif
                     }
 
                     progressMessage = string.Format ("Building {0} ...", PrettyPrintTarget (buildTarget));
@@ -805,7 +815,12 @@ namespace CineGame.SDK.Editor {
         internal static string GetGameIDFromSceneOrProject () {
             if (SceneManager.sceneCount == 0)
                 return null;
-            var sdks = FindObjectsOfType<CineGameSDK> ();
+            var sdks =
+#if UNITY_2022_3_OR_NEWER
+                FindObjectsByType<CineGameSDK> (FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+#else
+                FindObjectsOfType<CineGameSDK> ();
+#endif
             CineGameSettings settings = null;
             if (sdks.Length == 0 || sdks.All (sdk => sdk.Settings == null)) {
                 var assetGuids = AssetDatabase.FindAssets ("t:CineGameSettings");
@@ -884,6 +899,7 @@ namespace CineGame.SDK.Editor {
             return GameID;
         }
 
+#if !UNITY_2022_1_OR_NEWER
         //[MenuItem("CinemaTaztic/Pack Textures")]
         static void PackSprites () {
             var textures = FindAllSpriteTextures ();
@@ -900,7 +916,7 @@ namespace CineGame.SDK.Editor {
             }
             //UnityEditor.Sprites.Packer.RebuildAtlasCacheIfNeeded (EditorUserBuildSettings.activeBuildTarget);
         }
-
+#endif
         static Texture2D [] FindAllSpriteTextures () {
             var textures = new Dictionary<int, Texture2D> ();
             var allObjects = Resources.FindObjectsOfTypeAll<GameObject> ();
