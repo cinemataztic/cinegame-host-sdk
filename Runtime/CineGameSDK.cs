@@ -421,10 +421,14 @@ namespace CineGame.SDK {
             );
 
             CineGameLogger.GameID = GameID;
-
-            if (Screen.currentResolution.refreshRate < 25)
+#if UNITY_2022_2_OR_NEWER
+            var currentRate = Screen.currentResolution.refreshRateRatio.value;
+#else
+            var currentRate = Screen.currentResolution.refreshRate;
+#endif
+            if (currentRate < 25)
             {
-                Debug.LogError($"ERROR: Refresh rate too low: {Screen.currentResolution.refreshRate}");
+                Debug.LogError($"ERROR: Refresh rate too low: {currentRate}");
             }
         }
 

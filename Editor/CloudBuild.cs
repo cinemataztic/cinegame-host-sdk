@@ -19,8 +19,8 @@ namespace CineGame.SDK.Editor {
 
 		static CloudBuild instance;
 
-		static SpriteMetaData [] ProgressMetaData;
-		static int ProgressCurrentMetaIndex;
+		static readonly GUIContent [] ProgressIcons = new GUIContent [12];
+		static int ProgressIconIndex;
 		static int LastTimeUpdate;
 		static double LastTimeLoadedTargets;
 		static Texture2D ProgressTexture;
@@ -67,11 +67,9 @@ namespace CineGame.SDK.Editor {
 		}
 
 		public void OnEnable () {
-			var progressAssetPath = AssetDatabase.GUIDToAssetPath (Guids.ProgressTexture);
-			var ti = AssetImporter.GetAtPath (progressAssetPath) as TextureImporter;
-			ProgressMetaData = ti.spritesheet;
-			ProgressTexture = AssetDatabase.LoadAssetAtPath<Texture2D> (progressAssetPath);
-			ProgressCurrentMetaIndex = 0;
+			for (var i = 0; i < 12; i++)
+				ProgressIcons [i] = EditorGUIUtility.IconContent ($"d_WaitSpin{i:D2}");
+			ProgressIconIndex = 0;
 
 			DownloadIconTexture = AssetDatabase.LoadAssetAtPath<Texture2D> (AssetDatabase.GUIDToAssetPath (Guids.DownloadIconTexture));
 			InstallIconTexture = AssetDatabase.LoadAssetAtPath<Texture2D> (AssetDatabase.GUIDToAssetPath (Guids.InstallIconTexture));
@@ -86,7 +84,7 @@ namespace CineGame.SDK.Editor {
 			var tf = (int)(EditorApplication.timeSinceStartup * 10.0);
 			if (tf > LastTimeUpdate) {
 				LastTimeUpdate = tf;
-				ProgressCurrentMetaIndex = (ProgressCurrentMetaIndex + 1) % 30;
+				ProgressIconIndex = (ProgressIconIndex + 1) % 12;
 				Repaint ();
 			}
 		}
@@ -174,7 +172,9 @@ namespace CineGame.SDK.Editor {
 			if (string.IsNullOrWhiteSpace (CloudProjectSettings.organizationId) || string.IsNullOrWhiteSpace (CloudProjectSettings.projectId)) {
 #if UNITY_2021_1_OR_NEWER
 				EditorGUILayout.HelpBox ("Please set up Build Automation in Unity Services", MessageType.Error);
-				SettingsService.OpenProjectSettings ("Project/Services/Build Automation");
+				if (EditorGUILayout.LinkButton ("Open project settings")) {
+					SettingsService.OpenProjectSettings ("Project/Services");
+				}
 #else
 				EditorGUILayout.HelpBox ("Please set up Cloud Build in Unity Gaming Services", MessageType.Error);
 #endif
@@ -195,10 +195,6 @@ namespace CineGame.SDK.Editor {
 				Application.OpenURL ($"https://cloud.unity.com/home/organizations/{CloudProjectSettings.organizationId}/projects/{CloudProjectSettings.projectId}/cloud-build/settings/source-control");
 			}
 
-			//Get TexCoords for animated progress texture
-			var rtProgress = ProgressMetaData [ProgressCurrentMetaIndex].rect;
-			rtProgress = new Rect (rtProgress.x / ProgressTexture.width, rtProgress.y / ProgressTexture.height, rtProgress.width / ProgressTexture.width, rtProgress.height / ProgressTexture.height);
-
 			if (BuildTargets == null || (EditorApplication.timeSinceStartup - LastTimeLoadedTargets) > 3600.0) {
 				if (!IsLoadingTargets) {
 					if (string.IsNullOrWhiteSpace (EditorPrefs.GetString ("UcbApiKey"))) {
@@ -216,10 +212,9 @@ namespace CineGame.SDK.Editor {
 				labelStyle.fontStyle = FontStyle.Bold;
 				GUILayout.Label ("Loading targets ...");
 				EditorGUILayout.Space ();
-				var rtTexture = GUILayoutUtility.GetRect (rtProgress.width * ProgressTexture.width, rtProgress.height * ProgressTexture.height);
-				rtTexture.x = (rtTexture.width - rtTexture.height) / 2;
-				rtTexture.width = rtTexture.height;
-				GUI.DrawTextureWithTexCoords (rtTexture, ProgressTexture, rtProgress, true);
+				var prgTexture = ProgressIcons [ProgressIconIndex].image;
+				var rtTexture = GUILayoutUtility.GetRect (prgTexture.width, prgTexture.height);
+				GUI.DrawTexture (rtTexture, prgTexture, ScaleMode.StretchToFill, true);
 				GUILayout.FlexibleSpace ();
 				EditorGUILayout.EndVertical ();
 				return;
@@ -258,7 +253,7 @@ namespace CineGame.SDK.Editor {
 						var rt = BuildTargetsGridView.NextCell ();
 						var rtTexture = new Rect (rt);
 						rtTexture.width = rtTexture.height;
-						GUI.DrawTextureWithTexCoords (rtTexture, ProgressTexture, rtProgress, true);
+						GUI.DrawTexture (rtTexture, ProgressIcons [ProgressIconIndex].image, ScaleMode.StretchToFill, true);
 						_ = BuildTargetsGridView.NextCell ();
 					} else if (build.buildStatus != UcbBuildStatus.failure && build.buildStatus != UcbBuildStatus.success && build.buildStatus != UcbBuildStatus.unknown && build.buildStatus != UcbBuildStatus.canceled) {
 						GUI.Label (BuildTargetsGridView.NextCell (), new GUIContent (build.build.ToString (), NiceTime (build.created) + (string.IsNullOrEmpty (build.lastBuiltRevision) ? string.Empty : "\n#" + build.lastBuiltRevision.Truncate (9))));
@@ -266,7 +261,7 @@ namespace CineGame.SDK.Editor {
 						var rt = BuildTargetsGridView.NextCell ();
 						var rtTexture = new Rect (rt);
 						rtTexture.width = rtTexture.height;
-						GUI.DrawTextureWithTexCoords (rtTexture, ProgressTexture, rtProgress, true);
+						GUI.DrawTexture (rtTexture, ProgressIcons [ProgressIconIndex].image, ScaleMode.StretchToFill, true);
 
 						rt.x += rtTexture.width;
 						rt.width -= rtTexture.width;
