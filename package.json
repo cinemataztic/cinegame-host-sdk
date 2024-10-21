@@ -1,6 +1,6 @@
 {
   "name": "com.cinemataztic.cinegame.sdk",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "displayName": "CineGame SDK",
   "description": "This is the SDK for creating hosts for CineGame",
   "unity": "2021.3",
