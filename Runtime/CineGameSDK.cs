@@ -181,6 +181,17 @@ namespace CineGame.SDK {
             public void PutNull (string key) {
                 smartfoxObject.PutNull (key);
             }
+            public void Remove (string key) {
+                smartfoxObject.RemoveElement (key);
+            }
+            /// <summary>
+            /// Creates a new object property, returns the newly created object
+            /// </summary>
+            public PlayerObjectMessage AddObject (string key) {
+                var obj = new PlayerObjectMessage ();
+                smartfoxObject.PutSFSObject (key, obj.smartfoxObject);
+                return obj;
+            }
         }
 
         /// <summary>
