@@ -41,18 +41,18 @@ namespace CineGame.SDK {
                     }
                     reader = p.StandardError;
                     if (!reader.EndOfStream) {
-                        Debug.LogErrorFormat ("SystemProcess {0} >> {1}", filename, reader.ReadToEnd ());
+                        Debug.LogError ($"ExternalProcess {filename} >> {reader.ReadToEnd ()}");
                     }
                     p.WaitForExit ();
                     if (p.ExitCode != 0) {
-                        Debug.LogErrorFormat ("SystemProcess {0} exitcode={1}", filename, p.ExitCode);
+                        Debug.LogErrorFormat ($"ExternalProcess {filename} exitcode={p.ExitCode}");
                     }
                     return p.ExitCode == 0;
                 }
             } catch (Win32Exception win32e) {
-                Debug.LogErrorFormat ("SystemProcess: Win32Exception while running {0}: {1}", filename, win32e);
+                Debug.LogWarning ($"ExternalProcess {filename} {win32e.Message}");
             } catch (Exception e) {
-                Debug.LogErrorFormat ("SystemProcess: Exception while running {0}: {1}", filename, e);
+                Debug.LogError ($"ExternalProcess {filename} {e}");
             }
             return false;
         }
