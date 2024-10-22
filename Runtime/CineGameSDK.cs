@@ -103,14 +103,21 @@ namespace CineGame.SDK {
             public PlayerObjectMessage () {
                 smartfoxObject = new SFSObject ();
             }
+
+            /// <summary>
+            /// Create object message from JSON string
+            /// </summary>
+            public PlayerObjectMessage (string json) {
+                smartfoxObject = SFSObject.NewFromJsonData (json);
+            }
+
             public bool ContainsKey (string key) {
                 return smartfoxObject.ContainsKey (key);
             }
             public bool IsNull (string key) {
                 return smartfoxObject.IsNull (key);
             }
-            public string[] GetKeys()
-            {
+            public string[] GetKeys() {
                 return smartfoxObject.GetKeys();
             }
             public int GetInt (string key) {
@@ -891,9 +898,30 @@ namespace CineGame.SDK {
         }
 
         /// <summary>
+		/// Broadcast public object message to either all players, all supporters or all users
+		/// </summary>
+        public static void BroadcastObjectMessage (string json, bool toPlayers = true, bool toSpectators = false) {
+            var dataObj = new PlayerObjectMessage (json);
+            SmartfoxClient.BroadcastObjectMessage (dataObj.GetSmartFoxObject (), toPlayers: toPlayers, toSpectators: toSpectators);
+            CineGameBots.BroadcastObjectMessage (dataObj, toPlayers: toPlayers, toSpectators: toSpectators);
+        }
+
+        /// <summary>
 		/// Send private object message to specific CineGame user
 		/// </summary>
         public static void SendObjectMessage (PlayerObjectMessage dataObj, int backendId) {
+            if (backendId >= 0) {
+                SmartfoxClient.SendObjectMessage (dataObj.GetSmartFoxObject (), backendId);
+            } else {
+                CineGameBots.SendObjectMessage (dataObj, backendId);
+            }
+        }
+
+        /// <summary>
+		/// Send private object message to specific CineGame user
+		/// </summary>
+        public static void SendObjectMessage (string json, int backendId) {
+            var dataObj = new PlayerObjectMessage (json);
             if (backendId >= 0) {
                 SmartfoxClient.SendObjectMessage (dataObj.GetSmartFoxObject (), backendId);
             } else {
