@@ -1019,6 +1019,8 @@ namespace CineGame.SDK.Editor {
         /// </summary>
         static void GetLatestCommit () {
             string parentDir = Path.Combine (Application.dataPath, "../");
+            if (!Directory.Exists (Path.Combine (parentDir, ".git")))
+                return;
             if (ExternalProcess.Run ("git", "log -1 --no-color --decorate", parentDir, delegate (string message, float pct) {
                 if (message.StartsWith ("commit ")) {
                     var str = message.Substring (7);
