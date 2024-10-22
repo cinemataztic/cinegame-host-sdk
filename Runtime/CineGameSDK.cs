@@ -559,11 +559,17 @@ namespace CineGame.SDK {
             Debug.Log("Environment: " + CineGameEnvironment);
             Debug.Log("Player Capacity: " + SmartfoxClient.MaxPlayers);
 
+            var _localGameServer = IsGameServerRunningLocally ();
+            if (_localGameServer) {
+                Debug.Log ("Local gameserver IP: " + LocalIP);
+            }
+
             var req = new CreateGameRequest {
                 hostName = Hostname,
                 gameType = GameID,
                 mac = MacAddress,
-                localGameServerRunning = IsSmartfoxRunningLocally (),
+                localGameServerRunning = _localGameServer,
+                localIp = LocalIP,
                 deviceId = DeviceId,
                 platform = Application.platform.ToString (),
                 showId = Configuration.CINEMATAZTIC_SHOW_ID,
@@ -835,19 +841,16 @@ namespace CineGame.SDK {
         /// <summary>
 		/// Returns true if there is a smartfox server running on the local computer
 		/// </summary>
-        internal static bool IsSmartfoxRunningLocally () {
-            Debug.Log ("IsSmartfoxRunningLocally disabled for now, returning false");
-            return false;
-            /*var isSmartfoxRunning = false;
-            try {
-                return ExternalProcess.Run ("/usr/bin/pgrep", "-f smartfoxserver", null, (msg, pct) => {
-                    isSmartfoxRunning = int.TryParse (msg, out int pid);
-                    return false;
-                }) && isSmartfoxRunning;
-            } catch (System.ComponentModel.Win32Exception ex) {
-                Debug.LogWarning ("IsSmartfoxRunningLocally: Exception while checking for local smartfoxserver, returning false: " + ex.Message);
+        internal static bool IsGameServerRunningLocally () {
+            if (Application.platform == RuntimePlatform.WindowsPlayer || Application.platform == RuntimePlatform.WindowsEditor) {
+                Debug.Log ("IsSmartfoxRunningLocally disabled on this platform for now, returning false");
                 return false;
-            }*/
+            }
+            var isGameServerRunning = false;
+            return ExternalProcess.Run ("/usr/bin/pgrep", "-f smartfoxserver", null, (msg, pct) => {
+                isGameServerRunning = int.TryParse (msg, out int pid);
+                return false;
+            }) && isGameServerRunning;
         }
 
         static void API (string uri, string json, BackendCallback callback = null) {
