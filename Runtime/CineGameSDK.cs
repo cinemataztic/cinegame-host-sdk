@@ -188,9 +188,17 @@ namespace CineGame.SDK {
             public void PutNull (string key) {
                 smartfoxObject.PutNull (key);
             }
-            public void Remove (string key) {
-                smartfoxObject.RemoveElement (key);
+            public void PutObject (string key, PlayerObjectMessage value) {
+                smartfoxObject.PutSFSObject (key, value.smartfoxObject);
             }
+            public void PutObjectArray (string key, PlayerObjectMessage [] objects) {
+                var arr = new SFSArray ();
+                for (int i = 0; i < objects.Length; i++) {
+                    arr.AddSFSObject (objects [i].GetSmartFoxObject ());
+                }
+                smartfoxObject.PutSFSArray (key, arr);
+            }
+
             /// <summary>
             /// Creates a new object property, returns the newly created object
             /// </summary>
@@ -198,6 +206,10 @@ namespace CineGame.SDK {
                 var obj = new PlayerObjectMessage ();
                 smartfoxObject.PutSFSObject (key, obj.smartfoxObject);
                 return obj;
+            }
+
+            public void Remove (string key) {
+                smartfoxObject.RemoveElement (key);
             }
         }
 
