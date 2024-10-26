@@ -12,6 +12,8 @@ using UnityEngine;
 using UnityEngine.Networking;
 
 using Sfs2X.Entities.Data;
+using Sfs2X.Entities.Variables;
+using Smartfox;
 
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -288,6 +290,10 @@ namespace CineGame.SDK {
 		/// </summary>
         public static Action<int> OnError;
 
+        static int MaxPlayers = 75;
+        static int MaxSpectators = 75 * 5;
+        static int numBkIdWarnings = 1;
+
         delegate void BackendCallback (HttpStatusCode statusCode, string response);
 
         private static readonly Dictionary<string, string> BackendHeaders = new (10) {
@@ -318,6 +324,8 @@ namespace CineGame.SDK {
                 return;
             }
             instance = this;
+            var sfc = gameObject.AddComponent<SmartfoxClient> ();
+            sfc.InitEvents ();
 
             var clusterName = Configuration.CLUSTER_NAME;
             CineGameEnvironment = (clusterName != "dev" && clusterName != "staging") ? "production" : clusterName;
@@ -398,8 +406,7 @@ namespace CineGame.SDK {
                     if (accessTokenParts.Length > 1) {
                         var payloadString = Encoding.UTF8.GetString (CineGameUtility.Base64UrlDecode (accessTokenParts [1]));
                         var payloadJson = JObject.Parse (payloadString);
-                        JToken o;
-                        if (payloadJson.TryGetValue ("email", out o)) {
+                        if (payloadJson.TryGetValue ("email", out JToken o)) {
                             UserEmail = (string)o;
                         }
                         if (payloadJson.TryGetValue ("_id", out o)) {
@@ -528,10 +535,8 @@ namespace CineGame.SDK {
         {
             if (instance != this)
                 return;
-            SmartfoxClient.Update();
 
-            if(!Application.isEditor)
-            {
+            if(!Application.isEditor) {
                 CineGameDCHP.Update();
             }
 
@@ -557,7 +562,7 @@ namespace CineGame.SDK {
             Debug.Log("Game: " + GameID);
             Debug.Log("Market: " + Market);
             Debug.Log("Environment: " + CineGameEnvironment);
-            Debug.Log("Player Capacity: " + SmartfoxClient.MaxPlayers);
+            Debug.Log("Player Capacity: " + MaxPlayers);
 
             var _localGameServer = IsGameServerRunningLocally ();
             if (_localGameServer) {
@@ -583,12 +588,29 @@ namespace CineGame.SDK {
                     //Debug.LogFormat ("API CreateGame response: {0}", response);
 
                     ParseConfig (CreateResponse);
-
                     GameCode = (string)CreateResponse ["gameCode"];
                     var gameZone = (string)CreateResponse ["gameZone"];
                     var gameServer = (string)CreateResponse ["gameServer"];
-                    var webGlSecure = (bool)(CreateResponse ["webGlSecure"] ?? false);
-                    SmartfoxClient.ConnectAndCreateGame (gameServer, GameCode, gameZone, GameID, webGlSecure);
+                    //var webGlSecure = (bool)(CreateResponse ["webGlSecure"] ?? false);
+                    SmartfoxClient.Connect (gameServer, gameZone, (success) => {
+                        if (success) {
+                            SmartfoxClient.Login ("Host" + GameCode, (error) => {
+                                if (string.IsNullOrEmpty (error)) {
+                                    SmartfoxClient.CreateAndJoinRoom (GameCode, MaxPlayers, MaxSpectators, new List<RoomVariable> {
+                                        new SFSRoomVariable ("HostId", SmartfoxClient.MySfsUser.Id),
+                                        new SFSRoomVariable ("GameType", GameID),
+                                    }, (room, alreadyExists) => {
+                                        if (room != null) {
+                                            var sfc = SmartfoxClient.Instance;
+                                            //sfc.OnUserLeftRoom += _OnUserLeft;
+                                            sfc.OnObjectMessage.AddListener (HandleObjectMessage);
+                                            sfc.OnPrivateMessage.AddListener (HandlePrivateMessage);
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                    });
 
                     var creditsForParticipating = 0;
                     var creditsForSupporterParticipating = 0;
@@ -602,7 +624,7 @@ namespace CineGame.SDK {
                     }
 
                     if (CreateResponse.ContainsKey ("maxSupportersPerPlayer")) {
-                        SmartfoxClient.MaxSpectators = (int)(long)CreateResponse ["maxSupportersPerPlayer"] * SmartfoxClient.MaxPlayers;
+                        MaxSpectators = (int)(long)CreateResponse ["maxSupportersPerPlayer"] * MaxPlayers;
                     }
 
                     OnGameReady?.Invoke (new Dictionary<string, object> {
@@ -632,9 +654,9 @@ namespace CineGame.SDK {
             });
         }
 
-        public static void RequestSeat(bool state)
-        {
-            CineGameSeatController.Activate(state);
+
+        public static void RequestSeat(bool state) {
+            CineGameSeatController.Activate (state);
         }
 
 
@@ -671,32 +693,31 @@ namespace CineGame.SDK {
             var startTime = Time.realtimeSinceStartup;
             Texture2D texture = null;
             var nRetryTimes = 3;
-            for (; ; )
-            {
-				using var request = UnityWebRequestTexture.GetTexture (sUrl);
+            for (; ; ) {
+                using var request = UnityWebRequestTexture.GetTexture (sUrl);
                 request.SetRequestHeader ("User-Agent", "Mozilla");
-				var timeBegin = Time.realtimeSinceStartup;
-				yield return request.SendWebRequest ();
-				if (request.result == UnityWebRequest.Result.Success) {
-					texture = DownloadHandlerTexture.GetContent (request);
-					if (texture != null) {
-						var texMipMap = new Texture2D (texture.width, texture.height, texture.format, true);
-						texMipMap.SetPixels32 (texture.GetPixels32 ());
-						texMipMap.Apply (true);
-						texture = texMipMap;
-						break;
-					}
-				}
-				if (request.result == UnityWebRequest.Result.ConnectionError && --nRetryTimes != 0) {
-					Debug.LogWarning ($"{request.error} while downloading profile picture, retrying: {request.downloadHandler?.text} {sUrl}");
-					//Wait a little, then retry
-					yield return new WaitForSeconds (.5f);
-					continue;
-				}
-				//Other errors, or giving up after n retries
-				Debug.LogWarning ($"{request.error} while downloading profile picture, giving up: {request.downloadHandler?.text} {sUrl}");
-				yield break;
-			}
+                var timeBegin = Time.realtimeSinceStartup;
+                yield return request.SendWebRequest ();
+                if (request.result == UnityWebRequest.Result.Success) {
+                    texture = DownloadHandlerTexture.GetContent (request);
+                    if (texture != null) {
+                        var texMipMap = new Texture2D (texture.width, texture.height, texture.format, true);
+                        texMipMap.SetPixels32 (texture.GetPixels32 ());
+                        texMipMap.Apply (true);
+                        texture = texMipMap;
+                        break;
+                    }
+                }
+                if (request.result == UnityWebRequest.Result.ConnectionError && --nRetryTimes != 0) {
+                    Debug.LogWarning ($"{request.error} while downloading profile picture, retrying: {request.downloadHandler?.text} {sUrl}");
+                    //Wait a little, then retry
+                    yield return new WaitForSeconds (.5f);
+                    continue;
+                }
+                //Other errors, or giving up after n retries
+                Debug.LogWarning ($"{request.error} while downloading profile picture, giving up: {request.downloadHandler?.text} {sUrl}");
+                yield break;
+            }
 
             var timeElapsed = Time.realtimeSinceStartup - startTime;
             Debug.Log ($"BackendID={backendID} avatar texture ({texture.width}, {texture.height}) downloaded in {timeElapsed:##.00}s: {sUrl}");
@@ -735,13 +756,13 @@ namespace CineGame.SDK {
 
                 case "lagMonitorInterval":
                     v = (long)en.Current.Value;
-                    SmartfoxClient.LagMonitorInterval = (int)v;
+                    SmartfoxClient.LagMeasureIntervalSeconds = (int)v;
                     Debug.LogFormat ("LagMonitorInterval set to {0} seconds.", v);
                     break;
 
                 case "lagSamplesPerInterval":
                     v = (long)en.Current.Value;
-                    SmartfoxClient.LagSamplesPerInterval = (int)v;
+                    SmartfoxClient.LagMeasureNumSamples = (int)v;
                     Debug.LogFormat ("LagSamplesPerInterval set to {0}.", v);
                     break;
 
@@ -787,7 +808,9 @@ namespace CineGame.SDK {
         private void SendDataToServer (List<User> users, List<User> winners = null, List<MiniGame> miniGames = null) {
 
             GameEnded = true;
-            SmartfoxClient.GameOver ();
+            /*if (MaxLagValue > SmartfoxClient.LagWarningThreshold) {
+                Debug.LogErrorFormat ("SFS Max lag of {0} ms exceeded threshold of {1} ms", MaxLagValue, LagWarningThreshold);
+            }*/
 
             var d = new Dictionary<string, object> {
                 ["gameCode"] = GameCode
@@ -795,6 +818,8 @@ namespace CineGame.SDK {
             if (users != null && users.Count > 0) {
                 var l = new List<object> ();
                 foreach (var u in users) {
+                    if (u.BackendID <= 0)
+                        continue;
                     var dp = new Dictionary<string, object> {
                         { "userId", u.BackendID },
                         { "points", u.Score }
@@ -806,6 +831,8 @@ namespace CineGame.SDK {
             if (winners != null && winners.Count > 0) {
                 var l = new List<object> ();
                 foreach (var w in winners) {
+                    if (w.BackendID <= 0)
+                        continue;
                     l.Add (w.BackendID);
                 }
                 d.Add ("winners", l);
@@ -890,6 +917,115 @@ namespace CineGame.SDK {
             instance.StartCoroutine (instance.E_Backend (request, callback));
         }
 
+        static readonly Dictionary<int, Sfs2X.Entities.User> SmartfoxUserDictionary = new ();
+
+        static void HandlePrivateMessage (string message, Sfs2X.Entities.User user) {
+            if (user.Properties.TryGetValue ("bkid", out object v)) {
+                var backendID = (int)v;
+                if (message.StartsWith ("/m ") || message.StartsWith ("/giphy ") || message.StartsWith ("/tenor ")) {
+                    OnPlayerChatMessage?.Invoke (backendID, message);
+                } else {
+                    OnPlayerStringMessage?.Invoke (backendID, message);
+                }
+            }
+        }
+
+        static void HandleObjectMessage (ISFSObject dataObj, Sfs2X.Entities.User user) {
+            if (dataObj.ContainsKey ("bkid")) {
+                var backendID = dataObj.GetInt ("bkid");
+                var userName = dataObj.GetUtfString ("name");
+                var userAge = dataObj.GetInt ("age");
+                var userGender = dataObj.GetUtfString ("gender");
+
+                if (user.Properties == null) {
+                    user.Properties = new Dictionary<string, object> ();
+                }
+                user.Properties ["bkid"] = backendID;
+                user.Properties ["name"] = userName;
+
+                SmartfoxUserDictionary [backendID] = user;
+
+                if (user.IsPlayer) {
+                    if (GameEnded) {
+                        Debug.LogWarning ($"Received bkid object from {userName} ({backendID}) but game has already ended");
+                        return;
+                    }
+
+                    string avatarID = null;
+
+                    if (dataObj.ContainsKey ("avatar")) {
+                        avatarID = dataObj.GetUtfString ("avatar");
+                    }
+
+                    Version appVer = null;
+                    if (dataObj.ContainsKey ("appVer")) {
+                        string appVerString = dataObj.GetUtfString ("appVer");
+                        appVer = new Version (appVerString);
+                    }
+
+                    if (CineGameChatController.IsProfanityFilterLoaded) {
+                        CineGameChatController.RunProfanityFilter (userName, (filteredUserName) => {
+                            OnPlayerJoined?.Invoke (new CineGameSDK.User {
+                                BackendID = backendID,
+                                AppVersion = appVer,
+                                Name = filteredUserName,
+                                Age = userAge,
+                                Gender = userGender,
+                                Score = 0
+                            });
+
+                            if (!string.IsNullOrWhiteSpace (avatarID)) {
+                                SetPlayerAvatar (backendID, avatarID);
+                            }
+                        });
+                    } else {
+                        Debug.LogWarning ("SFS Player name is unfiltered (CineGameChatController instance not found)");
+
+                        OnPlayerJoined?.Invoke (new User {
+                            BackendID = backendID,
+                            AppVersion = appVer,
+                            Name = userName,
+                            Age = userAge,
+                            Gender = userGender,
+                            Score = 0
+                        });
+
+                        if (!string.IsNullOrWhiteSpace (avatarID)) {
+                            SetPlayerAvatar (backendID, avatarID);
+                        }
+                    }
+                } else if (user.IsSpectator) {
+                    var supportingID = dataObj.GetInt ("supportingId");
+                    if (CineGameChatController.IsProfanityFilterLoaded) {
+                        CineGameChatController.RunProfanityFilter (userName, (filteredUserName) => {
+                            OnSupporterJoined?.Invoke (new Supporter {
+                                BackendID = backendID,
+                                SupportingID = supportingID,
+                                Name = filteredUserName
+                            });
+                        });
+                    } else {
+                        Debug.LogWarning ("SFS Supporter name is unfiltered (CineGameChatController instance not found)");
+                        OnSupporterJoined?.Invoke (new Supporter {
+                            BackendID = backendID,
+                            SupportingID = supportingID,
+                            Name = userName
+                        });
+                    }
+                }
+            } else if (dataObj.ContainsKey ("avatar") && user.Properties != null) {
+                var avatarID = dataObj.GetUtfString ("avatar");
+                var backendID = (int)user.Properties ["bkid"];
+                SetPlayerAvatar (backendID, avatarID);
+            }
+            if (user.Properties != null && user.Properties.TryGetValue ("bkid", out object o)) {
+                int backendID = (int)o;
+                OnPlayerObjectMessage?.Invoke (backendID, PlayerObjectMessage.FromSmartFoxObject (dataObj));
+            } else if (numBkIdWarnings-- > 0) {
+                Debug.LogWarning ($"SFS OnObjectMessage: {user.Name} has no bkid property! Happens when packages get lost or are received out of order");
+            }
+        }
+
         /// <summary>
 		/// Stop further joins by either players or supporters
 		/// </summary>
@@ -908,7 +1044,7 @@ namespace CineGame.SDK {
 		/// Broadcast public object message to either all players, all supporters or all users
 		/// </summary>
         public static void BroadcastObjectMessage (PlayerObjectMessage dataObj, bool toPlayers = true, bool toSpectators = false) {
-            SmartfoxClient.BroadcastObjectMessage (dataObj.GetSmartFoxObject (), toPlayers: toPlayers, toSpectators: toSpectators);
+            SmartfoxClient.Broadcast (dataObj.GetSmartFoxObject (), toPlayers: toPlayers, toSpectators: toSpectators);
             CineGameBots.BroadcastObjectMessage (dataObj, toPlayers: toPlayers, toSpectators: toSpectators);
         }
 
@@ -917,7 +1053,7 @@ namespace CineGame.SDK {
 		/// </summary>
         public static void BroadcastObjectMessage (string json, bool toPlayers = true, bool toSpectators = false) {
             var dataObj = new PlayerObjectMessage (json);
-            SmartfoxClient.BroadcastObjectMessage (dataObj.GetSmartFoxObject (), toPlayers: toPlayers, toSpectators: toSpectators);
+            SmartfoxClient.Broadcast (dataObj.GetSmartFoxObject (), toPlayers: toPlayers, toSpectators: toSpectators);
             CineGameBots.BroadcastObjectMessage (dataObj, toPlayers: toPlayers, toSpectators: toSpectators);
         }
 
@@ -926,7 +1062,7 @@ namespace CineGame.SDK {
 		/// </summary>
         public static void SendObjectMessage (PlayerObjectMessage dataObj, int backendId) {
             if (backendId >= 0) {
-                SmartfoxClient.SendObjectMessage (dataObj.GetSmartFoxObject (), backendId);
+                SmartfoxClient.Send (dataObj.GetSmartFoxObject (), SmartfoxUserDictionary [backendId]);
             } else {
                 CineGameBots.SendObjectMessage (dataObj, backendId);
             }
@@ -938,7 +1074,7 @@ namespace CineGame.SDK {
         public static void SendObjectMessage (string json, int backendId) {
             var dataObj = new PlayerObjectMessage (json);
             if (backendId >= 0) {
-                SmartfoxClient.SendObjectMessage (dataObj.GetSmartFoxObject (), backendId);
+                SmartfoxClient.Send (dataObj.GetSmartFoxObject (), SmartfoxUserDictionary [backendId]);
             } else {
                 CineGameBots.SendObjectMessage (dataObj, backendId);
             }
@@ -1003,7 +1139,7 @@ namespace CineGame.SDK {
 		/// </summary>
         public static void SendPrivateMessage (string msg, int backendId) {
             if (backendId >= 0) {
-                SmartfoxClient.SendPrivateMessage (msg, backendId);
+                SmartfoxClient.Send (msg, SmartfoxUserDictionary [backendId]);
             } else {
                 CineGameBots.SendStringMessage (msg, backendId);
             }
@@ -1014,7 +1150,7 @@ namespace CineGame.SDK {
 		/// </summary>
         public static void KickPlayer (int backendId) {
             if (backendId >= 0) {
-                SmartfoxClient.KickUser (backendId);
+                SmartfoxClient.KickUser (SmartfoxUserDictionary [backendId]);
             } else {
                 //CineGameBots.KickPlayer (backendId);
             }
@@ -1025,7 +1161,7 @@ namespace CineGame.SDK {
 		/// </summary>
         public static void KickSupporter (int backendId) {
             if (backendId >= 0) {
-                SmartfoxClient.KickUser (backendId);
+                SmartfoxClient.KickUser (SmartfoxUserDictionary [backendId]);
             } else {
                 //CineGameBots.KickSupporter (backendId);
             }

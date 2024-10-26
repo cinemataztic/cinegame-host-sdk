@@ -1,8 +1,8 @@
 {
     "name": "CineGame.SDK",
-    "rootNamespace": "",
     "references": [
-        "Unity.TextMeshPro"
+        "Unity.TextMeshPro",
+        "com.smartfoxserver.csharpclient"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

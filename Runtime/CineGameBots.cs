@@ -209,7 +209,7 @@ namespace CineGame.SDK {
             readonly float TimeBeforeJoin;
             readonly float ProbChat;
             readonly string [] ChatMessages;
-            readonly bool ReaveAndRejoin;
+            readonly bool LeaveAndRejoin;
 
             internal LobbyBot (int id, string name, string avatarId, float timeBeforeJoin, bool leaveAndRejoin, float probChat, string [] chatMessages) {
                 BackendID = id;
@@ -218,7 +218,7 @@ namespace CineGame.SDK {
                 TimeBeforeJoin = timeBeforeJoin;
                 ChatMessages = chatMessages;
                 ProbChat = probChat;
-                ReaveAndRejoin = leaveAndRejoin;
+                LeaveAndRejoin = leaveAndRejoin;
             }
 
             void IBot.SendObjectMessage (CineGameSDK.PlayerObjectMessage obj) {
@@ -257,8 +257,6 @@ namespace CineGame.SDK {
                     yield return new WaitForSecondsRealtime (TimeBeforeJoin);
                 }
 
-                if(ReaveAndRejoin)
-
                 Log ($"CineGameBots: {pl.Name} attempting to join game");
                 CineGameSDK.OnPlayerJoined?.Invoke (pl);
 
@@ -268,7 +266,7 @@ namespace CineGame.SDK {
 
                 for (; ; ) {
 
-                    if (ReaveAndRejoin)
+                    if (LeaveAndRejoin)
                     {
                         if (Random.value < .01f)
                         {
