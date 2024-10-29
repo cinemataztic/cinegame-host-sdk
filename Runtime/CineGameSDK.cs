@@ -870,7 +870,7 @@ namespace CineGame.SDK {
 		/// </summary>
         internal static bool IsGameServerRunningLocally () {
             if (Application.platform == RuntimePlatform.WindowsPlayer || Application.platform == RuntimePlatform.WindowsEditor) {
-                Debug.Log ("IsSmartfoxRunningLocally disabled on this platform for now, returning false");
+                Debug.Log ("IsGameServerRunningLocally disabled on this platform for now, returning false");
                 return false;
             }
             var isGameServerRunning = false;
