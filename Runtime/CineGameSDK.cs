@@ -1108,6 +1108,15 @@ namespace CineGame.SDK {
         }
 
         /// <summary>
+        /// Helper to send a simple response. Should be used sparsely as it will result in a complete network package for each call
+        /// </summary>
+        public static void Send (int backendId, string key, int [] value) {
+            var dataObj = new PlayerObjectMessage();
+            dataObj.PutIntArray(key, value);
+            SendObjectMessage(dataObj, backendId);
+        }
+
+        /// <summary>
         /// Helper to broadcast a simple response. Should be used sparsely as it will result in a complete network package to each receiver for each call
         /// </summary>
         public static void Broadcast (string key, bool value, bool toPlayers = true, bool toSpectators = false) {
