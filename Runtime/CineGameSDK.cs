@@ -1061,7 +1061,7 @@ namespace CineGame.SDK {
 		/// Send private object message to specific CineGame user
 		/// </summary>
         public static void SendObjectMessage (PlayerObjectMessage dataObj, int backendId) {
-            if (backendId >= 0) {
+            if (backendId > 0) {
                 SmartfoxClient.Send (dataObj.GetSmartFoxObject (), SmartfoxUserDictionary [backendId]);
             } else {
                 CineGameBots.SendObjectMessage (dataObj, backendId);
@@ -1073,7 +1073,7 @@ namespace CineGame.SDK {
 		/// </summary>
         public static void SendObjectMessage (string json, int backendId) {
             var dataObj = new PlayerObjectMessage (json);
-            if (backendId >= 0) {
+            if (backendId > 0) {
                 SmartfoxClient.Send (dataObj.GetSmartFoxObject (), SmartfoxUserDictionary [backendId]);
             } else {
                 CineGameBots.SendObjectMessage (dataObj, backendId);
@@ -1138,7 +1138,7 @@ namespace CineGame.SDK {
 		/// Send private string message to specific CineGame user
 		/// </summary>
         public static void SendPrivateMessage (string msg, int backendId) {
-            if (backendId >= 0) {
+            if (backendId > 0) {
                 SmartfoxClient.Send (msg, SmartfoxUserDictionary [backendId]);
             } else {
                 CineGameBots.SendStringMessage (msg, backendId);
@@ -1149,7 +1149,7 @@ namespace CineGame.SDK {
 		/// Kick player out of game
 		/// </summary>
         public static void KickPlayer (int backendId) {
-            if (backendId >= 0) {
+            if (backendId > 0) {
                 SmartfoxClient.KickUser (SmartfoxUserDictionary [backendId]);
             } else {
                 //CineGameBots.KickPlayer (backendId);
@@ -1160,7 +1160,7 @@ namespace CineGame.SDK {
 		/// Kick supporter/spectator out of game
 		/// </summary>
         public static void KickSupporter (int backendId) {
-            if (backendId >= 0) {
+            if (backendId > 0) {
                 SmartfoxClient.KickUser (SmartfoxUserDictionary [backendId]);
             } else {
                 //CineGameBots.KickSupporter (backendId);
