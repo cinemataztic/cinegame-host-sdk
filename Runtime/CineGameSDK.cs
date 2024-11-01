@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Collections;
@@ -239,6 +240,10 @@ namespace CineGame.SDK {
 		/// When a WiFi network is available. Name,Password
 		/// </summary>
         public static Action<string, string> OnWiFiAvailable;
+        /// <summary>
+        /// If a WiFi network is available and a QR code to join it was downloaded, this will be invoked with the QR texture
+        /// </summary>
+        public static Action<Texture2D> OnWiFiQR;
         /// <summary>
         /// When the block duration is updated dynamically (always invoked at start with initial duration)
         /// </summary>
@@ -685,20 +690,32 @@ namespace CineGame.SDK {
                 }
             }
 
-            instance.StartCoroutine (instance.LoadAvatarPicture (backendID, uri.ToString ()));
+            var startTime = Time.realtimeSinceStartup;
+            instance.StartCoroutine (instance.E_DownloadPicture (uri.ToString (), (texture) => {
+                if (texture != null) {
+                    var timeElapsed = Time.realtimeSinceStartup - startTime;
+                    Debug.Log ($"BackendID={backendID} avatar texture {texture.width}x{texture.height} downloaded in {timeElapsed:##.00}s: {uri}");
+                    OnPlayerAvatarChanged?.Invoke (backendID, texture);
+                }
+            }));
         }
 
 
-        IEnumerator LoadAvatarPicture (int backendID, string sUrl) {
-            var startTime = Time.realtimeSinceStartup;
+        /// <summary>
+        /// Generic coroutine to download a picture from a URL and invoke a callback with the resulting Texture2D. Optionally, the picture can be cached
+        /// </summary>
+        IEnumerator E_DownloadPicture (string sUrl, Action<Texture2D> callback, bool cache = false) {
             Texture2D texture = null;
             var nRetryTimes = 3;
             for (; ; ) {
-                using var request = UnityWebRequestTexture.GetTexture (sUrl);
+                using var request = GetTextureFromCacheOrUrl (sUrl);
                 request.SetRequestHeader ("User-Agent", "Mozilla");
                 var timeBegin = Time.realtimeSinceStartup;
                 yield return request.SendWebRequest ();
                 if (request.result == UnityWebRequest.Result.Success) {
+                    if (cache) {
+                        StoreTextureInCache (request);
+                    }
                     texture = DownloadHandlerTexture.GetContent (request);
                     if (texture != null) {
                         var texMipMap = new Texture2D (texture.width, texture.height, texture.format, true);
@@ -709,25 +726,63 @@ namespace CineGame.SDK {
                     }
                 }
                 if (request.result == UnityWebRequest.Result.ConnectionError && --nRetryTimes != 0) {
-                    Debug.LogWarning ($"{request.error} while downloading profile picture, retrying: {request.downloadHandler?.text} {sUrl}");
+                    Debug.LogWarning ($"{request.error} while downloading picture, retrying: {request.downloadHandler?.text} {sUrl}");
                     //Wait a little, then retry
                     yield return new WaitForSeconds (.5f);
                     continue;
                 }
                 //Other errors, or giving up after n retries
-                Debug.LogWarning ($"{request.error} while downloading profile picture, giving up: {request.downloadHandler?.text} {sUrl}");
+                Debug.LogWarning ($"{request.error} while downloading picture, giving up: {request.downloadHandler?.text} {sUrl}");
                 yield break;
             }
+            callback.Invoke (texture);
+        }
 
-            var timeElapsed = Time.realtimeSinceStartup - startTime;
-            Debug.Log ($"BackendID={backendID} avatar texture ({texture.width}, {texture.height}) downloaded in {timeElapsed:##.00}s: {sUrl}");
 
-            OnPlayerAvatarChanged?.Invoke (backendID, texture);
+        /// <summary>
+        /// Get a UnityWebRequest to load a texture either from cache or URL. Cache expires after 20 hours
+        /// </summary>
+        static UnityWebRequest GetTextureFromCacheOrUrl (string url) {
+            var filename = GetCacheFileName (url);
+            if (File.Exists (filename)) {
+                var lastWriteTimeUtc = File.GetLastWriteTimeUtc (filename);
+                var nowUtc = DateTime.UtcNow;
+                var totalHours = (int)nowUtc.Subtract (lastWriteTimeUtc).TotalHours;
+                if (totalHours < 20) { //cache expires in 20 hours
+                    return UnityWebRequestTexture.GetTexture ("file://" + filename, true);
+                }
+            }
+            var webRequest = UnityWebRequestTexture.GetTexture (url, true);
+            webRequest.timeout = 10;
+            return webRequest;
+        }
+
+
+        /// <summary>
+        /// Store a downloaded binary as a temp file (name based on download url)
+        /// </summary>
+        static void StoreTextureInCache (UnityWebRequest w) {
+            try {
+                if (!w.url.StartsWith ("file://") && w.result == UnityWebRequest.Result.Success) {
+                    var filename = GetCacheFileName (w.url);
+                    File.WriteAllBytes (filename, w.downloadHandler.data);
+                }
+            } catch (Exception ex) {
+                Debug.LogWarning ($"{ex.GetType ()} happened while storing texture in cache: {ex}");
+            }
+        }
+
+
+        /// <summary>
+        /// Generate a unique temp filename based on the original download URL
+        /// </summary>
+        static string GetCacheFileName (string url) {
+            return Path.Combine (Application.temporaryCachePath, CineGameUtility.ComputeMD5Hash (url));
         }
 
 
         private void ParseConfig (JObject d) {
-            string wifiName = null, wifiPassword = null;
+            string wifiName = null, wifiPassword = null, wifiQR = null;
             long v;
             string s;
             var en = d.GetEnumerator ();
@@ -746,6 +801,10 @@ namespace CineGame.SDK {
                 case "wifiName":
                     s = (string)en.Current.Value;
                     wifiName = s;
+                    break;
+
+                case "wifiQR":
+                    s = (string)en.Current.Value;
                     break;
 
                 case "lagWarningThreshold":
@@ -795,9 +854,11 @@ namespace CineGame.SDK {
                 }
             }
 
-            if(wifiName != null || wifiPassword != null)
-            {
+            if(wifiName != null || wifiPassword != null || wifiQR != null) {
                 OnWiFiAvailable?.Invoke(wifiName, wifiPassword);
+                if (!string.IsNullOrWhiteSpace (wifiQR) && OnWiFiQR != null) {
+                    StartCoroutine (E_DownloadPicture (wifiQR, OnWiFiQR, cache: true));
+                }
             }
         }
 
