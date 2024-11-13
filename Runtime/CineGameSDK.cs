@@ -718,10 +718,21 @@ namespace CineGame.SDK {
                     }
                     texture = DownloadHandlerTexture.GetContent (request);
                     if (texture != null) {
-                        var texMipMap = new Texture2D (texture.width, texture.height, texture.format, true);
-                        texMipMap.SetPixels32 (texture.GetPixels32 ());
-                        texMipMap.Apply (true);
-                        texture = texMipMap;
+                        if (SystemInfo.copyTextureSupport != UnityEngine.Rendering.CopyTextureSupport.None) {
+                            Debug.Log ("CopyTexture to generate mipmaps (GPU)");
+                            var texMipMap = new Texture2D (texture.width, texture.height, texture.format, true);
+                            Graphics.CopyTexture (texture, 0, 0, texMipMap, 0, 0);
+                            texMipMap.Apply (true, true);
+                        } else if (texture.isReadable) {
+                            Debug.Log ("Get/LoadRawTextureData to generate mipmaps (CPU)");
+                            var texMipMap = new Texture2D (texture.width, texture.height, texture.format, true);
+                            //copy on the CPU
+                            texMipMap.LoadRawTextureData (texture.GetRawTextureData<byte> ());
+                            texMipMap.Apply (true, true);
+                            texture = texMipMap;
+                        } else {
+                            Debug.LogWarning ("Texture not readable, no mipmaps created: " + sUrl);
+                        }
                         break;
                     }
                 }
