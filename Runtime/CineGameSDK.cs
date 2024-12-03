@@ -815,6 +815,7 @@ namespace CineGame.SDK {
 
                 case "wifiQR":
                     s = (string)en.Current.Value;
+                    wifiQR = s;
                     break;
 
                 case "lagWarningThreshold":
