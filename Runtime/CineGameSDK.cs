@@ -593,29 +593,10 @@ namespace CineGame.SDK {
                     //Debug.LogFormat ("API CreateGame response: {0}", response);
 
                     ParseConfig (CreateResponse);
+
                     GameCode = (string)CreateResponse ["gameCode"];
                     var gameZone = (string)CreateResponse ["gameZone"];
                     var gameServer = (string)CreateResponse ["gameServer"];
-                    //var webGlSecure = (bool)(CreateResponse ["webGlSecure"] ?? false);
-                    SmartfoxClient.Connect (gameServer, gameZone, (success) => {
-                        if (success) {
-                            SmartfoxClient.Login ("Host" + GameCode, (error) => {
-                                if (string.IsNullOrEmpty (error)) {
-                                    SmartfoxClient.CreateAndJoinRoom (GameCode, MaxPlayers, MaxSpectators, new List<RoomVariable> {
-                                        new SFSRoomVariable ("HostId", SmartfoxClient.MySfsUser.Id),
-                                        new SFSRoomVariable ("GameType", GameID),
-                                    }, (room, alreadyExists) => {
-                                        if (room != null) {
-                                            var sfc = SmartfoxClient.Instance;
-                                            //sfc.OnUserLeftRoom += _OnUserLeft;
-                                            sfc.OnObjectMessage.AddListener (HandleObjectMessage);
-                                            sfc.OnPrivateMessage.AddListener (HandlePrivateMessage);
-                                        }
-                                    });
-                                }
-                            });
-                        }
-                    });
 
                     var creditsForParticipating = 0;
                     var creditsForSupporterParticipating = 0;
@@ -632,16 +613,47 @@ namespace CineGame.SDK {
                         MaxSpectators = (int)(long)CreateResponse ["maxSupportersPerPlayer"] * MaxPlayers;
                     }
 
-                    OnGameReady?.Invoke (new Dictionary<string, object> {
-                        { "GameCode", GameCode },
-                        { "CreditsForParticipating", creditsForParticipating },
-                        { "CreditsForSupporterParticipating", creditsForSupporterParticipating },
-                        { "CreditsForWinning", creditsForWinning },
-                        { "CreditsForSupporterWinning", creditsForSupporterWinning },
+                    //var webGlSecure = (bool)(CreateResponse ["webGlSecure"] ?? false);
+                    SmartfoxClient.Connect (gameServer, gameZone, (success) => {
+                        if (success) {
+                            SmartfoxClient.Login ("Host" + GameCode, (error) => {
+                                if (string.IsNullOrEmpty (error)) {
+                                    SmartfoxClient.CreateAndJoinRoom (GameCode, MaxPlayers, MaxSpectators, new List<RoomVariable> {
+                                        new SFSRoomVariable ("HostId", SmartfoxClient.MySfsUser.Id),
+                                        new SFSRoomVariable ("GameType", GameID),
+                                    }, (room, alreadyExists) => {
+                                        if (room != null) {
+                                            var sfc = SmartfoxClient.Instance;
+                                            //sfc.OnUserLeftRoom += _OnUserLeft;
+                                            sfc.OnObjectMessage.AddListener (HandleObjectMessage);
+                                            sfc.OnPrivateMessage.AddListener (HandlePrivateMessage);
+
+                                            //Invoke event with details about the created game
+                                            OnGameReady?.Invoke (new Dictionary<string, object> {
+                                                { "GameCode", GameCode },
+                                                { "CreditsForParticipating", creditsForParticipating },
+                                                { "CreditsForSupporterParticipating", creditsForSupporterParticipating },
+                                                { "CreditsForWinning", creditsForWinning },
+                                                { "CreditsForSupporterWinning", creditsForSupporterWinning },
+                                            });
+
+                                            //Invoke event with just the gamecode (eg for displaying the code in a Text component)
+                                            OnGameCodeLoaded?.Invoke (GameCode);
+                                        } else {
+                                            Debug.LogError ("CineGameSDK: Room not created, alreadyExists=" + alreadyExists);
+                                            OnError?.Invoke (409);
+                                        }
+                                    });
+                                } else {
+                                    Debug.LogError ("Connected but unable to log in to realtime game server");
+                                    OnError?.Invoke (403);
+                                }
+                            });
+                        } else {
+                            Debug.LogError ("Unable to connect to realtime game server");
+                            OnError?.Invoke (0);
+                        }
                     });
-
-                    OnGameCodeLoaded?.Invoke(GameCode);
-
                 } else if (statusCode == HttpStatusCode.Unauthorized) {
                     OnError?.Invoke (401);
                 } else if ((int)statusCode > 500) {
