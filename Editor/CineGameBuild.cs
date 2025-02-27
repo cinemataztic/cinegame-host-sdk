@@ -439,7 +439,12 @@ namespace CineGame.SDK.Editor {
             if (instance == null) {
                 instance = GetWindow<CineGameBuild> ("CineGame Build", typeof (CloudBuild), typeof (CineGameTest), typeof(CineGameLogin));
             }
-            instance.Focus ();
+            else
+            {
+                RepaintWindow();
+            }
+            
+            instance.Focus();
 
             if (!CineGameLogin.IsLoggedIn) {
                 CineGameLogin.Init ();
@@ -802,7 +807,8 @@ namespace CineGame.SDK.Editor {
             Directory.CreateDirectory (Path.GetDirectoryName (fullOutPath));
             bool isDebug = (buildOptions & BuildOptions.Development) != 0;
             if (Application.platform == RuntimePlatform.WindowsEditor) {
-                return ExternalProcess.Run ("powershell", string.Format ("Get-ChildItem . {0}| Compress-Archive -DestinationPath {1} -Update", isDebug ? string.Empty : "| where {{ $_.Name -notlike '*_BackUpThisFolder_ButDontShipItWithYourGame' -and $_.Name -notlike '*_BurstDebugInformation_DoNotShip' }} ",  fullOutPath), Path.GetFullPath (sInDir), progress);
+                string powershellCommand = string.Format("Get-ChildItem . {0}| Compress-Archive -DestinationPath {1} -Update", isDebug ? string.Empty : " | where { $_.Name -notlike '*_BackUpThisFolder_ButDontShipItWithYourGame' -and $_.Name -notlike '*_BurstDebugInformation_DoNotShip'} ", fullOutPath);
+                return ExternalProcess.Run("powershell", powershellCommand, Path.GetFullPath(sInDir), progress);
             }
             return ExternalProcess.Run ("zip", string.Format ("-FSrD \"{0}\" . {1}", fullOutPath, isDebug ? string.Empty : "-x \"*_BackUpThisFolder_ButDontShipItWithYourGame/*\" \"*_BurstDebugInformation_DoNotShip/*\""), Path.GetFullPath (sInDir), progress);
         }
