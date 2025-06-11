@@ -47,7 +47,7 @@ namespace CineGame.SDK {
                     return p.ExitCode == 0;
                 }
             } catch (Win32Exception win32e) {
-                Debug.LogWarning ($"ExternalProcess {filename} {win32e.Message}");
+                Debug.LogWarning ($"ExternalProcess {filename} Win32Exception: HResult={win32e.HResult:X} Message={win32e.Message} InnerException={win32e.InnerException}");
             } catch (Exception e) {
                 Debug.LogError ($"ExternalProcess {filename} {e}");
             }
