@@ -52,6 +52,7 @@ namespace CineGame.SDK {
         public static string UserName;
         public static string UserId;
 
+        internal static bool IsGameServerRunningLocally;
 
         /// <summary>
         /// Game Request
@@ -400,6 +401,7 @@ namespace CineGame.SDK {
 
                 if (string.IsNullOrEmpty (accessToken)) {
                     Debug.LogError ("Missing API key (jwt). Please check that the environment variable has been initialized by editor or player software!");
+                    enabled = false;
                     OnError?.Invoke (0);
                     Debug.Break ();
                     return;
@@ -529,8 +531,20 @@ namespace CineGame.SDK {
                 }
                 yield return null;
             }
-            Setup ();
+
             CineGameDCHP.Start ();
+
+            bool smartfoxScanned = false;
+            SmartfoxClient.Connect ("127.0.0.1", "BasicExamples", (success) => {
+                smartfoxScanned = true;
+                IsGameServerRunningLocally = success;
+            });
+            while (!smartfoxScanned)
+                yield return null;
+            if (IsGameServerRunningLocally)
+                SmartfoxClient.Disconnect ();
+
+            Setup ();
         }
 
         /// <summary>
@@ -569,8 +583,7 @@ namespace CineGame.SDK {
             Debug.Log("Environment: " + CineGameEnvironment);
             Debug.Log("Player Capacity: " + MaxPlayers);
 
-            var _localGameServer = IsGameServerRunningLocally ();
-            if (_localGameServer) {
+            if (IsGameServerRunningLocally) {
                 Debug.Log ("Local gameserver IP: " + LocalIP);
             }
 
@@ -578,7 +591,7 @@ namespace CineGame.SDK {
                 hostName = Hostname,
                 gameType = GameID,
                 mac = MacAddress,
-                localGameServerRunning = _localGameServer,
+                localGameServerRunning = IsGameServerRunningLocally,
                 localIp = LocalIP,
                 deviceId = DeviceId,
                 platform = Application.platform.ToString (),
@@ -947,21 +960,6 @@ namespace CineGame.SDK {
                     Invoke (nameof (SendGameEndToServer), 1f);
                 }
             });
-        }
-
-        /// <summary>
-		/// Returns true if there is a smartfox server running on the local computer
-		/// </summary>
-        internal static bool IsGameServerRunningLocally () {
-            if (Application.platform == RuntimePlatform.WindowsPlayer || Application.platform == RuntimePlatform.WindowsEditor) {
-                Debug.Log ("IsGameServerRunningLocally disabled on this platform for now, returning false");
-                return false;
-            }
-            var isGameServerRunning = false;
-            return ExternalProcess.Run ("/usr/bin/pgrep", "-f smartfoxserver", null, (msg, pct) => {
-                isGameServerRunning = int.TryParse (msg, out int pid);
-                return false;
-            }) && isGameServerRunning;
         }
 
         static void API (string uri, string json, BackendCallback callback = null) {

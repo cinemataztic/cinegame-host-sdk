@@ -17,7 +17,7 @@ namespace CineGame.SDK {
 	/// </summary>
     internal static class CineGameDCHP {
 
-        static SocketClient DCHPClient;
+        static readonly SocketClient DCHPClient = new ();
         static readonly Queue<string> DCHPMessages = new ();
         static readonly Queue<string> DCHPErrors = new ();
 
@@ -67,7 +67,6 @@ namespace CineGame.SDK {
             try {
                 var port = Configuration.INTERNAL_TCP_SERVER_PORT ?? 4455;
                 DCHPMessages.Enqueue ("Attempting to connect to 127.0.0.1:" + port);
-                DCHPClient = new SocketClient ();
                 await DCHPClient.Open ("127.0.0.1", port, OnDCHPMessage, OnDCHPError);
                 if (!DCHPClient.Connected)
                     throw new Exception ("DCH-P Socket not connected");
@@ -114,7 +113,7 @@ namespace CineGame.SDK {
             try {
                 //DCH-p messages are doubly serialized as string @@
                 message = JsonConvert.DeserializeObject<string> (message);
-                DCHPMessages.Enqueue ("DCH-P response: " + message);
+                //DCHPMessages.Enqueue ("DCH-P response: " + message);
 
                 float newBlockDuration = BlockDuration;
                 IEnumerable<BlockDurationUpdate> blockDurationUpdates = null;
@@ -126,16 +125,16 @@ namespace CineGame.SDK {
                 } else {
                     blockDurationUpdates = JsonConvert.DeserializeObject<List<BlockDurationUpdate>> (message);
                 }
-                var cineGameUpdate = blockDurationUpdates?.FirstOrDefault (bu => bu.type == "CineGame");
+                var cineGameUpdate = blockDurationUpdates?.FirstOrDefault (bu => bu.type == "CineGame" || bu.type == "CineClash");
                 if (cineGameUpdate != default) {
                     newBlockDuration = Mathf.Clamp (cineGameUpdate.duration, 0, 1200);
                     if (newBlockDuration != BlockDuration) {
                         BlockDuration = newBlockDuration;
                         CineGameSDK.OnBlockDurationUpdated?.Invoke (BlockDuration);
                         DCHPMessages.Enqueue ("New CineGame block duration from DCH-P: " + newBlockDuration);
-                    } else {
+                    }/* else {
                         DCHPMessages.Enqueue ("CineGame block duration not changed");
-                    }
+                    }*/
                 } else {
                     DCHPMessages.Enqueue ("No CineGame block type found in block duration updates");
                 }
@@ -164,7 +163,7 @@ namespace CineGame.SDK {
             /// </summary>
             public int duration;
             /// <summary>
-            /// type of block. we only care about "CineGame".
+            /// type of block. we only care about "CineGame" or "CineClash".
             /// </summary>
             public string type;
             //public string @event;
@@ -203,6 +202,8 @@ namespace CineGame.SDK {
             /// </summary>
             public bool Connected {
                 get {
+                    if (_socket == null)
+                        return false;
                     var errorCode = (SocketError)(int)_socket.GetSocketOption (SocketOptionLevel.Socket, SocketOptionName.Error);
                     return errorCode == SocketError.IsConnected
                         || errorCode == SocketError.Success
@@ -264,7 +265,6 @@ namespace CineGame.SDK {
 			/// </summary>
             public void Close () {
                 _socket.Dispose ();
-                _socket = null;
             }
 
             /// <summary>
