@@ -1266,11 +1266,7 @@ namespace CineGame.SDK {
         }
 
         internal static string GetRegionProfanityUrl () {
-			var marketId = Market;
-            if (string.IsNullOrWhiteSpace (marketId) && instance.Settings != null) {
-                marketId = instance.Settings.MarketId;
-            }
-            return string.Format ("https://profanity.cinemataztic.com/{0}/txt-file", marketId);
+            return CineGameMarket.GetProfanityAPI ();
         }
 
         void OnApplicationQuit () {

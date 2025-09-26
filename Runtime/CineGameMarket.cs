@@ -127,5 +127,9 @@ namespace CineGame.SDK {
             return $"https://{Slugs [CineGameSDK.Market]}.cinegamecore.{Configuration.CLUSTER_NAME}.cinemataztic.com/api/";
         }
 
+        public static string GetProfanityAPI() {
+            return $"https://{Slugs [CineGameSDK.Market].Replace ('-', '.')}.api.profanity.{Configuration.CLUSTER_NAME}.cinemataztic.com/txt-file";
+        }
+
     }
 }
