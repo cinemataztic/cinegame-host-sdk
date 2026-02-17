@@ -642,27 +642,29 @@ namespace CineGame.SDK.Editor {
                 }
                 form.AddField ("gameType", GameID);
 
+                var marketId = EditorPrefs.GetString ("CineGameMarket");
+                form.AddField ("market", CineGameMarket.Slugs [marketId]);
+                form.AddField ("duration", CineGameMarket.Durations [marketId]);
 
-                string marketSlug = CineGameMarket.Slugs[EditorPrefs.GetString("CineGameMarket")];
-                form.AddField("market", marketSlug);
-                /*
                 GetLatestCommit();
+                var comments = string.Empty;
                 if (!string.IsNullOrEmpty (LatestBranch)) {
-                    form.AddField ("commit-branch", LatestBranch);
+                    comments += LatestBranch + "\n";
                 }
                 if (!string.IsNullOrEmpty (LatestCommit)) {
-                    form.AddField ("commit-hash", LatestCommit);
+                    comments += LatestCommit + "\n";
                 }
                 if (!string.IsNullOrEmpty (LatestAuthor)) {
-                    form.AddField ("commit-author", LatestAuthor);
+                    comments += LatestAuthor + "\n";
                 }
                 if (!string.IsNullOrEmpty (LatestCommitMessage)) {
-                    form.AddField ("commit-msg", LatestCommitMessage);
+                    comments += LatestCommitMessage + "\n";
                 }
                 if (!string.IsNullOrEmpty (LatestDiff)) {
-                    form.AddField ("commit-diff", LatestDiff);
+                    comments += LatestDiff + "\n";
                 }
-                */
+                form.AddField ("comments", comments);
+
                 //Get build time from auto-generated assembly version
                 var sdkVersion = Assembly.GetAssembly (typeof (CineGameSDK)).GetName ().Version;
                 var sdkBuildDate = new DateTime (2000, 1, 1, 0, 0, 0 /*, DateTimeKind.Utc*/).Add (new TimeSpan (sdkVersion.Build, 0, 0, sdkVersion.Revision * 2));
