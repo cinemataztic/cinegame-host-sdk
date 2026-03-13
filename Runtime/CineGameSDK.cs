@@ -597,6 +597,7 @@ namespace CineGame.SDK {
                 platform = Application.platform.ToString (),
                 showId = Configuration.CINEMATAZTIC_SHOW_ID,
                 blockId = Configuration.CINEMATAZTIC_BLOCK_ID,
+                exhibitorId = Configuration.CINEMATAZTIC_EXHIBITOR,
                 deviceInfo = DeviceInfo,
             };
 

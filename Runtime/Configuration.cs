@@ -13,7 +13,7 @@ namespace CineGame.SDK {
 		}
 
 		/// <summary>
-		/// Target directory where Player software expects all logs to end up
+		/// Target directory where DCH expects all logs to end up
 		/// </summary>
 		public static string LOG_DIR {
 			get { return System.Environment.GetEnvironmentVariable (PropertyNameFromAccessor (MethodBase.GetCurrentMethod ())); }
@@ -41,7 +41,7 @@ namespace CineGame.SDK {
 		}
 
 		/// <summary>
-		/// Specifies which cluster the machine is set to work with, so we can determine which API group to contact (dev, staging or production)
+		/// Specifies which CinemaTaztic cluster the client is currently communicating with
 		/// </summary>
 		public static string CLUSTER_NAME
 		{
@@ -50,7 +50,7 @@ namespace CineGame.SDK {
 		}
 
 		/// <summary>
-		/// Access token for backend communication, set by either Player software or HostEditor
+		/// Access token for backend communication, set by either DCH or Editor SDK
 		/// </summary>
 		public static string CINEMATAZTIC_ACCESS_TOKEN {
 			get { return System.Environment.GetEnvironmentVariable (PropertyNameFromAccessor (MethodBase.GetCurrentMethod ())); }
@@ -58,7 +58,15 @@ namespace CineGame.SDK {
 		}
 
 		/// <summary>
-		/// Screen ID from player software/dch
+		/// Exhibitor id/name from DCH if available
+		/// </summary>
+		public static string CINEMATAZTIC_EXHIBITOR {
+			get { return System.Environment.GetEnvironmentVariable (PropertyNameFromAccessor (MethodBase.GetCurrentMethod ())); }
+			set { System.Environment.SetEnvironmentVariable (PropertyNameFromAccessor (MethodBase.GetCurrentMethod ()), value); }
+		}
+
+		/// <summary>
+		/// Screen ID from DCH
 		/// </summary>
 		public static string CINEMATAZTIC_SCREEN_ID {
 			get { return System.Environment.GetEnvironmentVariable (PropertyNameFromAccessor (MethodBase.GetCurrentMethod ())); }
@@ -66,7 +74,7 @@ namespace CineGame.SDK {
 		}
 
 		/// <summary>
-		/// Show ID from player software/dch if available
+		/// Show ID from DCH if available
 		/// </summary>
 		public static string CINEMATAZTIC_SHOW_ID {
 			get { return System.Environment.GetEnvironmentVariable (PropertyNameFromAccessor (MethodBase.GetCurrentMethod ())); }
@@ -74,7 +82,7 @@ namespace CineGame.SDK {
 		}
 
 		/// <summary>
-		/// Block ID from player software/dch if available
+		/// Block ID from DCH if available
 		/// </summary>
 		public static string CINEMATAZTIC_BLOCK_ID {
 			get { return System.Environment.GetEnvironmentVariable (PropertyNameFromAccessor (MethodBase.GetCurrentMethod ())); }
@@ -89,7 +97,7 @@ namespace CineGame.SDK {
 		}
 
 		/// <summary>
-		/// Current market, set by the Player software. If not available, the default market from CineGameSettings is used
+		/// Current market, set by the DCH. If not available, the default market from CineGameSettings is used
 		/// </summary>
 		public static string MARKET_ID {
 			get { return System.Environment.GetEnvironmentVariable (PropertyNameFromAccessor (MethodBase.GetCurrentMethod ())); }
@@ -97,7 +105,7 @@ namespace CineGame.SDK {
 		}
 
 		/// <summary>
-		/// HostEditor SDK will set this when testing a WebGL build in the Editor
+		/// The SDK will set this when testing a WebGL build in the Editor
 		/// </summary>
 		public static string IS_WEBGL {
 			get { return System.Environment.GetEnvironmentVariable (PropertyNameFromAccessor (MethodBase.GetCurrentMethod ())); }
@@ -105,7 +113,7 @@ namespace CineGame.SDK {
 		}
 
 		/// <summary>
-		/// Specifies the local system time (in JavaScript Ticks, ie milliseconds since Jan 1 1970) where the CineGame block should ideally have started
+		/// Port on which the local DCH TCP server is listening
 		/// </summary>
 		public static int? INTERNAL_TCP_SERVER_PORT {
 			get {
@@ -118,7 +126,7 @@ namespace CineGame.SDK {
 		}
 
 		/// <summary>
-		/// Specifies the local system time (in JavaScript Ticks, ie milliseconds since Jan 1 1970) where the CineGame block should ideally have started
+		/// Interval in seconds between each block duration poll on the TCP connection
 		/// </summary>
 		public static int? BLOCK_DURATIONS_POLL_INTERVAL_SECS {
 			get {
