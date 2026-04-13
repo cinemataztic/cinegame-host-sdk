@@ -65,6 +65,7 @@ namespace CineGame.SDK {
             public string localIp;
             public bool localGameServerRunning;
             public string deviceId;
+            public string exhibitorId;
             public string platform;
             public string showId;
             public string blockId;
