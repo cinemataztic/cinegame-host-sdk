@@ -301,7 +301,7 @@ namespace CineGame.SDK {
         static int MaxSpectators = 75 * 5;
         static int numBkIdWarnings = 1;
 
-        delegate void BackendCallback (HttpStatusCode statusCode, string response);
+        internal delegate void BackendCallback (HttpStatusCode statusCode, string response);
 
         private static readonly Dictionary<string, string> BackendHeaders = new (10) {
             {"Content-Type", "application/json; charset=utf-8"},
@@ -350,6 +350,7 @@ namespace CineGame.SDK {
             Market = Configuration.MARKET_ID;
 #endif
 
+#if !UNITY_EDITOR
             try
             {
                 // Read BLOCK_START_TICKS from parent process. This will be in JavaScript ticks, ie miliseconds since Jan 1 1970.
@@ -367,6 +368,7 @@ namespace CineGame.SDK {
             } catch (Exception) {
                 Debug.Log ("BLOCK_START_TICKS not defined, using time t0 as starting point");
             }
+#endif
         }
 
         void Setup () {
@@ -533,17 +535,28 @@ namespace CineGame.SDK {
                 yield return null;
             }
 
-            CineGameDCHP.Start ();
-
+#if !UNITY_EDITOR
+            try {
+                CineGameDCHP.Start ();
+            } catch (Exception ex) {
+                Debug.LogError ("Exception while initializing DCH communication: " + ex);
+            }
+#endif
+            Debug.Log ("Scan for local smartfox server...");
             bool smartfoxScanned = false;
             SmartfoxClient.Connect ("127.0.0.1", "BasicExamples", (success) => {
                 smartfoxScanned = true;
                 IsGameServerRunningLocally = success;
             });
-            while (!smartfoxScanned)
+            t = Time.realtimeSinceStartup;
+            while (!smartfoxScanned && t + 1f > Time.realtimeSinceStartup)
                 yield return null;
-            if (IsGameServerRunningLocally)
+            if (IsGameServerRunningLocally) {
+                Debug.Log ("Local smartfox server found!");
                 SmartfoxClient.Disconnect ();
+            } else {
+                Debug.Log ("Local smartfox server not found, using API or market default");
+            }
 
             Setup ();
         }
@@ -964,10 +977,8 @@ namespace CineGame.SDK {
             });
         }
 
-        static void API (string uri, string json, BackendCallback callback = null) {
-            if (Debug.isDebugBuild) {
-                Debug.LogFormat ("POST {0} {1}", uri, json);
-            }
+        internal static void API (string uri, string json, BackendCallback callback = null) {
+            Debug.LogFormat ("POST {0} {1}", uri, json);
             var request = new UnityWebRequest (
                 CineGameMarket.GetAPI () + uri,
                 "POST",
@@ -1121,7 +1132,8 @@ namespace CineGame.SDK {
 		/// Change game capacity. Note that the server determines max values for these and they cannot be exceeded
 		/// </summary>
         public static void UpdateGameCapacity (int maxPlayers, int maxSupportersPerPlayer) {
-            SmartfoxClient.UpdateRoomCapacity (maxPlayers, maxPlayers * maxSupportersPerPlayer);
+            //Game host is also a "player" in smartfox, so we add 1
+            SmartfoxClient.UpdateRoomCapacity (maxPlayers + 1, maxPlayers * maxSupportersPerPlayer);
         }
 
         /// <summary>
@@ -1273,8 +1285,10 @@ namespace CineGame.SDK {
 
         void OnApplicationQuit () {
             //Log error if communication with server was incomplete
-            if (GameEnded && (!GameEndSentToServer)) {
-                Debug.LogError (">>> ERROR! Server communication incomplete. Winners may not have received their prices. <<<");
+            if (!GameEnded) {
+                Debug.LogError (">>> Application quitting before game ended!");
+            } else if (!GameEndSentToServer && !IsStaticGameCode) {
+                Debug.LogError (">>> ERROR! Application quitting before API request completed. Winners may not have received their prices or credits.");
             }
             SmartfoxClient.Disconnect ();
             CineGameDCHP.Stop ();
