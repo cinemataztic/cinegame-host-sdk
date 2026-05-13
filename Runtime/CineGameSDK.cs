@@ -300,6 +300,7 @@ namespace CineGame.SDK {
         static int MaxPlayers = 75;
         static int MaxSpectators = 75 * 5;
         static int numBkIdWarnings = 1;
+        static bool IsStaticGameCode;
 
         internal delegate void BackendCallback (HttpStatusCode statusCode, string response);
 
