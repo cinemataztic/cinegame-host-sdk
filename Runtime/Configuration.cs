@@ -137,5 +137,29 @@ namespace CineGame.SDK {
 			}
 			set { System.Environment.SetEnvironmentVariable (PropertyNameFromAccessor (MethodBase.GetCurrentMethod ()), value.ToString ()); }
 		}
+
+		/// <summary>
+		/// If defined, we will connect to this game server instead (override)
+		/// </summary>
+		public static string SMARTFOX_SERVER {
+			get { return System.Environment.GetEnvironmentVariable (PropertyNameFromAccessor (MethodBase.GetCurrentMethod ())); }
+			set { System.Environment.SetEnvironmentVariable (PropertyNameFromAccessor (MethodBase.GetCurrentMethod ()), value); }
+		}
+
+		/// <summary>
+		/// If defined, we will connect to this game zone instead (override)
+		/// </summary>
+		public static string SMARTFOX_ZONE {
+			get { return System.Environment.GetEnvironmentVariable (PropertyNameFromAccessor (MethodBase.GetCurrentMethod ())); }
+			set { System.Environment.SetEnvironmentVariable (PropertyNameFromAccessor (MethodBase.GetCurrentMethod ()), value); }
+		}
+
+		/// <summary>
+		/// If defined, we will create a game with this code instead (override)
+		/// </summary>
+		public static string GAME_CODE {
+			get { return System.Environment.GetEnvironmentVariable (PropertyNameFromAccessor (MethodBase.GetCurrentMethod ())); }
+			set { System.Environment.SetEnvironmentVariable (PropertyNameFromAccessor (MethodBase.GetCurrentMethod ()), value); }
+		}
 	}
 }
