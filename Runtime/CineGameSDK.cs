@@ -25,12 +25,14 @@ namespace CineGame.SDK {
         private static CineGameSDK instance;
 
         public CineGameSettings Settings;
+        public string GameCode;
+        public string GameZone = "Denmark";
+        public string GameServer = "smartfox-server.smartfox.dev.cinemataztic.com";
 
         public static string GameID;
         public static string Market;
         public static string CineGameEnvironment;
 
-        private static string GameCode;
         private static float BlockStartTime;
 
         private static int GetGameCodeTries = 0;
@@ -39,6 +41,11 @@ namespace CineGame.SDK {
         public static bool GameEndSentToServer = false;
         public static JObject CreateResponse;
         private static string GameEndSerializedJson;
+
+        int CreditsForParticipating = 0;
+        int CreditsForSupporterParticipating = 0;
+        int CreditsForWinning = 0;
+        int CreditsForSupporterWinning = 0;
 
         /// <summary>
         /// Device Information
@@ -397,41 +404,6 @@ namespace CineGame.SDK {
                 Cursor.visible = false;
             }
 
-            if (!IsWebGL) {
-                //Get access token from environment. If this is run in editor, the CinemaBuild script should already have retrieved a fresh token at load, if username and password were already filled in.
-                //If this is run as standalone, the desktop player software should already have set it.
-                //You can since january 2020 no longer run standalone builds without the player software.
-                string accessToken = Configuration.CINEMATAZTIC_ACCESS_TOKEN;
-
-                if (string.IsNullOrEmpty (accessToken)) {
-                    Debug.LogError ("Missing API key (jwt). Please check that the environment variable has been initialized by editor or player software!");
-                    enabled = false;
-                    OnError?.Invoke (0);
-                    Debug.Break ();
-                    return;
-                } else {
-                    //Get gamecode from the backend. We are seeing network errors when trying this in first frame so we delay it a little
-                    BackendHeaders ["Authorization"] = "Bearer " + accessToken;
-
-                    var accessTokenParts = accessToken.Split ('.');
-                    if (accessTokenParts.Length > 1) {
-                        var payloadString = Encoding.UTF8.GetString (CineGameUtility.Base64UrlDecode (accessTokenParts [1]));
-                        var payloadJson = JObject.Parse (payloadString);
-                        if (payloadJson.TryGetValue ("email", out JToken o)) {
-                            UserEmail = (string)o;
-                        }
-                        if (payloadJson.TryGetValue ("_id", out o)) {
-                            UserId = (string)o;
-                        }
-                        if (payloadJson.TryGetValue ("name", out o)) {
-                            var nameObj = (JObject)o;
-                            UserName = nameObj ["first"] + " " + nameObj ["last"];
-                        }
-                        Debug.Log ($"Logging in as user/device {UserName} ({UserEmail}) id={UserId}");
-                    }
-                }
-            }
-
             if (string.IsNullOrEmpty (DeviceId)) {
                 var did = SystemInfo.deviceUniqueIdentifier;
                 if (did == SystemInfo.unsupportedIdentifier) {
@@ -447,9 +419,132 @@ namespace CineGame.SDK {
                 Debug.Log ($"DeviceId from deviceUniqueIdentifier: {did}");
             }
 
-            RequestGameCode ();
+            Debug.Log("Game: " + GameID);
+            Debug.Log("Market: " + Market);
+            Debug.Log("Environment: " + CineGameEnvironment);
+            Debug.Log("Player Capacity: " + MaxPlayers);
+
+            if (IsGameServerRunningLocally)
+            {
+                Debug.Log("Local gameserver IP: " + LocalIP);
+            }
+
+            var ovGameServer = Configuration.SMARTFOX_SERVER;
+            if (!string.IsNullOrWhiteSpace (ovGameServer)) {
+                GameServer = ovGameServer;
+            }
+            var ovGameZone = Configuration.SMARTFOX_ZONE;
+            if (!string.IsNullOrWhiteSpace (ovGameZone)) {
+                GameZone = ovGameZone;
+            }
+            var ovGameCode = Configuration.GAME_CODE;
+            if (!string.IsNullOrWhiteSpace (ovGameCode)) {
+                GameCode = ovGameCode;
+            }
+
+            if (!string.IsNullOrWhiteSpace (GameCode) && !string.IsNullOrWhiteSpace (GameServer) && !string.IsNullOrWhiteSpace (GameZone)) {
+                //Game has static code and server setup, just connect immediately to the specified server and zone, and join the game with the static code
+                IsStaticGameCode = true;
+                ConnectToGameServer ();
+            } else {
+                if (!IsWebGL) {
+                    //Get access token from environment. If this is run in editor, the CinemaBuild script should already have retrieved a fresh token at load, if username and password were already filled in.
+                    //If this is run as standalone, the DCH software should already have set it.
+                    string accessToken = Configuration.CINEMATAZTIC_ACCESS_TOKEN;
+
+                    if (string.IsNullOrEmpty (accessToken)) {
+                        Debug.LogError ("Missing API key (jwt). Please check that the environment variable has been initialized by editor or player software!");
+                        enabled = false;
+                        OnError?.Invoke (0);
+                        Debug.Break ();
+                        return;
+                    } else {
+                        BackendHeaders ["Authorization"] = "Bearer " + accessToken;
+
+                        var accessTokenParts = accessToken.Split ('.');
+                        if (accessTokenParts.Length > 1) {
+                            var payloadString = Encoding.UTF8.GetString (CineGameUtility.Base64UrlDecode (accessTokenParts [1]));
+                            var payloadJson = JObject.Parse (payloadString);
+                            if (payloadJson.TryGetValue ("email", out JToken o)) {
+                                UserEmail = (string)o;
+                            }
+                            if (payloadJson.TryGetValue ("_id", out o)) {
+                                UserId = (string)o;
+                            }
+                            if (payloadJson.TryGetValue ("name", out o)) {
+                                var nameObj = (JObject)o;
+                                UserName = nameObj ["first"] + " " + nameObj ["last"];
+                            }
+                            Debug.Log ($"Logging in as user/device {UserName} ({UserEmail}) id={UserId}");
+                        }
+                    }
+                }
+
+                RetryRequestGameCode ();
+            }
 
             OnSetupCompleted?.Invoke ();
+        }
+
+
+        void RetryRequestGameCode () {
+            RequestGameCode ((statusCode) => {
+                if (statusCode == HttpStatusCode.OK) {
+                    ConnectToGameServer ();
+                } else if (++GetGameCodeTries > 2) {
+                    Debug.LogError ($"Backend responded with {statusCode} while creating game. Aborting.");
+                    OnError?.Invoke ((int)statusCode);
+                } else {
+                    Debug.LogWarning ($"Backend responded with {statusCode} while creating game - retrying in one second");
+                    Invoke (nameof (RetryRequestGameCode), 1f);
+                }
+            });
+        }
+
+
+        void ConnectToGameServer () {
+            Debug.Log ($"Connecting to {GameServer}:9933 zone={GameZone}");
+            SmartfoxClient.Connect (GameServer, GameZone, (success) => {
+                if (success) {
+                    SmartfoxClient.Login ("Host" + GameCode, (error) => {
+                        if (string.IsNullOrEmpty (error)) {
+                            SmartfoxClient.CreateAndJoinRoom (GameCode, MaxPlayers, MaxSpectators, new List<RoomVariable> {
+                                new SFSRoomVariable ("HostId", SmartfoxClient.MySfsUser.Id),
+                                new SFSRoomVariable ("GameType", GameID),
+                                new SFSRoomVariable ("GameStart", DateTime.Now.ToString ("HH:mm:ss"))
+                            }, (room, alreadyExists) => {
+                                if (room != null) {
+                                    var sfc = SmartfoxClient.Instance;
+                                    //sfc.OnUserLeftRoom += _OnUserLeft;
+                                    sfc.OnObjectMessage.AddListener (HandleObjectMessage);
+                                    sfc.OnPrivateMessage.AddListener (HandlePrivateMessage);
+
+                                    //Invoke event with details about the created game
+                                    OnGameReady?.Invoke (new Dictionary<string, object> {
+                                        { "GameCode", GameCode },
+                                        { "CreditsForParticipating", CreditsForParticipating },
+                                        { "CreditsForSupporterParticipating", CreditsForSupporterParticipating },
+                                        { "CreditsForWinning", CreditsForWinning },
+                                        { "CreditsForSupporterWinning", CreditsForSupporterWinning },
+                                    });
+
+                                    //Invoke event with just the gamecode (eg for displaying the code in a Text component)
+                                    OnGameCodeLoaded?.Invoke (GameCode);
+                                } else {
+                                    Debug.LogError ("CineGameSDK: Room not created, alreadyExists=" + alreadyExists);
+                                    OnError?.Invoke (409);
+                                }
+                            }); ;
+                        } else {
+                            Debug.LogError ("ERROR: Connected but unable to log in to realtime game server");
+                            OnError?.Invoke (403);
+                        }
+                    });
+                } else {
+                    Debug.LogError ("ERROR: Unable to connect to realtime game server!");
+                    OnError?.Invoke (0);
+                }
+            });
         }
 
 
@@ -587,21 +682,11 @@ namespace CineGame.SDK {
             }
         }
 
-        internal static void RequestGameCodeStatic () {
-            instance.RequestGameCode ();
+        internal static void RequestGameCodeStatic (Action<HttpStatusCode> callback) {
+            instance.RequestGameCode (callback);
         }
 
-		void RequestGameCode () {
-
-            Debug.Log("Game: " + GameID);
-            Debug.Log("Market: " + Market);
-            Debug.Log("Environment: " + CineGameEnvironment);
-            Debug.Log("Player Capacity: " + MaxPlayers);
-
-            if (IsGameServerRunningLocally) {
-                Debug.Log ("Local gameserver IP: " + LocalIP);
-            }
-
+		void RequestGameCode (Action<HttpStatusCode> callback) {
             var req = new CreateGameRequest {
                 hostName = Hostname,
                 gameType = GameID,
@@ -624,18 +709,18 @@ namespace CineGame.SDK {
                     ParseConfig (CreateResponse);
 
                     GameCode = (string)CreateResponse ["gameCode"];
-                    var gameZone = (string)CreateResponse ["gameZone"];
-                    var gameServer = (string)CreateResponse ["gameServer"];
+                    if (string.IsNullOrWhiteSpace (Configuration.SMARTFOX_ZONE)) {
+                        GameZone = (string)CreateResponse ["gameZone"];
+                    }
+                    if (string.IsNullOrWhiteSpace (Configuration.SMARTFOX_ZONE)) {
+                        GameServer = (string)CreateResponse ["gameServer"];
+                    }
 
-                    var creditsForParticipating = 0;
-                    var creditsForSupporterParticipating = 0;
-                    var creditsForWinning = 0;
-                    var creditsForSupporterWinning = 0;
                     if (CreateResponse.ContainsKey ("creditsForParticipating")) {
-                        creditsForParticipating = (int)CreateResponse ["creditsForParticipating"];
-                        creditsForSupporterParticipating = (int)CreateResponse ["creditsForSupporterParticipating"];
-                        creditsForWinning = (int)CreateResponse ["creditsForWinning"];
-                        creditsForSupporterWinning = (int)CreateResponse ["creditsForSupporterWinning"];
+                        CreditsForParticipating = (int)CreateResponse ["creditsForParticipating"];
+                        CreditsForSupporterParticipating = (int)CreateResponse ["creditsForSupporterParticipating"];
+                        CreditsForWinning = (int)CreateResponse ["creditsForWinning"];
+                        CreditsForSupporterWinning = (int)CreateResponse ["creditsForSupporterWinning"];
                     }
 
                     if (CreateResponse.ContainsKey ("maxSupportersPerPlayer")) {
@@ -643,60 +728,16 @@ namespace CineGame.SDK {
                     }
 
                     //var webGlSecure = (bool)(CreateResponse ["webGlSecure"] ?? false);
-                    SmartfoxClient.Connect (gameServer, gameZone, (success) => {
-                        if (success) {
-                            SmartfoxClient.Login ("Host" + GameCode, (error) => {
-                                if (string.IsNullOrEmpty (error)) {
-                                    SmartfoxClient.CreateAndJoinRoom (GameCode, MaxPlayers, MaxSpectators, new List<RoomVariable> {
-                                        new SFSRoomVariable ("HostId", SmartfoxClient.MySfsUser.Id),
-                                        new SFSRoomVariable ("GameType", GameID),
-                                    }, (room, alreadyExists) => {
-                                        if (room != null) {
-                                            var sfc = SmartfoxClient.Instance;
-                                            //sfc.OnUserLeftRoom += _OnUserLeft;
-                                            sfc.OnObjectMessage.AddListener (HandleObjectMessage);
-                                            sfc.OnPrivateMessage.AddListener (HandlePrivateMessage);
-
-                                            //Invoke event with details about the created game
-                                            OnGameReady?.Invoke (new Dictionary<string, object> {
-                                                { "GameCode", GameCode },
-                                                { "CreditsForParticipating", creditsForParticipating },
-                                                { "CreditsForSupporterParticipating", creditsForSupporterParticipating },
-                                                { "CreditsForWinning", creditsForWinning },
-                                                { "CreditsForSupporterWinning", creditsForSupporterWinning },
-                                            });
-
-                                            //Invoke event with just the gamecode (eg for displaying the code in a Text component)
-                                            OnGameCodeLoaded?.Invoke (GameCode);
-                                        } else {
-                                            Debug.LogError ("CineGameSDK: Room not created, alreadyExists=" + alreadyExists);
-                                            OnError?.Invoke (409);
-                                        }
-                                    });
-                                } else {
-                                    Debug.LogError ("Connected but unable to log in to realtime game server");
-                                    OnError?.Invoke (403);
-                                }
-                            });
-                        } else {
-                            Debug.LogError ("Unable to connect to realtime game server");
-                            OnError?.Invoke (0);
-                        }
-                    });
-                } else if (statusCode == HttpStatusCode.Unauthorized) {
-                    OnError?.Invoke (401);
-                } else if ((int)statusCode > 500) {
-                    if (++GetGameCodeTries > 2) {
-                        Debug.LogErrorFormat ("Backend responded with error while creating game - retrying in one second: {0} {1}", statusCode, response);
-                        OnError?.Invoke ((int)statusCode);
-                    } else {
-                        Debug.LogWarningFormat ("WARNING Backend responded with error while creating game - retrying in one second: {0} {1}", statusCode, response);
-                    }
-                    Invoke (nameof (RequestGameCode), 1f);
                 } else {
-                    Debug.LogError ($"Backend responded with error while creating game - retrying in one second: {statusCode} {response}");
-                    OnError?.Invoke ((int)statusCode);
+                    if (statusCode == HttpStatusCode.Unauthorized) {
+                        Debug.LogError ("ERROR: NOT AUTHORIZED!");
+                        OnError?.Invoke (401);
+                    } else {
+                        Debug.LogError ($"Backend responded with error while creating game: {statusCode} {response}");
+                        OnError?.Invoke ((int)statusCode);
+                    }
                 }
+                callback.Invoke (statusCode);
             });
         }
 
@@ -924,6 +965,8 @@ namespace CineGame.SDK {
             /*if (MaxLagValue > SmartfoxClient.LagWarningThreshold) {
                 Debug.LogErrorFormat ("SFS Max lag of {0} ms exceeded threshold of {1} ms", MaxLagValue, LagWarningThreshold);
             }*/
+            if (IsStaticGameCode)
+                return;
 
             var d = new Dictionary<string, object> {
                 ["gameCode"] = GameCode
@@ -996,6 +1039,9 @@ namespace CineGame.SDK {
         private IEnumerator E_Backend (UnityWebRequest request, BackendCallback callback) {
             var timeBegin = Time.realtimeSinceStartup;
             yield return request.SendWebRequest ();
+            if (request.responseCode == 0) {
+                Debug.LogError ("ERROR: NO NETWORK CONNECTION!");
+            }
             var statusCode = (HttpStatusCode)request.responseCode;
             var responseString = request.downloadHandler.text;
             request.Dispose ();
@@ -1027,8 +1073,10 @@ namespace CineGame.SDK {
         }
 
         static void HandleObjectMessage (ISFSObject dataObj, Sfs2X.Entities.User user) {
+            if (user == SmartfoxClient.MySfsUser)
+                return;
             if (dataObj.ContainsKey ("bkid")) {
-                var backendID = dataObj.GetInt ("bkid");
+                var backendID = IsStaticGameCode ? user.Id : dataObj.GetInt ("bkid");
                 var userName = dataObj.GetUtfString ("name");
                 var userAge = dataObj.GetInt ("age");
                 var userGender = dataObj.GetUtfString ("gender");
