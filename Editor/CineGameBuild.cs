@@ -496,6 +496,11 @@ namespace CineGame.SDK.Editor {
 #endif
                     }
 
+                    //Enable file and line number in stack traces
+                    if (PlayerSettings.GetScriptingBackend (NamedBuildTarget.Standalone) == ScriptingImplementation.IL2CPP)) {
+                        PlayerSettings.SetIl2CppStacktraceInformation (NamedBuildTarget.Standalone, Il2CppStacktraceInformation.MethodFileLineNumber);
+                    }
+
                     progressMessage = string.Format ("Building {0} ...", PrettyPrintTarget (buildTarget));
                     var platformName = buildTarget.ToString ();
 
