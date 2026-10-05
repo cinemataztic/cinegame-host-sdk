@@ -308,6 +308,7 @@ namespace CineGame.SDK {
         static int MaxSpectators = 75 * 5;
         static int numBkIdWarnings = 1;
         static bool IsStaticGameCode;
+        static int _lastGcCount;
 
         internal delegate void BackendCallback (HttpStatusCode statusCode, string response);
 
@@ -669,12 +670,14 @@ namespace CineGame.SDK {
                 CineGameDCHP.Update();
             }
 
-            /*var newAvgFPS = avgFPS * 0.99f + (1f / Time.unscaledDeltaTime) * 0.01f;
-            if (refreshRate > 25f && newAvgFPS < 25f && avgFPS >= 25f && numAvgFpsWarnings-- > 0) {
-                Debug.LogError ($"Average framerate dropped to {minFPS}");
+            if (Debug.isDebugBuild) {
+                var count = GC.CollectionCount (0);
+                if (count != _lastGcCount) {
+                    var kb = GC.GetTotalMemory (false) / 1024;
+                    Debug.Log ($"[GC] Collection #{count} heap after: {kb} KB");
+                    _lastGcCount = count;
+                }
             }
-            avgFPS = newAvgFPS;
-            minFPS = Mathf.Min (minFPS, avgFPS);*/
 
             //When user presses Shift+C, the game crashes! Testing the system's robustness and error logging, sentry events etc
             if (Input.GetKeyDown (KeyCode.C) && Input.GetKey (KeyCode.LeftShift)) {
