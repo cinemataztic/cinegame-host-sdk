@@ -18,6 +18,7 @@ using Smartfox;
 
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Linq;
 
 namespace CineGame.SDK {
 
@@ -308,6 +309,7 @@ namespace CineGame.SDK {
         static int MaxSpectators = 75 * 5;
         static int numBkIdWarnings = 1;
         static bool IsStaticGameCode;
+        static private Dictionary<string, Uri> AvatarOptions = new ();
         static int _lastGcCount;
 
         internal delegate void BackendCallback (HttpStatusCode statusCode, string response);
@@ -347,12 +349,9 @@ namespace CineGame.SDK {
             CineGameEnvironment = (clusterName != "dev" && clusterName != "staging") ? "production" : clusterName;
 
 #if UNITY_EDITOR
-            if (Settings != null)
-            {
+            if (Settings != null) {
                 Market = Settings.MarketId;
-            }
-            else
-            {
+            } else {
                 Market = UnityEditor.EditorPrefs.GetString("CineGameMarket");
             }
 #else
@@ -360,8 +359,7 @@ namespace CineGame.SDK {
 #endif
 
 #if !UNITY_EDITOR
-            try
-            {
+            try {
                 // Read BLOCK_START_TICKS from parent process. This will be in JavaScript ticks, ie miliseconds since Jan 1 1970.
                 // .NET ticks are in 1e-7 seconds since Jan 1 0001, so we need to convert it by scaling and offsetting.
                 var blockStartTicksJS = Configuration.BLOCK_START_TICKS;
@@ -730,6 +728,11 @@ namespace CineGame.SDK {
                         MaxSpectators = (int)(long)CreateResponse ["maxSupportersPerPlayer"] * MaxPlayers;
                     }
 
+                    if (CreateResponse.ContainsKey ("avatarOptions")) {
+                        var avatarOptions = (JArray)CreateResponse ["avatarOptions"];
+                        AvatarOptions = avatarOptions.ToDictionary (j => (string)j ["title"], j => new Uri ((string)j ["imageUrl"]));
+                    }
+
                     //var webGlSecure = (bool)(CreateResponse ["webGlSecure"] ?? false);
                 } else {
                     if (statusCode == HttpStatusCode.Unauthorized) {
@@ -758,21 +761,12 @@ namespace CineGame.SDK {
             if (Uri.TryCreate (avatarID, UriKind.Absolute, out Uri uri)) {
                 //We only allow avatars hosted on cinemataztic.com or googleusercontent.com
                 if (!uri.Host.EndsWith (".cinemataztic.com") && !uri.Host.EndsWith (".googleusercontent.com")) {
-                    Debug.LogWarning($"Avatar from non-whitelisted domain {uri.Host}");
+                    Debug.LogWarning ($"Avatar from non-whitelisted domain {uri.Host}");
                     return;
                 }
-            } else if (CreateResponse.TryGetValue ("avatarOptions", out JToken o)) {
-                var avatarOptions = (JArray)o;
-                foreach (JObject avatarOption in avatarOptions) {
-                    if ((string)avatarOption ["title"] == avatarID) {
-                        uri = new Uri ((string)avatarOption ["imageUrl"]);
-                        break;
-                    }
-                }
-                if (uri == null) {
-                    Debug.LogWarning ($"GameID {GameID} does not support avatarID={avatarID}");
-                    return;
-                }
+            } else if (!AvatarOptions.TryGetValue (avatarID, out uri)) {
+                Debug.LogWarning ($"GameID {GameID} does not support avatarID={avatarID}");
+                return;
             }
 
             var startTime = Time.realtimeSinceStartup;
