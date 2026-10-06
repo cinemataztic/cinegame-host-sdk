@@ -797,16 +797,14 @@ namespace CineGame.SDK {
                     }
                     texture = DownloadHandlerTexture.GetContent (request);
                     if (texture != null) {
-                        if (SystemInfo.copyTextureSupport != UnityEngine.Rendering.CopyTextureSupport.None) {
-                            var texMipMap = new Texture2D (texture.width, texture.height, texture.format, true);
-                            Graphics.CopyTexture (texture, 0, 0, texMipMap, 0, 0);
-                            texMipMap.Apply (true, true);
-                        } else if (texture.isReadable) {
+                        if (texture.isReadable) {
                             Debug.Log ("DownloadPicture: CopyTexture not available, using Get/LoadRawTextureData to generate mipmaps (CPU)");
                             var texMipMap = new Texture2D (texture.width, texture.height, texture.format, true);
-                            //copy on the CPU
-                            texMipMap.LoadRawTextureData (texture.GetRawTextureData<byte> ());
+                            // Copy mip 0 data on the CPU - no roundtrip to GPU
+                            texMipMap.SetPixelData (texture.GetPixelData<byte> (0), 0);
+                            // Generate mipmaps on CPU, upload once, then free the CPU copy
                             texMipMap.Apply (true, true);
+                            Destroy (texture);
                             texture = texMipMap;
                         } else {
                             Debug.LogWarning ("Texture not readable, no mipmaps created: " + sUrl);
