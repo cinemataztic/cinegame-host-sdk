@@ -311,6 +311,7 @@ namespace CineGame.SDK {
         static bool IsStaticGameCode;
         static private Dictionary<string, Uri> AvatarOptions = new ();
         static int _lastGcCount;
+        static float _lastDeltaTime;
 
         internal delegate void BackendCallback (HttpStatusCode statusCode, string response);
 
@@ -668,13 +669,14 @@ namespace CineGame.SDK {
                 CineGameDCHP.Update();
             }
 
-            if (Debug.isDebugBuild) {
-                var count = GC.CollectionCount (0);
-                if (count != _lastGcCount) {
-                    var kb = GC.GetTotalMemory (false) / 1024;
-                    Debug.Log ($"[GC] Collection #{count} heap after: {kb} KB");
-                    _lastGcCount = count;
-                }
+            var count = GC.CollectionCount (0);
+            if (count != _lastGcCount) {
+                var kb = GC.GetTotalMemory (false) / 1024;
+                var deltaDiff = Mathf.Max (0f, _lastDeltaTime - Time.deltaTime);
+                Debug.Log ($"[GC] Collection #{count} timeDiff={deltaDiff:0.###}s heapSize={kb}kb");
+                _lastGcCount = count;
+            } else {
+                _lastDeltaTime = Time.deltaTime;
             }
 
             //When user presses Shift+C, the game crashes! Testing the system's robustness and error logging, sentry events etc
