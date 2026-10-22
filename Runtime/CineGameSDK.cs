@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -11,6 +12,7 @@ using System.Runtime.InteropServices;
 
 using UnityEngine;
 using UnityEngine.Networking;
+using UnityEngine.Scripting;
 
 using Sfs2X.Entities.Data;
 using Sfs2X.Entities.Variables;
@@ -18,7 +20,6 @@ using Smartfox;
 
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System.Linq;
 
 namespace CineGame.SDK {
 
@@ -343,6 +344,11 @@ namespace CineGame.SDK {
                 return;
             }
             instance = this;
+
+            if (!Application.isEditor) {
+                GarbageCollector.GCMode = GarbageCollector.Mode.Manual;
+            }
+
             var sfc = gameObject.AddComponent<SmartfoxClient> ();
             sfc.InitEvents ();
 
