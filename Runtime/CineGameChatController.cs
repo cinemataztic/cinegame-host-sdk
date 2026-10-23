@@ -33,24 +33,70 @@ namespace CineGame.SDK {
 		/// </summary>
         public static int GifSize = 150;
 
-        [Tooltip("TextAsset where emoji UV map is stored")]
+        [Tooltip ("TextAsset where emoji UV map is stored")]
         public TextAsset EmojiInfo;
 
         /// <summary>
 		/// Deserialized emoji UV map
 		/// </summary>
-        private readonly Dictionary<string, Rect> emojiRects = new ();
-
-        private static Regex regexp;
+        readonly Dictionary<string, Rect> emojiRects = new ();
 
         public delegate void WordFilterCallback (string filteredMessage);
-        static readonly Queue<Action> _executionQueue = new ();
 
         public static Action<int, string, Dictionary<string, Rect>> OnChatMessage;
         public static Action<int, string, int, int> OnGIFMessage;
 
+        /// <summary>
+        /// List of top-level domains scanned for
+        /// </summary>
+        static readonly string [] topLevelDomains = new [] {
+            "app",
+            "ai",
+            "ch",
+            "com",
+            "com.au",
+            "co.uk",
+            "co.nz",
+            "de",
+            "dk",
+            "ee",
+            "es",
+            "et",
+            "eu",
+            "fi",
+            "fr",
+            "gov",
+            "gr",
+            "ie",
+            "info",
+            "io",
+            "it",
+            "jp",
+            "lt",
+            "net",
+            "no",
+            "org",
+            "ru",
+            "se",
+            "xxx",
+        };
+
+        /// <summary>
+        /// Global buffer (we don't need to be thread-safe, just keep allocations to a minimum)
+        /// </summary>
+        static readonly StringBuilder sb = new (256);
+
+        class TrieNode {
+            public Dictionary<char, TrieNode> Children = new ();
+            public bool IsEndOfWord;
+            public int WordLength; // Stores length to allow replacing exact matches
+        }
+
+        static TrieNode _root;
+        static int _totalNodes;
+
         public static bool IsProfanityFilterLoaded {
-            get { return instance != null && regexp != null; }
+            get { return instance != null && _root != null; }
         }
 
         void Awake () {
@@ -78,6 +124,29 @@ namespace CineGame.SDK {
             CineGameSDK.OnPlayerChatMessage += Message;
         }
 
+        /// <summary>
+        /// Adds a word to the Trie structure, building nodes as required
+        /// </summary>
+        public void AddWord (string word) {
+            if (string.IsNullOrWhiteSpace (word)) return;
+
+            var current = _root;
+
+            for (int i = 0; i < word.Length; i++) {
+                var c = char.ToLowerInvariant (word [i]);
+                if (!current.Children.TryGetValue (c, out var nextNode)) {
+                    nextNode = new TrieNode ();
+                    _totalNodes++;
+                    current.Children [c] = nextNode;
+                }
+                current = nextNode;
+            }
+
+            current.IsEndOfWord = true;
+            current.WordLength = word.Length;
+        }
+
+
         IEnumerator E_LoadProfanity () {
             var url = CineGameSDK.GetRegionProfanityUrl ();
             var filename = string.Format ("{0}/{1}", Application.temporaryCachePath, CineGameUtility.ComputeMD5Hash (url));
@@ -87,94 +156,148 @@ namespace CineGame.SDK {
             request.timeout = 10;
             yield return request.SendWebRequest ();
 
-            string profanitiesRegexStr = null;
             if ((HttpStatusCode)request.responseCode == HttpStatusCode.OK) {
-                var sb = new StringBuilder (16384);
-                var reader = new StringReader (request.downloadHandler.text);
-                string line;
-                sb.Append ("(?:\\S+?\\.(?:com|com\\.au|co\\.uk|co\\.nz|de|dk|ee|es|eu|fi|fr|gov|gr|info|io|it|jp|lt|net|no|org|ru|se|xxx)|\\b(?:");
-                var numLines = 0;
-                while ((line = reader.ReadLine ()) != null) {
-                    sb.Append (Regex.Escape (line.Trim ()));
-                    sb.Append ('|');
-                    numLines++;
-                }
-                if (numLines > 0) {
-                    sb.Length -= 1;
-                }
-                sb.Append (")\\b)");
-                profanitiesRegexStr = sb.ToString ();
-            } else {
-                Debug.LogErrorFormat ("Error while attempting to download profanities: {0}", request.error);
+                var file = new FileInfo (filename);
+                file.Directory.Create ();
+                File.WriteAllText (file.FullName, request.downloadHandler.text);
+                cacheExists = true;
+            } else if (cacheExists) {
+                Debug.Log ("Using cached version of profanities from " + File.GetLastWriteTimeUtc (filename));
             }
-            if (string.IsNullOrEmpty (profanitiesRegexStr)) {
-                if (cacheExists) {
-                    Debug.Log ("Using cached version of profanities from " + File.GetLastWriteTimeUtc (filename));
-                    profanitiesRegexStr = File.ReadAllText (filename);
-                } else {
-                    Debug.LogError ("Profanities unavailable to download, and no cache exists. Chat will be unfiltered!");
+
+            if (!cacheExists) {
+                Debug.LogError ("Profanities unavailable to download, and no cache exists. Chat will be 100% filtered!");
+                yield break;
+            }
+
+            _root = new TrieNode ();
+            _totalNodes = 0;
+            var reader = new StreamReader (File.Open (filename, FileMode.Open));
+            string line;
+            var numLines = 0;
+            while ((line = reader.ReadLine ()) != null) {
+                var trimmed = line.Trim ();
+                if (string.IsNullOrEmpty (trimmed)) {
+                    Debug.LogWarning ("Empty profanity on line " + numLines);
+                    continue;
                 }
-            } else {
-                var file = new FileInfo(filename);
-                file.Directory.Create(); 
-                File.WriteAllText(file.FullName, profanitiesRegexStr);
+                AddWord (line);
+                numLines++;
             }
-            if (!string.IsNullOrEmpty (profanitiesRegexStr)) {
-                regexp = new Regex (profanitiesRegexStr, RegexOptions.Compiled | RegexOptions.IgnoreCase);
-            }
+            Debug.Log ($"CineGameChatController: Constructed {_totalNodes} Trie nodes from {numLines} profanities");
         }
 
         /// <summary>
 		/// Set up dictionary of {emoji,UVs}
 		/// </summary>
         void SetupEmojiDictionary () {
-			using var reader = new StringReader (EmojiInfo.text);
+            using var reader = new StringReader (EmojiInfo.text);
             string line = reader.ReadLine ();
-			while (line != null && line.Length > 1) {
-				// We add each emoji to emojiRects
-				string [] split = line.Split (' ');
-				float x = float.Parse (split [1], System.Globalization.CultureInfo.InvariantCulture);
-				float y = float.Parse (split [2], System.Globalization.CultureInfo.InvariantCulture);
-				float width = float.Parse (split [3], System.Globalization.CultureInfo.InvariantCulture);
-				float height = float.Parse (split [4], System.Globalization.CultureInfo.InvariantCulture);
+            while (line != null && line.Length > 1) {
+                // We add each emoji to emojiRects
+                string [] split = line.Split (' ');
+                float x = float.Parse (split [1], System.Globalization.CultureInfo.InvariantCulture);
+                float y = float.Parse (split [2], System.Globalization.CultureInfo.InvariantCulture);
+                float width = float.Parse (split [3], System.Globalization.CultureInfo.InvariantCulture);
+                float height = float.Parse (split [4], System.Globalization.CultureInfo.InvariantCulture);
 
 
-				string [] converted = split [0].Split ('-');
-				for (int j = 0; j < converted.Length; j++) {
-					converted [j] = char.ConvertFromUtf32 (Convert.ToInt32 (converted [j], 16));
-				}
-
-				emojiRects.Add (string.Join (string.Empty, converted), new Rect (x, y, width, height));
-
-				line = reader.ReadLine ();
-			}
-		}
-
-        /// <summary>
-		/// Runs the profanity filter on another thread. Result is returned in the callback argument.
-		/// </summary>
-        public static void RunProfanityFilter (string input, WordFilterCallback callback) {
-            if (!IsProfanityFilterLoaded) {
-                Debug.LogError ("Profanity filter not loaded!");
-                return;
-            }
-            System.Threading.ThreadPool.QueueUserWorkItem (delegate (object state) {
-                var filtered = regexp.Replace ((string)state, ReplacementString);
-
-                lock (_executionQueue) {
-                    _executionQueue.Enqueue (() => {
-                        callback (filtered);
-                    });
+                string [] converted = split [0].Split ('-');
+                for (int j = 0; j < converted.Length; j++) {
+                    converted [j] = char.ConvertFromUtf32 (Convert.ToInt32 (converted [j], 16));
                 }
-            }, input);
+
+                emojiRects.Add (string.Join (string.Empty, converted), new Rect (x, y, width, height));
+
+                line = reader.ReadLine ();
+            }
         }
 
-        void Update () {
-            lock (_executionQueue) {
-                while (_executionQueue.Count > 0) {
-                    _executionQueue.Dequeue ().Invoke ();
+
+        /// <summary>
+		/// First check with backend is the input is allowed or moderated. Then, if market-specific profanity filter is loaded, run it on another thread. Result is returned in the callback argument.
+		/// </summary>
+        public static void RunProfanityFilter (string input, WordFilterCallback callback) {
+            /*CineGameSDK.API ("game/moderate", "{\"message\":" + JsonConvert.SerializeObject (input) + "}", (statusCode, responseString) => {
+                if (statusCode == HttpStatusCode.NoContent) {
+                    Debug.Log ("User input moderated by backend: " + input);
+                    callback.Invoke (ReplacementString);
+                    return;
+                }*/
+                if (!IsProfanityFilterLoaded) {
+                    callback.Invoke(ReplacementString);
+                    return;
                 }
-            }
+
+                input = "cunt dickwad arsenal";
+                sb.Clear ();
+
+                var match = false;
+                int i = 0;
+
+                while (i < input.Length) {
+                    while (i < input.Length && !char.IsLetterOrDigit (input [i])) {
+                        sb.Append (input [i++]);
+                    }
+
+                    var current = _root;
+                    int matchLength = 0;
+                    int j = i;
+
+                    // Traverse Trie matching lowercase characters
+                    while (j < input.Length) {
+                        char c = char.ToLowerInvariant (input [j]);
+
+                        if (!current.Children.TryGetValue (c, out var nextNode))
+                            break;
+
+                        current = nextNode;
+                        j++;
+
+                        if (current.IsEndOfWord) {
+                            matchLength = current.WordLength; // Record longest match found
+                        }
+                    }
+
+                    if (matchLength > 0 && (j == input.Length || !char.IsLetterOrDigit (input [j]))) {
+                        match = true;
+                        sb.Append (ReplacementString);
+                        i += matchLength;
+                    } else {
+                        while (i < input.Length && char.IsLetterOrDigit (input [i])) {
+                            sb.Append (input [i++]);
+                        }
+                        if (i < input.Length && input [i] == '.') {
+                            //Scan for a toplevel domain (we do not allow messaging links)
+                            for (int l = 0; l < topLevelDomains.Length; l++) {
+                                var str = topLevelDomains [l];
+                                int k = i + 1;
+                                int kl = 0;
+                                while (k < input.Length && kl < str.Length) {
+                                    if (str [kl] != input [k])
+                                        break;
+                                    k++;
+                                    kl++;
+                                }
+                                if (kl == str.Length && (k == input.Length || !char.IsLetter (input [k]))) {
+                                    Debug.Log ("User input: blocked potential website address: " + input);
+                                    callback.Invoke (ReplacementString);
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (match) {
+                    var filtered = sb.ToString ();
+                    Debug.Log ($"User input: profanity \"{input}\" => \"{filtered}\"");
+                    callback.Invoke (filtered);
+                } else {
+                    callback.Invoke (input);
+                }
+
+            //});
         }
 
         /// <summary>
@@ -207,48 +330,51 @@ namespace CineGame.SDK {
                     //Surrogate-tail emojis will throw an exception when logging. We will probably do nothing about it.
                 }
 
-                RunProfanityFilter (chatMessage, delegate (string filteredMessage) {
-                    string emojiMessage = filteredMessage;
-                    var emojiDictionary = new Dictionary<string, Rect> ();
-
-                    int i = 0;
-                    int numChars = emojiMessage.Length;
-                    while (i < numChars) {
-                        string singleChar = emojiMessage.Substring (i, 1);
-                        string doubleChar = string.Empty;
-                        string fourChar = string.Empty;
-
-                        if (i < (emojiMessage.Length - 1)) {
-                            doubleChar = emojiMessage.Substring (i, 2);
-                        }
-                        if (i < (emojiMessage.Length - 3)) {
-                            fourChar = emojiMessage.Substring (i, 4);
-                        }
-
-                        if (instance.emojiRects.ContainsKey (fourChar)) {
-                            if (!emojiDictionary.ContainsKey (fourChar)) {
-                                instance.emojiRects.TryGetValue (fourChar, out Rect uvRect);
-                                emojiDictionary.Add (fourChar, uvRect);
-                            }
-                        } else if (instance.emojiRects.ContainsKey (doubleChar)) {
-                            if (!emojiDictionary.ContainsKey (doubleChar)) {
-                                instance.emojiRects.TryGetValue (doubleChar, out Rect uvRect);
-                                emojiDictionary.Add (doubleChar, uvRect);
-                            }
-                        } else if (instance.emojiRects.ContainsKey (singleChar)) {
-                            if (!emojiDictionary.ContainsKey (singleChar)) {
-                                instance.emojiRects.TryGetValue (singleChar, out Rect uvRect);
-                                emojiDictionary.Add (singleChar, uvRect);
-                            }
-                        }
-
-                        i++;
-                    }
-
-                    OnChatMessage?.Invoke (backendID, emojiMessage, emojiDictionary);
-
+                RunProfanityFilter (chatMessage, (filteredMessage) => {
+                    SetupEmojisAndChat (backendID, filteredMessage);
                 });
             }
+        }
+
+        static void SetupEmojisAndChat (int backendID, string filteredMessage) {
+            string emojiMessage = filteredMessage;
+            var emojiDictionary = new Dictionary<string, Rect> ();
+
+            int i = 0;
+            int numChars = emojiMessage.Length;
+            while (i < numChars) {
+                string singleChar = emojiMessage.Substring (i, 1);
+                string doubleChar = string.Empty;
+                string fourChar = string.Empty;
+
+                if (i < (emojiMessage.Length - 1)) {
+                    doubleChar = emojiMessage.Substring (i, 2);
+                }
+                if (i < (emojiMessage.Length - 3)) {
+                    fourChar = emojiMessage.Substring (i, 4);
+                }
+
+                if (instance.emojiRects.ContainsKey (fourChar)) {
+                    if (!emojiDictionary.ContainsKey (fourChar)) {
+                        instance.emojiRects.TryGetValue (fourChar, out Rect uvRect);
+                        emojiDictionary.Add (fourChar, uvRect);
+                    }
+                } else if (instance.emojiRects.ContainsKey (doubleChar)) {
+                    if (!emojiDictionary.ContainsKey (doubleChar)) {
+                        instance.emojiRects.TryGetValue (doubleChar, out Rect uvRect);
+                        emojiDictionary.Add (doubleChar, uvRect);
+                    }
+                } else if (instance.emojiRects.ContainsKey (singleChar)) {
+                    if (!emojiDictionary.ContainsKey (singleChar)) {
+                        instance.emojiRects.TryGetValue (singleChar, out Rect uvRect);
+                        emojiDictionary.Add (singleChar, uvRect);
+                    }
+                }
+
+                i++;
+            }
+
+            OnChatMessage?.Invoke (backendID, emojiMessage, emojiDictionary);
         }
 
         public static void SetupEmoji (Texture2D emojiAtlas, TMP_Text text, int index, Rect emojiUv) {
@@ -275,14 +401,14 @@ namespace CineGame.SDK {
         }
 
         IEnumerator E_SpeakGiphy (int backendID, string giphyId) {
-			using var www = UnityWebRequest.Get ($"https://api.giphy.com/v1/gifs/{giphyId}?api_key={GiphyApiKey}");
+            using var www = UnityWebRequest.Get ($"https://api.giphy.com/v1/gifs/{giphyId}?api_key={GiphyApiKey}");
             yield return www.SendWebRequest ();
-			if (www.responseCode == 200) {
-				var result = JsonConvert.DeserializeObject<GiphyResult> (www.downloadHandler.text);
-				var img = result.data.images.original;
-				if (!string.IsNullOrWhiteSpace (img.mp4)) {
-					//TODO maybe cache common gifs:
-					/*var pathToVideo = $"{Application.temporaryCachePath}/giphy/{giphyId}.mp4";
+            if (www.responseCode == 200) {
+                var result = JsonConvert.DeserializeObject<GiphyResult> (www.downloadHandler.text);
+                var img = result.data.images.original;
+                if (!string.IsNullOrWhiteSpace (img.mp4)) {
+                    //TODO maybe cache common gifs:
+                    /*var pathToVideo = $"{Application.temporaryCachePath}/giphy/{giphyId}.mp4";
 					if (!File.Exists (pathToVideo)) {
 						using (var wwwFile = UnityWebRequest.Get (img.mp4)) {
 							yield return wwwFile.SendWebRequest ();
@@ -293,31 +419,31 @@ namespace CineGame.SDK {
 						}
 					}
 					*/
-					OnGIFMessage?.Invoke (backendID, img.mp4, img.width, img.height);
-					Debug.LogFormat ("Player {0} plays mp4 @ {1}", backendID, img.mp4);
-				} else {
-					Debug.LogError ("SpeakGiphy: Empty url for mp4 animation");
-				}
-			}
-		}
+                    OnGIFMessage?.Invoke (backendID, img.mp4, img.width, img.height);
+                    Debug.LogFormat ("Player {0} plays mp4 @ {1}", backendID, img.mp4);
+                } else {
+                    Debug.LogError ("SpeakGiphy: Empty url for mp4 animation");
+                }
+            }
+        }
 
         IEnumerator E_SpeakTenor (int backendID, string tenorId) {
-			using var www = UnityWebRequest.Get ($"https://g.tenor.com/v1/gifs?ids={tenorId}&key={TenorApiKey}"); yield return www.SendWebRequest ();
-			if (www.responseCode == 200) {
-				var result = JsonConvert.DeserializeObject<TenorResult> (www.downloadHandler.text);
-				if (result.results.Length != 0 && result.results [0].media.Length != 0) {
-					var img = result.results [0].media [0].mp4;
-					if (!string.IsNullOrWhiteSpace (img?.url)) {
-						OnGIFMessage?.Invoke (backendID, img.url, img.dims [0], img.dims [1]);
-						Debug.LogFormat ("Player {0} plays mp4 @ {1}", backendID, img.url);
-					} else {
-						Debug.LogError ("SpeakTenor: Empty url for mp4 animation");
-					}
-				} else {
-					Debug.LogError ("SpeakTenor: Empty result set");
-				}
-			}
-		}
+            using var www = UnityWebRequest.Get ($"https://g.tenor.com/v1/gifs?ids={tenorId}&key={TenorApiKey}"); yield return www.SendWebRequest ();
+            if (www.responseCode == 200) {
+                var result = JsonConvert.DeserializeObject<TenorResult> (www.downloadHandler.text);
+                if (result.results.Length != 0 && result.results [0].media.Length != 0) {
+                    var img = result.results [0].media [0].mp4;
+                    if (!string.IsNullOrWhiteSpace (img?.url)) {
+                        OnGIFMessage?.Invoke (backendID, img.url, img.dims [0], img.dims [1]);
+                        Debug.LogFormat ("Player {0} plays mp4 @ {1}", backendID, img.url);
+                    } else {
+                        Debug.LogError ("SpeakTenor: Empty url for mp4 animation");
+                    }
+                } else {
+                    Debug.LogError ("SpeakTenor: Empty result set");
+                }
+            }
+        }
 
 #pragma warning disable IDE1006
         /// <summary>
