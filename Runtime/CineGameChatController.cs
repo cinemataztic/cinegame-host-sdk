@@ -218,18 +218,17 @@ namespace CineGame.SDK {
 		/// First check with backend is the input is allowed or moderated. Then, if market-specific profanity filter is loaded, run it on another thread. Result is returned in the callback argument.
 		/// </summary>
         public static void RunProfanityFilter (string input, WordFilterCallback callback) {
-            /*CineGameSDK.API ("game/moderate", "{\"message\":" + JsonConvert.SerializeObject (input) + "}", (statusCode, responseString) => {
+            CineGameSDK.API ("game/moderate", "{\"message\":" + JsonConvert.SerializeObject (input) + "}", (statusCode, responseString) => {
                 if (statusCode == HttpStatusCode.NoContent) {
                     Debug.Log ("User input moderated by backend: " + input);
                     callback.Invoke (ReplacementString);
                     return;
-                }*/
+                }
                 if (!IsProfanityFilterLoaded) {
                     callback.Invoke(ReplacementString);
                     return;
                 }
 
-                input = "cunt dickwad arsenal";
                 sb.Clear ();
 
                 var match = false;
@@ -297,7 +296,7 @@ namespace CineGame.SDK {
                     callback.Invoke (input);
                 }
 
-            //});
+            });
         }
 
         /// <summary>
