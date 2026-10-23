@@ -795,7 +795,7 @@ namespace CineGame.SDK {
             Texture2D texture = null;
             var nRetryTimes = 3;
             for (; ; ) {
-                using var request = GetTextureFromCacheOrUrl (sUrl);
+                using var request = GetTextureFromCacheOrUrl (sUrl, readable: true);
                 request.SetRequestHeader ("User-Agent", "Mozilla");
                 var timeBegin = Time.realtimeSinceStartup;
                 yield return request.SendWebRequest ();
@@ -806,7 +806,6 @@ namespace CineGame.SDK {
                     texture = DownloadHandlerTexture.GetContent (request);
                     if (texture != null) {
                         if (texture.isReadable) {
-                            Debug.Log ("DownloadPicture: CopyTexture not available, using Get/LoadRawTextureData to generate mipmaps (CPU)");
                             var texMipMap = new Texture2D (texture.width, texture.height, texture.format, true);
                             // Copy mip 0 data on the CPU - no roundtrip to GPU
                             texMipMap.SetPixelData (texture.GetPixelData<byte> (0), 0);
@@ -820,7 +819,7 @@ namespace CineGame.SDK {
                         break;
                     }
                 }
-                if (request.result == UnityWebRequest.Result.ConnectionError && --nRetryTimes != 0) {
+                if (texture == null && --nRetryTimes != 0) {
                     Debug.LogWarning ($"{request.error} while downloading picture, retrying: {request.downloadHandler?.text} {sUrl}");
                     //Wait a little, then retry
                     yield return new WaitForSeconds (.5f);
@@ -837,17 +836,17 @@ namespace CineGame.SDK {
         /// <summary>
         /// Get a UnityWebRequest to load a texture either from cache or URL. Cache expires after 20 hours
         /// </summary>
-        static UnityWebRequest GetTextureFromCacheOrUrl (string url) {
+        static UnityWebRequest GetTextureFromCacheOrUrl (string url, bool readable = false) {
             var filename = GetCacheFileName (url);
             if (File.Exists (filename)) {
                 var lastWriteTimeUtc = File.GetLastWriteTimeUtc (filename);
                 var nowUtc = DateTime.UtcNow;
                 var totalHours = (int)nowUtc.Subtract (lastWriteTimeUtc).TotalHours;
                 if (totalHours < 20) { //cache expires in 20 hours
-                    return UnityWebRequestTexture.GetTexture ("file://" + filename, true);
+                    return UnityWebRequestTexture.GetTexture ("file://" + filename, !readable);
                 }
             }
-            var webRequest = UnityWebRequestTexture.GetTexture (url, true);
+            var webRequest = UnityWebRequestTexture.GetTexture (url, nonReadable: !readable);
             webRequest.timeout = 10;
             return webRequest;
         }
