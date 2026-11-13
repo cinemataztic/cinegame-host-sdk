@@ -164,8 +164,9 @@ namespace CineGame.SDK {
 		/// </summary>
         internal static void BroadcastObjectMessage (CineGameSDK.PlayerObjectMessage obj, bool toPlayers, bool toSpectators) {
             if (instance != null) {
-                foreach (var script in instance.BotScripts) {
-                    script.SendObjectMessage (obj);
+                var numScripts = instance.BotScripts.Count;
+                for (int i = 0; i < numScripts; i++) {
+                    instance.BotScripts [i].SendObjectMessage (obj);
                 }
             }
         }
@@ -254,16 +255,20 @@ namespace CineGame.SDK {
 
                 if (TimeBeforeJoin > float.Epsilon) {
                     Log ($"CineGameBots: {pl.Name} will attempt to join the game in {TimeBeforeJoin:#.00} seconds");
-                    yield return new WaitForSecondsRealtime (TimeBeforeJoin);
+                    var _rejoinTimeout = Time.realtimeSinceStartup + TimeBeforeJoin;
+                    while (Time.realtimeSinceStartup < _rejoinTimeout)
+                        yield return null;
                 }
 
                 Log ($"CineGameBots: {pl.Name} attempting to join game");
                 CineGameSDK.OnPlayerJoined?.Invoke (pl);
 
-                var timeToSetAvatar = Random.Range (.01f, 1f);
-                yield return new WaitForSecondsRealtime (timeToSetAvatar);
+                var _setAvatarTimeout = Time.realtimeSinceStartup + Random.Range (.01f, 1f);
+                while (Time.realtimeSinceStartup < _setAvatarTimeout)
+                    yield return null;
                 CineGameSDK.SetPlayerAvatar (BackendID, AvatarID);
 
+                var objMove = new CineGameSDK.PlayerObjectMessage ();
                 for (; ; ) {
 
                     if (LeaveAndRejoin)
@@ -273,25 +278,31 @@ namespace CineGame.SDK {
                             var timeToRejoin = Random.Range(.3f, 30f);
                             Log($"CineGameBots: {Name} leaving the game, will rejoin in {timeToRejoin:#.00} seconds");
                             CineGameSDK.OnPlayerLeft?.Invoke(BackendID);
-                            yield return new WaitForSecondsRealtime(timeToRejoin);
+
+                            var _rejoinTimeout = Time.realtimeSinceStartup + timeToRejoin;
+                            while (Time.realtimeSinceStartup < _rejoinTimeout)
+                                yield return null;
 
                             Log($"CineGameBots: {Name} rejoining the game");
                             CineGameSDK.OnPlayerLeft?.Invoke(BackendID);
                         }
                     }
 
-                    yield return new WaitForSecondsRealtime (Random.Range (.3f, 3f));
+                    var _waitTimeout = Time.realtimeSinceStartup + Random.Range (.3f, 3f);
+                    while (Time.realtimeSinceStartup < _waitTimeout)
+                        yield return null;
 
-                    var obj = new CineGameSDK.PlayerObjectMessage ();
                     var shouldMove = Random.value < .5f;
-                    obj.PutFloat ("x", shouldMove ? Random.Range (0f, 1f) : .5f);
-                    obj.PutFloat ("y", shouldMove ? Random.Range (0f, 1f) : .5f);
-                    CineGameSDK.OnPlayerObjectMessage?.Invoke (BackendID, obj);
+                    objMove.PutFloat ("x", shouldMove ? Random.Range (0f, 1f) : .5f);
+                    objMove.PutFloat ("y", shouldMove ? Random.Range (0f, 1f) : .5f);
+                    CineGameSDK.OnPlayerObjectMessage?.Invoke (BackendID, objMove);
 
                     if (!shouldMove && Random.value < ProbChat/100f) {
+                        var _timeToChat = Time.realtimeSinceStartup + Random.Range (3f, 10f);
+                        while (Time.realtimeSinceStartup < _timeToChat)
+                            yield return null;
                         var chatMessage = ChatMessages [Random.Range (0, ChatMessages.Length)];
-                        Log ($"CineGameBots: {Name} says '{chatMessage}'");
-                        yield return new WaitForSecondsRealtime (Random.Range (3f, 10f));
+                        //Log ($"CineGameBots: {Name} says '{chatMessage}'");
                         CineGameSDK.OnPlayerChatMessage?.Invoke (BackendID, chatMessage);
                     }
                 }
