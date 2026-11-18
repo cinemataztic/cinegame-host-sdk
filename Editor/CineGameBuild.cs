@@ -2,10 +2,15 @@
 using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
 using UnityEditor;
+using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using UnityEditor.SceneManagement;
 using Unity.EditorCoroutines.Editor;
 //using UnityEngine.Video;
+
+using TMPro;
+using UnityEngine.TextCore.LowLevel;
+using UnityEngine.Playables;
 
 using System;
 using System.Runtime.InteropServices;
@@ -15,8 +20,8 @@ using System.IO;
 using System.Reflection;
 using System.Linq;
 using System.Text.RegularExpressions;
+
 using Newtonsoft.Json.Linq;
-using UnityEditor.Build;
 
 namespace CineGame.SDK.Editor {
 
@@ -333,6 +338,14 @@ namespace CineGame.SDK.Editor {
                     return;
             }
 
+            if (!ValidateBuild (out bool warn)) {
+                EditorUtility.DisplayDialog ("CineGame Build", "There were problems with the project or scene and the build is canceled. Please see log for details.", "OK");
+                return;
+            }
+            if (warn && !EditorUtility.DisplayDialog (titleContent.text, "There were warnings in the log when validating the project. Continue building?", "OK", "Cancel")) {
+                return;
+            }
+
             if (UcbAvailable && BuildOnUcb) {
                 CloudBuild.Init ();
                 CloudBuild.CreateBuildTarget (CloudBuild.UcbPlatform.standalonelinux64, appName: GameID, branchName: LatestBranch, subdirectory: ScmSubdirectory, autoBuild: true);
@@ -459,6 +472,87 @@ namespace CineGame.SDK.Editor {
                 instance.Repaint ();
             }
         }
+
+
+        /// <summary>
+        /// Returns false if the project or loaded scenes contain settings that will affect the quality of the build.
+        /// </summary>
+        bool ValidateBuild (out bool warn) {
+            var valid = true;
+            warn = false;
+            //
+            // Validate TextMeshPro font settings. They can have a severe performance impact if dynamic fonts are used.
+            //
+            var tmp_fontassets = Resources.FindObjectsOfTypeAll<TMP_Text> ().Select (t => t.font).ToHashSet ();
+            foreach (var font in tmp_fontassets) {
+                if (font.atlasPopulationMode == AtlasPopulationMode.Dynamic
+                    && font.atlasRenderMode != GlyphRenderMode.SDFAA
+                    && font.atlasRenderMode != GlyphRenderMode.SDFAA_HINTED) {
+                    Debug.LogError ($"{font.name} : When using dynamic population mode (which you should only use for user input or network responses), glyph render mode must be SDFAA(_Hinted)", font);
+                    valid = false;
+                }
+                if (font.atlasRenderMode != GlyphRenderMode.SMOOTH_HINTED
+                    && font.atlasRenderMode != GlyphRenderMode.RASTER_HINTED
+                    && font.atlasRenderMode != GlyphRenderMode.SDFAA_HINTED
+                    && font.atlasRenderMode != GlyphRenderMode.COLOR_HINTED) {
+                    Debug.LogWarning ($"{font.name} : Font does not use a Hinted render mode. You should prefer to use hinted, it increases the quality of the font by aligning glyph elements on pixel boundaries.", font);
+                    warn = true;
+                }
+                if (font.atlasPopulationMode == AtlasPopulationMode.DynamicOS) {
+                    Debug.LogError ($"{font.name} : DynamicOS population mode is not allowed", font);
+                    valid = false;
+                }
+                if (font.atlasPopulationMode == AtlasPopulationMode.Dynamic && font.getFontFeatures) {
+                    Debug.LogWarning ($"{font.name} : 'Get Font Features' is expensive and should be disabled unless you need kerning or OpenType ligatures", font);
+                    warn = true;
+                }
+            }
+            //
+            // Validate Director/Timeline settings. They should never use GameTime update mode and they should be split up between states
+            //
+            var directors = Resources.FindObjectsOfTypeAll<PlayableDirector> ();
+            var numDirectorsInActiveScene = 0;
+            foreach (var d in directors) {
+                if (d.timeUpdateMode == DirectorUpdateMode.GameTime) {
+                    Debug.LogWarning ("A loaded Director/Timeline is using updatemode = GameTime. This is dangerous, as framedrops will result in extended time. Use UnscaledGameTime or DSP-- if you MUST use GameTime, then use TimelineHandler component with Manual Update enabled.", d.gameObject);
+                    warn = true;
+                }
+                numDirectorsInActiveScene++;
+            }
+            if (numDirectorsInActiveScene == 1) {
+                Debug.LogWarning ("Loaded scenes only contain one Playable Director. This is dangerous because we want each state to be contained and skippable (lobby, tutorial, game). If you use one Timeline for everything, you must at least make sure to add the CineGame TimelineHandler component and set it up to skip forward to the correct time at the beginning of each state.");
+                warn = true;
+            }
+            //
+            // Warn if meshes look static but are not marked as static
+            //
+            var meshRenderers = Resources.FindObjectsOfTypeAll<MeshRenderer> ();
+            foreach (var mr in meshRenderers) {
+                if (!mr.gameObject.scene.isLoaded || !mr.gameObject.scene.IsValid ())
+                    continue;
+                var meshName = mr.TryGetComponent<MeshFilter> (out var mf) ? mf.sharedMesh.name : null;
+                if (!mr.gameObject.isStatic && !mr.GetComponentInParent<Animator> (includeInactive: true)) {
+                    Debug.LogWarning ($"The mesh {meshName} is not marked as static. If this mesh never moves it should be marked as static.", mr.gameObject);
+                    warn = true;
+                }
+                if (mr.TryGetComponent<Collider> (out _)) {
+                    Debug.LogWarning ($"The mesh {meshName} has a collider attached. If this mesh does not interact with physics, the collider will hurt performance.", mr.gameObject);
+                    warn = true;
+                }
+            }
+            //
+            // Warn if a light renders realtime shadows, as it should only be animated lights or lights that affect dynamic objects
+            //
+            var lights = Resources.FindObjectsOfTypeAll<Light> ();
+            foreach (var l in lights) {
+                if (l.lightmapBakeType == LightmapBakeType.Realtime) {
+                    Debug.LogWarning ($"The light {l.gameObject.name} is using realtime mode. Only lights that are animated or affect moving objects should be set to realtime.", l.gameObject);
+                    warn = true;
+                }
+            }
+            return valid;
+        }
+
 
         IEnumerator E_BuildGame () {
             var tmpDir = Application.temporaryCachePath + "/cinemabuild";
